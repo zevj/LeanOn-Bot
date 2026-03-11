@@ -1,11 +1,22 @@
-<script setup></script>
-
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <router-view />
 </template>
 
-<style scoped></style>
+<style >
+--root {
+  --primary-color: #0E6008;
+  --secondary-color: #049516;
+  --tertiary-color: #9bc44c;
+  --yellow-color: #ffd700;
+  --background-color: #faf9f6;
+  --black-color: #242424;
+
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Poppins, sans-serif;
+}
+</style>
