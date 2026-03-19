@@ -245,31 +245,25 @@ span {
 }
 
 
-/* Wrapper for inputs with icons */
-.input-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 730px;
+
+/* otp */
+.otp-container{
+  display:flex;
+  gap:38px;
+  margin-bottom: 30px;
+
 }
 
-/* Input styling */
-.input-wrapper input {
-  width: 100%;
-  height: 55px; /* keep original size */
-  padding-left: 45px; /* space for left icon */
-  border-radius: 8px;
-  border: 2px solid #ccc;
-  font-size: 16px;
-  margin-bottom: 20px;
-  transition: 0.15s ease-in-out border-color, 0.15s ease-in-out outline;
+.otp-input{
+  width:90px;
+  height:100px;
+  text-align:center;
+  font-size:22px;
+  border:2px solid #ccc;
+  border-radius:8px;
+  outline:none;
 }
 
-/* Email icon */
-.email-icon {
-  position: absolute;
-  left: 15px;
-  top: 37%;
-  transform: translateY(-50%);
-  font-size: 1.3rem;
-  color: #555;
+.otp-input:focus{
+  border-color:#42b883;
 }

@@ -7,26 +7,41 @@
         <p class="login-subtitle">Forgot the password, don't worry and we've got you back</p>
 
         <!-- Forgot Password Form -->
-        <form class="login-form" @submit.prevent="handleForgotPassword">
+      <form class="login-form" @submit.prevent="handleResetPassword">
 
-          <div class="form-group email-group">
-            <label for="email">Email</label>
-            <div class="input-wrapper">
-              <i class="bx bx-envelope email-icon"></i>
-              <input
-                type="text"
-                id="email"
-                placeholder="Enter your email"
-                v-model="email"
-              />
-            </div>
-          </div>
+  <!-- New Password -->
+  <div class="form-group">
+    <label for="password">Create New Password</label>
+    <div class="input-wrapper">
+      <input
+        type="password"
+        id="password"
+        placeholder="Enter your New Password..."
+        v-model="password"
+      />
+    </div>
+  </div>
 
-          <!-- Submit button -->
-          <router-link to="/OTPFPass" class="login-button">Enter</router-link>
-          <router-link to="/login" class="back-button">Back</router-link>
+  <!-- Confirm Password -->
+  <div class="form-group">
+    <label for="confirmPassword">Confirm Password</label>
+    <div class="input-wrapper">
+      <input
+        type="password"
+        id="confirmPassword"
+        placeholder="Confirm your Password..."
+        v-model="confirmPassword"
+      />
+    </div>
+  </div>
 
-        </form>
+  <!-- Submit -->
+  <router-link to="/login" class="login-button">Enter</router-link>
+
+  <!-- Back -->
+  <router-link to="/OTPFPass" class="back-button">Back</router-link>
+
+</form>
       </div>
 
       <div class="right-container">
@@ -72,31 +87,39 @@ import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
 
-// Form field
-const email = ref('')
+const password = ref('')
+const confirmPassword = ref('')
 
-// Router & Toast
 const router = useRouter()
 const toast = useToast()
 
-const handleForgotPassword = () => {
-  // 1️⃣ Check if email is empty
-  if (!email.value) {
-    toast.error('Please enter your email!')
+const handleResetPassword = () => {
+
+  // 1️⃣ Check empty fields
+  if (!password.value || !confirmPassword.value) {
+    toast.error('Please fill in all fields!')
     return
   }
 
-  // 2️⃣ Validate email format
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailPattern.test(email.value)) {
-    toast.error('Please enter a valid email!')
+  // 2️⃣ Minimum password length
+  if (password.value.length < 6) {
+    toast.error('Password must be at least 6 characters!')
     return
   }
 
-  // 3️⃣ Success
-  toast.success('OTP sent! Redirecting to verification...')
-  router.push('/OTPVerification')
+  // 3️⃣ Check if passwords match
+  if (password.value !== confirmPassword.value) {
+    toast.error('Passwords do not match!')
+    return
+  }
+
+  // ✅ Real success (no simulation)
+  toast.success('Password successfully reset!')
+
+  // Redirect to login
+  router.push('/login')
 }
 </script>
+
 
 <style scoped src="../assets/login/forgotPass.css"></style>

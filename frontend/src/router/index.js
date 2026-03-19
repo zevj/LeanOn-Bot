@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/login.vue'
 import Signup from '../views/Signup.vue'
 import forgotPass from '../views/forgotpass.vue'
+import OTPVerification from '../views/OTP.vue'
+import NewPass from '../views/NewPass.vue'
+import OTPFPass from '../views/OTPFPass.vue'
 
 const routes = [
   {
@@ -20,6 +23,24 @@ const routes = [
     path: '/forgotPass',
     name: 'forgotPass',
     component: forgotPass
+  },
+
+   {
+    path: '/NewPass',
+    name: 'NewPass',
+    component: NewPass
+  },
+
+     {
+    path: '/OTPVerification',
+    name: 'OTPVerification',
+    component: OTPVerification
+  },
+
+   {
+    path: '/OTPFPass',
+    name: 'OTPFPass',
+    component: OTPFPass
   },
 ]
 
