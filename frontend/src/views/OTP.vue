@@ -18,7 +18,7 @@
           </div>
 
           <button type="submit" class="login-button">Verify OTP</button>
-          <router-link to="/forgotPass" class="back-button">Back</router-link>
+          <router-link to="/signup" class="back-button">Back</router-link>
 
         </form>
       </div>
