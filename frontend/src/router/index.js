@@ -40,8 +40,8 @@ const routes = [
   },
 
    {
-    path: '/forgotPass',
-    name: 'forgotPass',
+    path: '/forgotpass',
+    name: 'forgotpass',
     component: forgotPass
   },
 

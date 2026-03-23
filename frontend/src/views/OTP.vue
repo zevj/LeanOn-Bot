@@ -26,10 +26,19 @@
             </span>
           </p>
           <button type="submit" class="login-button">Verify OTP</button>
-          <button type="button" class="login-button" :disabled="timeLeft > 0" @click="handleResend">
-            {{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}
-          </button>
-          <router-link to="/login" class="back-button">Back</router-link>
+          <button
+  type="button"
+  class="login-button"
+  :disabled="timeLeft > 0"
+  @click="handleResend"
+>
+  {{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}
+</button>
+
+<!-- ✅ correct route for signup OTP flow -->
+<router-link to="/signup" class="back-button">
+  Back
+</router-link>
 
         </form>
       </div>
