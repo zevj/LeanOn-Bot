@@ -7,41 +7,22 @@
         <p class="login-subtitle">Forgot the password, don't worry and we've got you back</p>
 
         <!-- Forgot Password Form -->
-      <form class="login-form" @submit.prevent="handleResetPassword">
+        <form class="login-form" @submit.prevent="handleReset">
 
-  <!-- New Password -->
-  <div class="form-group">
-    <label for="password">Create New Password</label>
-    <div class="input-wrapper">
-      <input
-        type="password"
-        id="password"
-        placeholder="Enter your New Password..."
-        v-model="password"
-      />
-    </div>
-  </div>
+<div class="form-group">
+  <label>New Password</label>
+  <input type="password" v-model="password" />
+</div>
 
-  <!-- Confirm Password -->
-  <div class="form-group">
-    <label for="confirmPassword">Confirm Password</label>
-    <div class="input-wrapper">
-      <input
-        type="password"
-        id="confirmPassword"
-        placeholder="Confirm your Password..."
-        v-model="confirmPassword"
-      />
-    </div>
-  </div>
+<div class="form-group">
+  <label>Confirm Password</label>
+  <input type="password" v-model="confirmPassword" />
+</div>
 
-  <!-- Submit -->
-  <router-link to="/login" class="login-button">Enter</router-link>
-
-  <!-- Back -->
-  <router-link to="/OTPFPass" class="back-button">Back</router-link>
+<button type="submit" class="login-button">Reset Password</button>
 
 </form>
+
       </div>
 
       <div class="right-container">
@@ -85,39 +66,65 @@
 <script setup>
 import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import axios from 'axios'
+
+const route = useRoute
+const router = useRouter()
+const toast = useToast()
+const email = localStorage.getItem('reset_email')
 
 const password = ref('')
 const confirmPassword = ref('')
 
-const router = useRouter()
-const toast = useToast()
+const handleReset = async () => {
 
-const handleResetPassword = () => {
+const email = localStorage.getItem('reset_email') // ✅ get email first
 
-  // 1️⃣ Check empty fields
-  if (!password.value || !confirmPassword.value) {
-    toast.error('Please fill in all fields!')
-    return
-  }
+// 🔒 SAFETY CHECK (PUT IT HERE)
+if (!email) {
+  toast.error('Session expired. Please try again.')
+  router.push('/forgotPass')
+  return
+}
 
-  // 2️⃣ Minimum password length
-  if (password.value.length < 6) {
-    toast.error('Password must be at least 6 characters!')
-    return
-  }
+// 1️⃣ Check empty fields
+if (!password.value || !confirmPassword.value) {
+  toast.error('Please fill in all fields!')
+  return
+}
 
-  // 3️⃣ Check if passwords match
-  if (password.value !== confirmPassword.value) {
-    toast.error('Passwords do not match!')
-    return
-  }
+// 2️⃣ Minimum password length
+if (password.value.length < 6) {
+  toast.error('Password must be at least 6 characters!')
+  return
+}
 
-  // ✅ Real success (no simulation)
+// 3️⃣ Check match
+if (password.value !== confirmPassword.value) {
+  toast.error('Passwords do not match!')
+  return
+}
+
+try {
+  await axios.post('/api/forgot-password/reset', {
+    email: email, // ✅ use localStorage email
+    password: password.value,
+    password_confirmation: confirmPassword.value
+  })
+
   toast.success('Password successfully reset!')
+  
+  // 🧹 CLEANUP
+  localStorage.removeItem('otp_expiry')
+  localStorage.removeItem('reset_email')
 
-  // Redirect to login
   router.push('/login')
+
+} catch (error) {
+  console.log(error.response)
+  toast.error(error.response?.data?.message || 'Reset failed')
+}
 }
 </script>
 

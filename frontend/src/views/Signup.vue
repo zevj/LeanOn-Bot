@@ -136,6 +136,7 @@
 import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const firstName = ref('')
 const lastName = ref('')
@@ -152,7 +153,7 @@ const router = useRouter()
 const togglePassword = () => showPassword.value = !showPassword.value
 const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value
 
-const handleSignup = () => {
+const handleSignup = async () => {
   if (!firstName.value || !lastName.value || !email.value || !password.value || !confirmPassword.value) {
     toast.error('Please fill out all fields!')
     return
@@ -169,8 +170,32 @@ const handleSignup = () => {
     return
   }
 
-  toast.success('Signup successful! Redirecting to OTP verification...')
-  router.push('/OTPVerification')
+  try {
+    const response = await axios.post('http://127.0.0.1:8000/api/register', {
+      first_name: firstName.value,
+      last_name: lastName.value,
+      email: email.value,
+      password: password.value,
+      password_confirmation: confirmPassword.value
+    })
+
+    // 🔥 SAVE FOR TIMER
+    localStorage.setItem('signup_otp_expiry', response.data.otp_expires_at)
+    localStorage.setItem('signup_email', email.value)
+
+    toast.success('Signup successful! Please verify OTP.')
+
+    router.push('/OTPVerification')
+
+  } catch (error) {
+    console.error(error)
+
+    if (error.response) {
+      toast.error(error.response.data.message || 'Signup failed')
+    } else {
+      toast.error('Server error')
+    }
+  }
 }
 </script>
 

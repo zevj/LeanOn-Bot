@@ -104,6 +104,8 @@
 import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
+// import { GoogleLogin } from 'vue3-google-login'
 
 const username = ref('')
 const password = ref('')
@@ -116,25 +118,54 @@ const togglePassword = () => {
   showPassword.value = !showPassword.value
 }
 
-const handleLogin = () => {
+const handleLogin = async () => {
   if (!username.value || !password.value) {
     toast.error('Please enter both email and password!')
     return
   }
 
-  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailPattern.test(username.value)) {
-    toast.error('Please enter a valid email address!')
-    return
-  }
+  try {
+    const res = await axios.post('http://127.0.0.1:8000/api/login', {
+      email: username.value,
+      password: password.value
+    })
 
-  if (username.value === 'test@example.com' && password.value === '123456') {
+    console.log(res.data) // debug
+    localStorage.setItem('token', res.data.token)
+    localStorage.setItem('user', JSON.stringify(res.data.user))
+    
     toast.success('Login successful!')
-    router.push('/dashboard')
-  } else {
-    toast.error('Invalid email or password!')
+
+    const role = res.data.user.role || 'student'
+    
+    if (role === 'guidance') {
+      router.push('/adminDashboard')
+    } else {
+      router.push('/Dashboard')
+    }
+
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Login failed!')
   }
 }
+
+// const handleGoogleLogin = async (response) => {
+//   try {
+//     const res = await axios.post('http://127.0.0.1:8000/api/google-login', {
+//       token: response.credential
+//     })
+
+//     // ✅ store token
+//     localStorage.setItem('token', res.data.token)
+//     localStorage.setItem('user', JSON.stringify(res.data.user))
+
+//     toast.success('Google login successful!')
+//     router.push('/dashboard')
+
+//   } catch (err) {
+//     toast.error(err.response?.data?.message || 'Google login failed')
+//   }
+// }
 </script>
 
 <style scoped src="../assets/login/Login.css"></style>

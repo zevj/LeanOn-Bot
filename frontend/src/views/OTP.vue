@@ -16,9 +16,20 @@
             <input class="otp-input" maxlength="1" v-model="otp5" @input="next(5,$event)" ref="i5">
             <input class="otp-input" maxlength="1" v-model="otp6" @input="next(6,$event)" ref="i6">
           </div>
+          <p class="otp-timer">
+            <span v-if="timeLeft > 0">
+              OTP expires in {{ timeLeft }}s
+            </span>
 
+            <span v-else class="expired">
+              OTP expired
+            </span>
+          </p>
           <button type="submit" class="login-button">Verify OTP</button>
-          <router-link to="/forgotPass" class="back-button">Back</router-link>
+          <button type="button" class="login-button" :disabled="timeLeft > 0" @click="handleResend">
+            {{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}
+          </button>
+          <router-link to="/login" class="back-button">Back</router-link>
 
         </form>
       </div>
@@ -65,6 +76,9 @@
 import { ref } from "vue"
 import { useToast } from "vue-toastification"
 import { useRouter } from "vue-router"
+import axios from "axios"
+import { useRoute } from 'vue-router'
+import { onMounted, onUnmounted } from 'vue'
 
 // OTP fields
 const otp1 = ref("")
@@ -84,32 +98,126 @@ const i6 = ref(null)
 
 const toast = useToast()
 const router = useRouter()
+const route = useRoute()
+
+const timeLeft = ref(0)
+let timer = null
+
+const startTimer = () => {
+  clearInterval(timer)
+
+  const expiry = localStorage.getItem('signup_otp_expiry')
+
+  if (!expiry) return
+
+  timer = setInterval(() => {
+    const now = new Date().getTime()
+    const expiryTime = new Date(expiry).getTime()
+
+    const diff = Math.floor((expiryTime - now) / 1000)
+
+    if (diff > 0) {
+      timeLeft.value = diff
+    } else {
+      timeLeft.value = 0
+      clearInterval(timer)
+    }
+  }, 1000)
+}
+
+onMounted(() => {
+  const email = localStorage.getItem('signup_email')
+
+  if (!email) {
+    toast.error('Missing email. Please sign up again.')
+    router.push('/signup')
+    return
+  }
+
+  startTimer()
+})
+
+onUnmounted(() => {
+  clearInterval(timer)
+})
 
 // Move to next input & allow numbers only
-const next = (index,e)=>{
-  // Remove non-numeric characters
-  e.target.value = e.target.value.replace(/[^0-9]/g,'')
-  
-  const inputs = [i1,i2,i3,i4,i5,i6]
-  
-  if(e.target.value.length === 1 && index < 6){
+const next = (index, e) => {
+  e.target.value = e.target.value.replace(/[^0-9]/g, '')
+
+  const inputs = [i1, i2, i3, i4, i5, i6]
+
+  if (e.target.value.length === 1 && index < 6) {
     inputs[index].value.focus()
   }
 }
 
 // Handle OTP verification
-const handleVerify = ()=>{
-  const otp = otp1.value + otp2.value + otp3.value + otp4.value + otp5.value + otp6.value
+const handleVerify = async () => {
+  const email = localStorage.getItem('signup_email') // ✅ ALWAYS GET HERE
 
-  // Validation: check if all 6 digits entered
+  console.log("EMAIL:", email)
+
+  const otp = otp1.value + otp2.value + otp3.value + otp4.value + otp5.value + otp6.value
+  console.log("OTP ENTERED:", otp)
+
   if (otp.length < 6) {
     toast.error("Please enter the 6-digit OTP correctly!")
     return
   }
 
-  // Success
-  toast.success(`OTP verified successfully!`)
-  router.push('/login') // redirect after OTP success
+  if (timeLeft.value === 0) {
+    toast.error('OTP expired. Please resend.')
+    return
+  }
+
+  try {
+    const response = await axios.post('http://127.0.0.1:8000/api/verify-otp', {
+      email: email,
+      otp: otp
+    })
+
+    localStorage.setItem('token', response.data.token)
+
+    toast.success("OTP verified successfully!")
+    router.push('/login')
+
+  } catch (error) {
+    console.log("ERROR:", error)
+
+    if (error.response) {
+      toast.error(error.response.data.message)
+    } else {
+      toast.error("Something went wrong")
+    }
+  }
+}
+
+const handleResend = async () => {
+  if (timeLeft.value > 0) return // 🔥 use real expiry
+
+  const email = localStorage.getItem('signup_email')
+
+  if (!email) {
+    toast.error("Session expired")
+    return
+  }
+
+  try {
+    const response = await axios.post('http://127.0.0.1:8000/api/resend-otp', {
+      email: email
+    })
+
+    // 🔥 update expiry from backend
+    localStorage.setItem('signup_otp_expiry', response.data.expires_at)
+
+    toast.success("OTP resent successfully!")
+
+    startTimer() 
+
+  } catch (error) {
+    toast.error(error.response?.data?.message || "Failed to resend OTP")
+  }
 }
 </script>
 

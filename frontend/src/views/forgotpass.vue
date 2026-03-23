@@ -23,7 +23,7 @@
           </div>
 
           <!-- Submit button -->
-          <router-link to="/OTPFPass" class="login-button">Enter</router-link>
+          <button type="submit" class="login-button">Enter</button>
           <router-link to="/login" class="back-button">Back</router-link>
 
         </form>
@@ -71,6 +71,7 @@
 import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 // Form field
 const email = ref('')
@@ -79,23 +80,38 @@ const email = ref('')
 const router = useRouter()
 const toast = useToast()
 
-const handleForgotPassword = () => {
-  // 1️⃣ Check if email is empty
+const handleForgotPassword = async () => {
   if (!email.value) {
     toast.error('Please enter your email!')
     return
   }
 
-  // 2️⃣ Validate email format
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailPattern.test(email.value)) {
     toast.error('Please enter a valid email!')
     return
   }
 
-  // 3️⃣ Success
-  toast.success('OTP sent! Redirecting to verification...')
-  router.push('/OTPVerification')
+  try {
+    const response = await axios.post('/api/forgot-password/send-otp', {
+      email: email.value
+    })
+
+    localStorage.setItem('otp_expiry', response.data.expires_at)
+    localStorage.setItem('reset_email', email.value)
+    toast.success('OTP sent!')
+
+    // pass email to next page
+    router.push({
+      path: '/OTPFPass',
+      query: { email: email.value }
+    })
+
+  } catch (error) {
+    console.log(error) // 👈 ADD
+  console.log(error.response) // 👈 ADD
+    toast.error(error.response?.data?.message || 'Error sending OTP')
+  }
 }
 </script>
 
