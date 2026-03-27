@@ -165,7 +165,7 @@ const handleLogin = async () => {
     if (role === 'guidance') {
       router.push('/adminDashboard')
     } else {
-      router.push('/Dashboard')
+      router.push('/ChatConvo')
     }
 
   } catch (err) {

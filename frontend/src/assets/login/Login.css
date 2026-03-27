@@ -128,6 +128,7 @@ input[type="password"]::-webkit-textfield-decoration-container {
     border-radius: 8px;
     font-size: 14px;
     text-align: center;
+    padding-top: 16px;
     cursor: pointer;
     text-decoration: none;
     transition: background-color 0.15s ease-in-out;
