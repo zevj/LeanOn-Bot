@@ -6,6 +6,7 @@ import OTPVerification from '../views/OTP.vue'
 import NewPass from '../views/NewPass.vue'
 import OTPFPass from '../views/OTPFPass.vue'
 import ChatConvo from '../views/ChatConvo.vue'
+import MyAccount from '../views/MyAccount.vue'
 const routes = [
   {
     path: '/login',
@@ -49,6 +50,12 @@ const routes = [
     path: '/ChatConvo',
     name: 'ChatConvo',
     component: ChatConvo
+  },
+
+  {
+    path: '/MyAccount',
+    name: 'MyAccount',
+    component: MyAccount
   },
 ]
 

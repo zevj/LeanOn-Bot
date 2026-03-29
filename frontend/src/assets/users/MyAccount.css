@@ -1,0 +1,507 @@
+
+main {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+.main-container {
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+.account-info-separation {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; /* top-aligned */
+  gap: 30px;
+  padding: 0 60px;
+  flex-wrap: wrap; /* allow left/right to stay together on zoom out */
+  max-width: 100%; /* ensures it won’t overflow */
+  box-sizing: border-box;
+}
+
+/* CONTAINER */
+.info-container {
+    background-color: #FFFFFF;
+    box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.09);
+    border: 2px solid #bdbdbd7a;
+    width: 400px;
+    border-radius: 10px;
+    padding: 25px;
+    transition: 0.15s ease-in-out all;
+}
+
+.info-container:hover {
+  box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
+  border: 2px solid #049516;
+  transform: translateY(-3px);
+}
+
+.photo-titleName {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.photo-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid #0E6008;
+  transition: 0.15s;
+  margin-bottom: 10px;
+}
+
+.photo-preview:hover {
+  opacity: 0.8;
+}
+
+.full-name {
+    padding-bottom: 5px;
+}
+
+.domain-mail {
+    font-size: 13px;
+    padding-bottom: 15px;
+}
+
+hr {
+    visibility: visible;
+    width: 350px;
+    opacity: 0.5;
+}
+
+/* OTHER INFOS */
+.other-infos {
+  padding-top: 20px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  padding-bottom: 15px;
+
+}
+
+.info-item i {
+  font-size: 18px;
+  color: #4CAF50; /* pwede mo palitan */
+}
+
+.info-item span {
+  font-weight: 600;
+}
+
+/* RIGHT SIDE */
+
+.right-side {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  align-items: center;
+}
+
+.profile-input-container {
+    background-color: #FFFFFF;
+    box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.09);
+    border: 2px solid #bdbdbd7a;
+    width: 950px;
+    height: 485px;
+    padding-bottom: 300px;
+    border-radius: 10px;
+    transition: 0.15s ease-in-out all;
+    margin-right: 0px;
+}
+
+.profile-input-container:hover {
+  outline: none;
+  border: 2px solid #0c4d06;
+}
+
+.title-header {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    gap: 5px;
+    padding: 20px;
+}
+
+.profile-title {
+  font-size: 18px;
+}
+
+.profile-desc {
+  font-size: 13px;
+}
+
+.profile-hr {
+  width: 100%;
+  opacity: 0.4;
+}
+
+.input-info-container {
+  display: flex;
+  gap: 30px; /* space between left and right */
+  padding: 10px 40px;
+}
+
+.left-side-input,
+.right-side-input {
+  padding-top: 20px;
+  flex: 1; /* equal width */
+  display: flex;
+  flex-direction: column;
+  gap: 25px; /* space between inputs vertically */
+}
+
+.name-input {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.input-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.input-info,
+.input-info select {
+  width: 100%;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 2px solid #b4b4b4;
+  transition: 0.15s ease-in-out all;
+}
+
+.input-info:focus,
+.input-info select:focus {
+  outline: none;
+  border: 2px solid #0E6008;
+}
+
+.action-btn {
+  display: flex;
+  align-items: end;
+  justify-content: end;
+  padding-right: 40px;
+  padding-top: 15px;
+  gap: 20px;
+}
+
+.save-btn {
+  padding: 15px 30px;
+  border-radius: 8px;
+  border-style: none;
+  background-color: #0c4d06;
+  color: white;
+  font-weight: 500;
+  transition: 0.15s ease-in-out all;
+  cursor: pointer;
+}
+
+.save-btn:hover {
+  background-color: #093a05;
+}
+
+.cancel-btn {
+  padding: 13px 30px;
+  border-radius: 8px;
+  border-style: none;
+  background-color: #FEF2F1;
+  color: #DC2625;
+  border: 2px solid #DC2625;
+  font-weight: 500;
+  transition: 0.15s ease-in-out all;
+  cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background-color: #DC2625;
+  color: white;
+}
+
+
+/* CHANGE PASSWORD */
+
+.password-container {
+    background-color: #FFFFFF;
+    box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.09);
+    border: 2px solid #bdbdbd7a;
+    width: 950px;
+    height: 410px;
+    padding-bottom: 300px;
+    border-radius: 10px;
+    transition: 0.15s ease-in-out all;
+    margin-right: 0px;
+}
+
+.password-container:hover {
+    outline: none;
+    border: 2px solid #0c4d06;
+}
+
+.password-header {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    gap: 5px;
+    padding: 20px;
+}
+
+.password-whole-container{
+  display: flex;
+  gap: 30px; /* space between left and right */
+  padding: 10px 40px;
+}
+
+.password-title {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.password-input {
+  width: 100%;
+  padding: 10px 15px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 2px solid #b4b4b4;
+  transition: 0.15s ease-in-out all;
+}
+
+.password-input:focus {
+  outline: none;
+  border: 2px solid #0E6008;
+}
+
+.password-separation {
+  padding-top: 20px;
+  flex: 1; /* equal width */
+  display: flex;
+  flex-direction: column;
+  gap: 25px; /* space between inputs vertically */
+}
+
+.password-wrapper {
+  width: 100%;
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-icon .password-input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  top: 60%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+}
+
+.eye-icon:hover {
+  color: #093a05;
+}
+
+/* Chrome, Edge, Opera */
+input[type="password"]::-webkit-password-toggle-button,
+input[type="password"]::-webkit-inner-spin-button,
+input[type="password"]::-webkit-contacts-auto-fill-button {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none !important;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+/* Firefox */
+input[type="password"]::-moz-password-character {
+    display: none !important;
+}
+
+/* Remove autocomplete icons on Chrome/Edge */
+input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+    box-shadow: 0 0 0px 1000px white inset !important;
+}
+
+/* Optional: hide IE/Edge legacy icons */
+input::-ms-reveal {
+    display: none;
+}
+
+/* Email input + send button */
+.email-input-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.password-input {
+  flex: 1;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 2px solid #b4b4b4;
+}
+
+.password-input:focus {
+  outline: none;
+  border-color: #0E6008;
+}
+
+.send-btn {
+  margin-top: 6px;
+  background-color: #0E6008;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-btn:hover {
+  background-color: #0c4d06;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* Modal Content */
+.modal-content {
+  position: relative;
+  background: #fff;
+  padding: 30px 25px 20px 25px;
+  border-radius: 16px;
+  padding-bottom: 40px;
+  width: 550px;
+  max-width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  box-shadow: 0px 10px 30px rgba(0,0,0,0.12);
+}
+
+/* Close Button */
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #666;
+}
+
+.close-btn:hover {
+  color: #000;
+}
+
+/* OTP Label with horizontal line */
+.otp-label-container {
+  display: flex;
+  align-items: start;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.otp-label-container label {
+  font-weight: 500;
+  color: #333;
+  min-width: 80px;
+}
+
+/* OTP Inputs Row */
+.otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.otp-input {
+  width: 70px;
+  height: 80px;
+  text-align: center;
+  font-size: 20px;
+  border: 2px solid #b4b4b4;
+  border-radius: 12px;
+  transition: 0.2s;
+}
+
+.otp-input:focus {
+  border-color: #0E6008;
+  outline: none;
+}
+
+/* Verify Button */
+.verify-btn {
+  background-color: #0E6008;
+  color: white;
+  width: 96%;
+  padding: 12px 0px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  align-self: center;
+  transition: 0.2s;
+}
+
+.verify-btn:hover {
+  background-color: #0c4d06;
+}
+
+/* Transition */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-15px);
+}
+
+.fade-slide-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-15px);
+}

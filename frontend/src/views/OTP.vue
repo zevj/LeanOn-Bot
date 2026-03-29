@@ -21,24 +21,27 @@
               OTP expires in {{ timeLeft }}s
             </span>
 
-            <span v-else class="expired">
+            <span v-else class="expired"> 
               OTP expired
             </span>
           </p>
           <button type="submit" class="login-button">Verify OTP</button>
-          <button
-  type="button"
-  class="login-button"
-  :disabled="timeLeft > 0"
-  @click="handleResend"
->
-  {{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}
-</button>
 
-<!-- ✅ correct route for signup OTP flow -->
-<router-link to="/signup" class="back-button">
-  Back
-</router-link>
+            <!-- ✅ correct route for signup OTP flow -->
+            <router-link to="/signup" class="back-button">
+              Back
+            </router-link>
+
+            <div class="resend-otp">
+              <p
+                type="button"
+                class="resend-otp"
+                :disabled="timeLeft > 0"
+                @click="handleResend"
+              >
+                Didn't get a code? <span>{{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}</span>
+              </p>
+            </div>
 
         </form>
       </div>
