@@ -30,14 +30,14 @@
         </div>
 
         <div class="main-menu">
-          <div class="menu-item">
+          <div class="menu-item" @click="openSearchModal">
             <i class='bx bx-search'></i>
             <span>Search Chat</span>
           </div>
-          <div class="menu-item">
-            <i class='bx bx-bookmark'></i>
-            <span>Saved</span>
-          </div>
+          <div class="menu-item" @click="openSavedModal">
+          <i class='bx bx-bookmark'></i>
+          <span>Saved</span>
+        </div>
         </div>
 
         <h4 class="chat-history-title">Chat History</h4>
@@ -67,8 +67,8 @@
           :style="{ top: dropdown.top + 'px', left: dropdown.left + 'px' }"
           @click.stop
         >
-          <div class="dropdown-item">
-            <i class='bx bx-edit'></i> Edit
+          <div class="dropdown-item" @click="saveChat(dropdown.index)">
+            <i class='bx bx-save'></i> Save
           </div>
           <div class="dropdown-item" @click="archiveChat(dropdown.index)">
             <i class='bx bx-archive'></i> Archive
@@ -102,69 +102,153 @@
     </aside>
 
     <!-- LOGOUT MODAL -->
-<transition name="modal">
-  <div v-if="showLogoutModal" class="modal-overlay" @click="closeModal">
-    <div class="modal-container" @click.stop>
-      <div class="modal-item">
-        <i class='bx bx-user'></i>
-        <router-link to="/MyAccount" class="my-account">My Account</router-link>
+    <transition name="modal">
+      <div v-if="showLogoutModal" class="modal-overlay" @click="closeModal">
+        <div class="modal-container" @click.stop>
+          <div class="modal-item">
+            <i class='bx bx-user'></i>
+            <router-link to="/MyAccount" class="my-account">My Account</router-link>
+          </div>
+          <div class="modal-item" @click="openArchivedModal">
+            <i class='bx bx-archive'></i>
+            <span>Archived</span>
+          </div>
+          <div class="modal-item">
+            <i class='bx bx-error-circle'></i>
+            <span>Crisis Alerts</span>
+          </div>
+          <div class="modal-item logout-item" @click="confirmLogout">
+            <i class='bx bx-log-out'></i>
+            <span>Logout</span>
+          </div>
+        </div>
       </div>
-      <div class="modal-item" @click="openArchivedModal">
-        <i class='bx bx-archive'></i>
-        <span>Archived</span>
+    </transition>
+
+    <!-- ARCHIVED MODAL -->
+    <transition name="archived-modal">
+      <div 
+        v-if="showArchivedModal" 
+        class="archived-overlay" 
+        @click="closeArchivedModal"
+      >
+        <div class="archived-container" @click.stop>
+          <h3 class="archived-title">Archived Chats</h3>
+
+          <div class="archived-list">
+            <div 
+              v-for="(chat, index) in archivedChats" 
+              :key="index" 
+              class="archived-item"
+            >
+              <div class="archived-text">
+                <h4>{{ chat.title }}</h4>
+                <p>{{ chat.date }}</p>
+              </div>
+
+              <div class="archived-actions">
+                <button @click="restoreChat(index)">
+                  <i class='bx bx-undo'></i>
+                </button>
+                <button @click="deleteArchivedChat(index)">
+                  <i class='bx bx-trash'></i>
+                </button>
+              </div>
+            </div>
+
+            <p v-if="archivedChats.length === 0" class="empty">
+              No archived chats
+            </p>
+          </div>
+
+          <button class="close-archived-btn" @click="closeArchivedModal">
+            Close
+          </button>
+        </div>
       </div>
-      <div class="modal-item">
-        <i class='bx bx-error-circle'></i>
-        <span>Crisis Alerts</span>
+    </transition>
+
+    <!-- SAVED MODAL -->
+    <transition name="saved-modal">
+      <div 
+        v-if="showSavedModal" 
+        class="saved-overlay" 
+        @click="closeSavedModal"
+      >
+        <!-- Only this container animates -->
+        <div class="saved-container" @click.stop>
+          <h3 class="saved-title">Saved Chats</h3>
+
+          <div class="saved-list">
+            <div 
+              v-for="(chat, index) in savedChats" 
+              :key="index" 
+              class="saved-item"
+            >
+              <div class="saved-text">
+                <h4>{{ chat.title }}</h4>
+                <p>{{ chat.date }}</p>
+              </div>
+
+              <div class="saved-actions">
+                <button @click="viewChat(chat)">
+                  <i class='bx bx-show'></i>
+                </button>
+                <button @click="deleteSavedChat(index)">
+                  <i class='bx bx-trash'></i>
+                </button>
+              </div>
+            </div>
+
+            <p v-if="savedChats.length === 0" class="empty">
+              No saved chats
+            </p>
+          </div>
+
+          <button class="close-saved-btn" @click="closeSavedModal">
+            Close
+          </button>
+        </div>
       </div>
-      <div class="modal-item logout-item" @click="confirmLogout">
-        <i class='bx bx-log-out'></i>
-        <span>Logout</span>
+    </transition>
+
+    <!-- SEARCH CHAT MODAL -->
+<transition name="search-modal">
+  <div 
+    v-if="showSearchModal" 
+    class="search-modal-overlay" 
+    @click="closeSearchModal"
+  >
+    <div class="search-modal-container" @click.stop>
+      <h3 class="search-modal-title">Search Chats</h3>
+      <input 
+        type="text" 
+        v-model="searchQuery" 
+        class="search-modal-input" 
+        placeholder="Search your chats..."
+      />
+
+      <div class="search-results">
+        <div v-for="(chat, index) in filteredSearchResults" :key="index" class="search-result-item">
+          <h4>{{ chat.title }}</h4>
+          <p>{{ chat.date || chat.time }}</p>
+        </div>
+        <p v-if="filteredSearchResults.length === 0" class="search-empty">No results found</p>
       </div>
+
+      <button class="search-modal-close-btn" @click="closeSearchModal">Close</button>
     </div>
   </div>
 </transition>
 
-<!-- ARCHIVED MODAL -->
-<!-- <transition name="modal">
-  <div v-if="showArchivedModal" class="modal-overlay-archived" @click="closeArchivedModal">
-    <div class="modal-container-archived" @click.stop>
-      <h3 class="modal-title">Archived Chats</h3>
-      <table class="archived-table">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Date Archived</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(chat, index) in archivedChats" :key="index">
-            <td>{{ chat.title }}</td>
-            <td>{{ chat.date }}</td>
-            <td class="actions">
-              <button class="restore-btn" @click="restoreChat(index)">
-                <i class='bx bx-undo'></i>
-              </button>
-              <button class="delete-btn" @click="deleteArchivedChat(index)">
-                <i class='bx bx-trash'></i>
-              </button>
-            </td>
-          </tr>
-          <tr v-if="archivedChats.length === 0">
-            <td colspan="3" class="no-archived">No archived chats</td>
-          </tr>
-        </tbody>
-      </table>
-      <button class="close-modal" @click="closeArchivedModal">Close</button>
-    </div>
-  </div>
-</transition> -->
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
 
 /* Sidebar props */
 defineProps({ open: Boolean })
@@ -177,8 +261,49 @@ const chats = ref([
   { title: 'Database normalization', time: '30 mins ago' },
 ])
 
-/* Archived chats state */
+/* Archived chats */
 const archivedChats = ref([])
+
+/* Saved chats */
+const savedChats = ref([
+  { title: 'How to install XAMPP', date: '2026-03-31 12:00 PM' },
+  { title: 'Vue Sidebar Design', date: '2026-03-31 11:45 AM' },
+])
+const showSavedModal = ref(false)
+const openSavedModal = () => showSavedModal.value = true
+const closeSavedModal = () => showSavedModal.value = false
+
+/* SEARCH CHAT MODAL */
+const showSearchModal = ref(false)
+const searchQuery = ref('')
+
+// Open search modal
+const openSearchModal = () => {
+  showSearchModal.value = true
+  searchQuery.value = ''
+}
+
+// Close search modal
+const closeSearchModal = () => showSearchModal.value = false
+
+// Computed filtered search results from chats, archivedChats, savedChats
+import { computed } from 'vue'
+const filteredSearchResults = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim()
+
+  // combine all chats
+  const allChats = [
+    ...chats.value.map(c => ({ ...c, type: 'Chat' })),
+    ...archivedChats.value.map(c => ({ ...c, type: 'Archived Chat' })),
+    ...savedChats.value.map(c => ({ ...c, type: 'Saved Chat' }))
+  ]
+
+  // if query is empty, show all chats
+  if (!query) return allChats
+
+  // otherwise, filter
+  return allChats.filter(c => c.title.toLowerCase().includes(query))
+})
 
 /* Logout Modal */
 const showLogoutModal = ref(false)
@@ -194,7 +319,7 @@ const showArchivedModal = ref(false)
 const openArchivedModal = () => showArchivedModal.value = true
 const closeArchivedModal = () => showArchivedModal.value = false
 
-/* DROPDOWN STATE */
+/* DROPDOWN */
 const dropdown = ref({ visible: false, top: 0, left: 0, index: null })
 const openDropdown = (event, index) => {
   event.stopPropagation()
@@ -209,8 +334,6 @@ const openDropdown = (event, index) => {
       : Math.max(0, window.innerHeight - dropdownHeight + window.scrollY)
   dropdown.value = { visible: true, top: topPos, left: rect.left + window.scrollX, index }
 }
-
-/* Close dropdown on outside click */
 const closeDropdown = () => { dropdown.value.visible = false }
 onMounted(() => window.addEventListener('click', closeDropdown))
 onBeforeUnmount(() => window.removeEventListener('click', closeDropdown))
@@ -218,24 +341,57 @@ onBeforeUnmount(() => window.removeEventListener('click', closeDropdown))
 /* ARCHIVE / RESTORE / DELETE */
 const archiveChat = (index) => {
   if (index == null) return
-  const chat = chats.value.splice(index, 1)[0]
-  archivedChats.value.unshift({ ...chat, date: new Date().toLocaleDateString() })
+  const chat = chats.value[index]
+  // Remove from main chats
+  chats.value.splice(index, 1)
+  // Add to archived
+  archivedChats.value.unshift({ ...chat, date: new Date().toLocaleString() })
+  // Close dropdown
   closeDropdown()
-  openArchivedModal()
+  // Show success toast
+  toast.success('Chat archived successfully!')
 }
 
 const restoreChat = (index) => {
-  const chat = archivedChats.value.splice(index, 1)[0]
+  const chat = archivedChats.value[index]
+  archivedChats.value.splice(index, 1)
   chats.value.unshift(chat)
+  toast.success('Chat restored successfully!')
 }
 
 const deleteChat = (index) => {
-  chats.value.splice(index, 1)
-  closeDropdown()
+  if (index == null) return
+  chats.value.splice(index, 1)       // remove chat
+  closeDropdown()                     // close dropdown menu
+  toast.success('Chat deleted successfully!')  // show toast
 }
 
 const deleteArchivedChat = (index) => {
-  archivedChats.value.splice(index, 1)
+  if (index == null) return
+  archivedChats.value.splice(index, 1)      // remove archived chat
+  toast.success('Archived chat deleted successfully!')  // show toast
+}
+
+/* SAVED CHAT */
+const saveChat = (index) => {
+  if (index == null) return
+  const chat = chats.value[index]
+  if (savedChats.value.find(c => c.title === chat.title)) {
+    toast.info('Already saved!')
+    return
+  }
+  savedChats.value.unshift({ ...chat, date: new Date().toLocaleString() })
+  toast.success('Chat saved successfully!')
+  closeDropdown()
+}
+
+const viewChat = (chat) => {
+  toast.info(`Viewing: ${chat.title}`)
+}
+
+const deleteSavedChat = (index) => {
+  savedChats.value.splice(index, 1)
+  toast.success('Removed from saved!')
 }
 </script>
 

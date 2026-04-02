@@ -91,6 +91,7 @@ import { useRouter } from "vue-router"
 import axios from "axios"
 import { useRoute } from 'vue-router'
 import { onMounted, onUnmounted } from 'vue'
+import { gsap } from 'gsap'
 
 // OTP fields
 const otp1 = ref("")
@@ -231,6 +232,83 @@ const handleResend = async () => {
     toast.error(error.response?.data?.message || "Failed to resend OTP")
   }
 }
+
+/* =========================
+   REFS
+========================= */
+const containerRef = ref(null)
+const leftRef = ref(null)
+const rightRef = ref(null)
+
+const titleRef = ref(null)
+const subtitleRef = ref(null)
+
+const formGroupRefs = ref([])
+
+const loginBtnRef = ref(null)
+const googleBtnRef = ref(null)
+
+/* =========================
+   GSAP ANIMATION
+========================= */
+onMounted(() => {
+  const tl = gsap.timeline({
+    defaults: {
+      duration: 0.8,
+      ease: "power2.out"
+    }
+  })
+
+  gsap.set(containerRef.value, { opacity: 1 })
+
+  tl.from(leftRef.value, { x: -70, opacity: 0 }, 0)
+  tl.from(rightRef.value, { x: 70, opacity: 0 }, 0)
+
+  tl.from(titleRef.value, { y: 40, opacity: 0 }, 0.3)
+  tl.from(subtitleRef.value, { y: 25, opacity: 0 }, 0.4)
+
+  tl.from(formGroupRefs.value, {
+    y: 25,
+    opacity: 0,
+    stagger: 0.15
+  }, 0.5)
+
+  tl.from(".forgot-password", { y: 15, opacity: 0 }, 0.7)
+
+  tl.from(loginBtnRef.value, {
+    scale: 0.92,
+    opacity: 0
+  }, 0.8)
+
+  tl.from(".divider", { y: 15, opacity: 0 }, 0.9)
+
+  gsap.set(googleBtnRef.value, {
+    opacity: 0,
+    y: 20,
+    scale: 0.95
+  })
+
+  tl.to(googleBtnRef.value, {
+    opacity: 1,
+    y: 0,
+    scale: 1
+  }, 1.0)
+
+  tl.from(".new-student", { y: 15, opacity: 0 }, 1.1)
+
+  tl.from(".overlay", { opacity: 0 }, 0.3)
+  tl.from(".title", { y: 50, opacity: 0 }, 0.4)
+  tl.from(".subtitle", { y: 25, opacity: 0 }, 0.5)
+  tl.from(".yellow-line", { width: 0, opacity: 0 }, 0.6)
+  tl.from(".subheading", { y: 25, opacity: 0 }, 0.7)
+
+  tl.from(".features", {
+    y: 25,
+    opacity: 0,
+    stagger: 0.2
+  }, 0.9)
+})
+
 </script>
 
 <style scoped src="../assets/login/OTP.css"></style>

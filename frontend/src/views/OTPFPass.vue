@@ -17,7 +17,7 @@
             <input class="otp-input" maxlength="1" v-model="otp5" @input="next(5,$event)" ref="i5">
             <input class="otp-input" maxlength="1" v-model="otp6" @input="next(6,$event)" ref="i6">
           </div>
-          <p class="otp-timer">
+          <!--<p class="otp-timer">
             <span v-if="timeLeft > 0">
               OTP expires in {{ timeLeft }}s
             </span>
@@ -25,14 +25,21 @@
             <span v-else class="expired">
               OTP expired
             </span>
-          </p>
+          </p>-->
 
           <button type="submit" class="login-button">Verify OTP</button>
-          <button class="login-button" :disabled="timeLeft > 0 || isResending" @click="resendOtp">
-            {{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}
-          </button>
           <router-link to="/forgotPass" class="back-button">Back</router-link>
 
+          <div class="resend-otp">
+              <p
+                type="button"
+                class="resend-otp"
+                :disabled="timeLeft > 0"
+                @click="handleResend"
+              >
+                Didn't get a code? <span>{{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}</span>
+              </p>
+            </div>
         </form>
       </div>
 
