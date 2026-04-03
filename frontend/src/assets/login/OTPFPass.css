@@ -56,6 +56,20 @@ span {
   transition: 0.15s ease-in-out all;
 }
 
+.resend-otp {
+    text-align: center;
+    padding-right: 100px;
+    padding-top: 10px;
+    font-size: 14px;
+    transition: 0.15s ease-in-out all;
+}
+
+.resend-otp span:hover {
+    color: #0b4706;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
 .otp-input:focus{
   border-color:#42b883;
 }

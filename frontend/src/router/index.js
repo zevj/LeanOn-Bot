@@ -7,13 +7,10 @@ import NewPass from '../views/NewPass.vue'
 import OTPFPass from '../views/OTPFPass.vue'
 import AdminDashboard from '../views/adminDashboard.vue'
 import StudentDashboard from '../views/studentDashboard.vue'
+import ChatConvo from '../views/ChatConvo.vue'
+import MyAccount from '../views/MyAccount.vue'
 
 const routes = [
-  {
-    path: '/',
-    redirect: '/login'
-  },
-
   {
     path: '/login',
     name: 'login',
@@ -40,8 +37,8 @@ const routes = [
   },
 
   {
-    path: '/forgotpass',
-    name: 'forgotpass',
+    path: '/forgotPass',
+    name: 'forgotPass',
     component: forgotPass
   },
 
@@ -62,21 +59,25 @@ const routes = [
     name: 'OTPFPass',
     component: OTPFPass
   },
+
+
+  /* STUDENT */
+  {
+    path: '/ChatConvo',
+    name: 'ChatConvo',
+    component: ChatConvo
+  },
+
+  {
+    path: '/MyAccount',
+    name: 'MyAccount',
+    component: MyAccount
+  },
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
-})
-
-router.beforeEach((to) => {
-  const token = localStorage.getItem('token')
-
-  if (to.meta.requiresAuth && !token) {
-    return '/' // redirect to login
-  }
-
-  return true // allow navigation
 })
 
 export default router

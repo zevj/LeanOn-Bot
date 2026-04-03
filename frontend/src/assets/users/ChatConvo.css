@@ -1,0 +1,78 @@
+.main-container {
+  display: flex;
+  justify-content: center; /* horizontal */
+  align-items: center;     /* vertical */
+  flex-direction: column;
+  height: 75.2vh;           /* <-- IMPORTANT */
+  background-color: #f5f5f5;
+}
+
+.title-container {
+    padding-bottom: 20px;
+}
+
+.main-title {
+    font-size: 48px;
+    color: #0E6008;
+    font-weight: 600;
+       animation: fadeUp 0.6s ease-out forwards;
+    animation-delay: 0.2s;
+}
+
+.main-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Animation keyframes */
+@keyframes fadeUp {
+    0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sugguestion-buttons {
+    width: 100%;
+    background-color: white;
+    padding: 18px;
+    padding-right: 25px;
+    border-radius: 8px;
+    font-weight: 550;
+    background: none;
+    border: 2px solid #0E6008;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; /* <-- fixed */
+    opacity: 0; /* start hidden */
+    transform: translateY(30px);
+    animation: fadeUp 0.6s ease-out forwards;
+}
+
+.sugguestion-buttons:hover {
+    box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
+    background-color: #0E6008;
+    color: white;
+}
+
+/* Stagger animation using nth-child */
+.sugguestion-buttons:nth-child(1) { 
+    animation-delay: 0.4s; 
+}
+
+.sugguestion-buttons:nth-child(2) { 
+    animation-delay: 0.55s; 
+}
+
+.sugguestion-buttons:nth-child(3) { 
+    animation-delay: 0.7s; 
+}
+
+.sugguestion-buttons:nth-child(4) { 
+    animation-delay: 0.85s; 
+}

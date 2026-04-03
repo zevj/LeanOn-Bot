@@ -25,10 +25,28 @@
     font-size: clamp(24px, 5vw, 25px); /* responsive */
     font-weight: 700;
     margin-bottom: 8px;
+    animation-delay: 0.1s;
+
+}
+
+/* TITLE & SUBTITLE */
+.login-title,
+.login-subtitle {
+  opacity: 0;
+  transform: translateY(-20px);
+  animation: fadeSlideDown 0.5s forwards;
 }
 
 .login-subtitle {
     padding-bottom: 25px;
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeSlideDown {
+  to {
+    opacity: 1;
+    transform: translateY(-10px);
+  }
 }
 
 span {
@@ -42,8 +60,27 @@ span {
   display:flex;
   gap:38px;
   margin-bottom: 30px;
-
+    opacity: 0;
+  transform: translateY(20px);
+  animation: fadeSlideUp 0.5s forwards;
+  animation-delay: 0.5s; /* after title/subtitle */
 }
+
+@keyframes fadeSlideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Inputs individually still have staggered fade-in */
+.otp-input:nth-child(1) { animation-delay: 0.55s; }
+.otp-input:nth-child(2) { animation-delay: 0.6s; }
+.otp-input:nth-child(3) { animation-delay: 0.65s; }
+.otp-input:nth-child(4) { animation-delay: 0.7s; }
+.otp-input:nth-child(5) { animation-delay: 0.75s; }
+.otp-input:nth-child(6) { animation-delay: 0.8s; }
+
 
 .otp-input{
   width:68.5px;
@@ -54,7 +91,26 @@ span {
   border-radius:8px;
   outline:none;
   transition: 0.15s ease-in-out all;
+  opacity: 0; /* start hidden */
+  transform: translateY(20px); /* start slightly down */
+  animation: otpFadeIn 0.4s forwards;
 }
+
+/* staggered animation using nth-child */
+.otp-input:nth-child(1) { animation-delay: 0.1s; }
+.otp-input:nth-child(2) { animation-delay: 0.2s; }
+.otp-input:nth-child(3) { animation-delay: 0.3s; }
+.otp-input:nth-child(4) { animation-delay: 0.4s; }
+.otp-input:nth-child(5) { animation-delay: 0.5s; }
+.otp-input:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes otpFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 
 .otp-input:focus{
   border-color:#42b883;
@@ -75,6 +131,15 @@ span {
     text-decoration: none;
     margin-bottom: 20px;
     transition: background-color 0.15s ease-in-out;
+    animation-delay: 1.0s; /* after OTP inputs */
+
+}
+
+.login-button,
+.back-button {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeSlideUp 0.7s forwards;
 }
 
 .login-button:hover {
@@ -97,11 +162,26 @@ span {
     cursor: pointer;
     text-decoration: none;
     transition: background-color 0.15s ease-in-out;
+    animation-delay: 0.170s;
 }
 
 .back-button:hover {
     background-color: #0b4706;
     color: white;
+}
+
+.resend-otp {
+    text-align: center;
+    padding-right: 100px;
+    padding-top: 10px;
+    font-size: 14px;
+    transition: 0.15s ease-in-out all;
+}
+
+.resend-otp span:hover {
+    color: #0b4706;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 /* RIGHT SIDE */

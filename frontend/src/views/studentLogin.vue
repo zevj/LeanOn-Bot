@@ -134,12 +134,12 @@ import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { gsap } from 'gsap'
-import LoadingButton from '@/views/loadingButton.vue' // ✅ import
+import LoadingButton from '@/views/loadingButton.vue'
 
 const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
-const isLoading = ref(false) // ✅ loading state
+const isLoading = ref(false)
 
 const toast = useToast()
 const router = useRouter()
@@ -178,6 +178,7 @@ const handleLogin = async () => {
       router.push('/adminDashboard')
     } else {
       router.push('/studentDashboard')
+      router.push('/ChatConvo')
     }
 
   } catch (err) {

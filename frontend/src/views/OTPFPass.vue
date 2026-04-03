@@ -19,7 +19,6 @@
             <input class="otp-input" maxlength="1" v-model="otp5" @input="next(5,$event)" ref="i5">
             <input class="otp-input" maxlength="1" v-model="otp6" @input="next(6,$event)" ref="i6">
           </div>
-
           <!-- ✅ VERIFY BUTTON -->
           <LoadingButton
             :loading="isVerifying"
@@ -42,7 +41,6 @@
           <router-link to="/forgotPass" class="back-button">
             Back
           </router-link>
-
         </form>
       </div>
 
