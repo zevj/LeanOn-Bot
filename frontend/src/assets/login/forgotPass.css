@@ -162,7 +162,6 @@ input[type="password"]::-webkit-textfield-decoration-container {
     text-decoration: none;
     margin-bottom: 20px;
     transition: background-color 0.15s ease-in-out;
-    padding-top: 15px;
 }
 
 .login-button:hover {

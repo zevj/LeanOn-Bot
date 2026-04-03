@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Login from '../views/login.vue'
-import Signup from '../views/Signup.vue'
-import forgotPass from '../views/forgotpass.vue'
+import Login from '../views/studentLogin.vue'
+import Signup from '../views/studentSignup.vue'
+import forgotPass from '../views/forgotPass.vue'
 import OTPVerification from '../views/OTP.vue'
 import NewPass from '../views/NewPass.vue'
 import OTPFPass from '../views/OTPFPass.vue'
-import Dashboard from '../views/Dashboard.vue'
 import AdminDashboard from '../views/adminDashboard.vue'
+import StudentDashboard from '../views/studentDashboard.vue'
 
 const routes = [
   {
@@ -21,10 +21,10 @@ const routes = [
   },
 
   {
-    path: '/dashboard',
-    name: 'Dashboard',
-    component: Dashboard,
-    meta: { requiresAuth: true } // ✅ protect this route, only accessible when authenticated
+    path: '/studentDashboard',
+    name: 'studentDashboard',
+    component: StudentDashboard,
+    meta: { requiresAuth: true, role: 'student' }
   },
 
   {
@@ -39,25 +39,25 @@ const routes = [
     component: Signup
   },
 
-   {
+  {
     path: '/forgotpass',
     name: 'forgotpass',
     component: forgotPass
   },
 
-   {
+  {
     path: '/NewPass',
     name: 'NewPass',
     component: NewPass
   },
 
-     {
+  {
     path: '/OTPVerification',
     name: 'OTPVerification',
     component: OTPVerification
   },
 
-   {
+  {
     path: '/OTPFPass',
     name: 'OTPFPass',
     component: OTPFPass

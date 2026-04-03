@@ -62,7 +62,7 @@
           </div>
 
           <div class="group-buttons">
-            <button type="submit" class="login-button" ref="signupBtnRef">Enter</button>
+            <LoadingButton type="submit" class="login-button" :loading="isLoading" ref="signupBtnRef">Sign Up</LoadingButton>
 
             <div ref="backBtnRef">
                <router-link to="/login" class="back-button" ref="backBtnRef">Back</router-link>
@@ -118,6 +118,7 @@ import { gsap } from 'gsap'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import LoadingButton from '@/views/loadingButton.vue'
 
 /* FORM DATA */
 const firstName = ref('')
@@ -159,12 +160,15 @@ const features = ['24/7 Available', 'Student Privacy', 'Fully Confidential']
 /* TOAST + ROUTER */
 const toast = useToast()
 const router = useRouter()
+const isLoading = ref(false)
 
 /* TOGGLE PASSWORD */
 const togglePassword = () => showPassword.value = !showPassword.value
 const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value
 
 const handleSignup = async () => {
+  if (isLoading.value) return // 🚫 prevent double click
+
   if (!firstName.value || !lastName.value || !email.value || !password.value || !confirmPassword.value) {
     toast.error('Please fill out all fields!')
     return
@@ -181,6 +185,8 @@ const handleSignup = async () => {
     return
   }
 
+  isLoading.value = true // 🔥 START LOADING
+
   try {
     const response = await axios.post('http://127.0.0.1:8000/api/register', {
       first_name: firstName.value,
@@ -190,12 +196,10 @@ const handleSignup = async () => {
       password_confirmation: confirmPassword.value
     })
 
-    // ✅ store OTP expiry + email
     localStorage.setItem('signup_otp_expiry', response.data.otp_expires_at)
     localStorage.setItem('signup_email', email.value)
 
     toast.success('Signup successful! Please verify OTP.')
-
     router.push('/OTPVerification')
 
   } catch (error) {
@@ -206,6 +210,9 @@ const handleSignup = async () => {
     } else {
       toast.error('Server error')
     }
+
+  } finally {
+    isLoading.value = false // 🔥 ALWAYS STOP LOADING
   }
 }
 

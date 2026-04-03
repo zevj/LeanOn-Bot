@@ -11,7 +11,7 @@ import axios from 'axios'
 const app = createApp(App)
 
 app.use(createPinia())
-app.use(router) 
+app.use(router)
 app.use(Toast)
 
 // app.use(vue3GoogleLogin, {

@@ -23,12 +23,16 @@
             </div>
           </div>
 
-          <!-- ✅ FIXED: use button (not router-link) -->
           <div class="group-buttons">
             <div ref="submitBtnRef">
-            <button type="submit" class="login-button" ref="submitBtnRef">
+            <LoadingButton
+              type="submit"
+              class="login-button"
+              :loading="isLoading"
+              ref="submitBtnRef"
+            >
               Enter
-            </button>
+            </LoadingButton>
           </div>
             <div ref="backBtnRef">
             <router-link to="/login" class="back-button">
@@ -80,6 +84,9 @@ import { gsap } from 'gsap'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import LoadingButton from '@/views/loadingButton.vue'
+
+const isLoading = ref(false)
 
 // Form field
 const email = ref('')
@@ -144,6 +151,8 @@ onMounted(() => {
    FORGOT PASSWORD LOGIC (YOURS ✅)
 ========================= */
 const handleForgotPassword = async () => {
+  if (isLoading.value) return // 🔒 prevent double click
+
   if (!email.value) {
     toast.error('Please enter your email!')
     return
@@ -154,6 +163,8 @@ const handleForgotPassword = async () => {
     toast.error('Please enter a valid email!')
     return
   }
+
+  isLoading.value = true // ✅ start loading
 
   try {
     const response = await axios.post('/api/forgot-password/send-otp', {
@@ -172,8 +183,9 @@ const handleForgotPassword = async () => {
 
   } catch (error) {
     console.log(error)
-    console.log(error.response)
     toast.error(error.response?.data?.message || 'Error sending OTP')
+  } finally {
+    isLoading.value = false // ✅ stop loading
   }
 }
 </script>

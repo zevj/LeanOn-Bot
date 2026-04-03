@@ -5,7 +5,9 @@
       <!-- LEFT CONTAINER -->
       <div class="left-container">
         <h1 class="login-title">Verify your account</h1>
-        <p class="login-subtitle">The code has been sent to your email, please enter your code.</p>
+        <p class="login-subtitle">
+          The code has been sent to your email, please enter your code.
+        </p>
 
         <form class="login-form" @submit.prevent="handleVerify">
 
@@ -17,21 +19,29 @@
             <input class="otp-input" maxlength="1" v-model="otp5" @input="next(5,$event)" ref="i5">
             <input class="otp-input" maxlength="1" v-model="otp6" @input="next(6,$event)" ref="i6">
           </div>
-          <p class="otp-timer">
-            <span v-if="timeLeft > 0">
-              OTP expires in {{ timeLeft }}s
-            </span>
 
-            <span v-else class="expired">
-              OTP expired
-            </span>
-          </p>
+          <!-- ✅ VERIFY BUTTON -->
+          <LoadingButton
+            :loading="isVerifying"
+            type="submit"
+            class="login-button"
+          >
+            Verify OTP
+          </LoadingButton>
 
-          <button type="submit" class="login-button">Verify OTP</button>
-          <button class="login-button" :disabled="timeLeft > 0 || isResending" @click="resendOtp">
+          <!-- ✅ RESEND BUTTON -->
+          <LoadingButton
+            :loading="isResending"
+            :disabled="timeLeft > 0"
+            @click="resendOtp"
+            class="login-button"
+          >
             {{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}
-          </button>
-          <router-link to="/forgotPass" class="back-button">Back</router-link>
+          </LoadingButton>
+
+          <router-link to="/forgotPass" class="back-button">
+            Back
+          </router-link>
 
         </form>
       </div>
@@ -81,6 +91,7 @@ import { useToast } from "vue-toastification"
 import { useRouter, useRoute } from "vue-router"
 import axios from "axios"
 import { gsap } from "gsap"
+import LoadingButton from "@/views/loadingButton.vue" // ✅
 
 // OTP fields
 const otp1 = ref("")
@@ -89,6 +100,10 @@ const otp3 = ref("")
 const otp4 = ref("")
 const otp5 = ref("")
 const otp6 = ref("")
+
+// Loading states
+const isVerifying = ref(false)
+const isResending = ref(false)
 
 // Refs for inputs
 const i1 = ref(null)
@@ -116,7 +131,6 @@ const router = useRouter()
 const route = useRoute()
 
 const timeLeft = ref(0)
-const isResending = ref(false)
 let timer = null
 
 /* =========================
@@ -154,9 +168,11 @@ const next = (index, e) => {
 }
 
 /* =========================
-   VERIFY OTP (REAL LOGIC ✅)
+   VERIFY OTP
 ========================= */
 const handleVerify = async () => {
+  if (isVerifying.value) return
+
   const otp = otp1.value + otp2.value + otp3.value + otp4.value + otp5.value + otp6.value
 
   if (otp.length < 6) {
@@ -169,6 +185,8 @@ const handleVerify = async () => {
     return
   }
 
+  isVerifying.value = true
+
   try {
     await axios.post('/api/forgot-password/verify-otp', {
       email: route.query.email,
@@ -176,13 +194,13 @@ const handleVerify = async () => {
     })
 
     toast.success("OTP verified!")
-
     localStorage.setItem('reset_email', route.query.email)
-
     router.push('/NewPass')
 
   } catch (error) {
     toast.error(error.response?.data?.message || 'Invalid OTP')
+  } finally {
+    isVerifying.value = false
   }
 }
 
@@ -190,6 +208,8 @@ const handleVerify = async () => {
    RESEND OTP
 ========================= */
 const resendOtp = async () => {
+  if (isResending.value || timeLeft.value > 0) return
+
   const email = route.query.email || localStorage.getItem('reset_email')
 
   if (!email) {
@@ -217,12 +237,11 @@ const resendOtp = async () => {
 }
 
 /* =========================
-   MOUNT (MERGED)
+   MOUNT
 ========================= */
 onMounted(() => {
   startTimer()
 
-  // GSAP animations
   gsap.from(overlayRef.value, { opacity: 0, duration: 0.8 })
   gsap.from([rightTitleRef.value, rightSubtitleRef.value], {
     y: 30, opacity: 0, stagger: 0.15

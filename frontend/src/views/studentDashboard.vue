@@ -17,7 +17,7 @@ onMounted(async () => {
     const res = await axios.get('/api/user')
     user.value = res.data
     console.log(res.data)
-  } catch (err) {
+  } catch {
     logout() // auto logout if token invalid
   }
 })
