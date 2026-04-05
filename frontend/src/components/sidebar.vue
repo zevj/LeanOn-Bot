@@ -23,10 +23,10 @@
       <nav class="menu">
 
         <div class="button-container">
-          <router-link to="/ChatConvo" class="new-convo-btn">
+          <button class="new-convo-btn">
             <i class='bx bx-message-square-add'></i>
             New Chat
-          </router-link>
+          </button>
         </div>
 
         <div class="main-menu">
@@ -113,10 +113,10 @@
             <i class='bx bx-archive'></i>
             <span>Archived</span>
           </div>
-          <router-link to="/CrisisAlert" class="modal-item">
+          <div class="modal-item">
             <i class='bx bx-error-circle'></i>
-            <span class="crisis-text">Crisis Alerts</span>
-          </router-link>
+            <span>Crisis Alerts</span>
+          </div>
           <div class="modal-item logout-item" @click="confirmLogout">
             <i class='bx bx-log-out'></i>
             <span>Logout</span>

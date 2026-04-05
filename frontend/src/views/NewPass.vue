@@ -12,7 +12,8 @@
           Forgot the password, don't worry and we've got you back
         </p>
 
-        <form class="login-form" @submit.prevent="handleResetPassword">
+        <!-- ❌ removed submit -->
+        <form class="login-form">
 
           <div class="password-row">
 
@@ -52,18 +53,25 @@
 
           </div>
 
-          <!-- ✅ FIXED: button instead of router-link -->
+          <!-- ✅ BUTTONS -->
           <div class="group-buttons">
+
             <div ref="enterBtnRef">
-            <button type="submit" class="login-button">
-              Reset Password
-            </button>
-          </div>
-          <div ref="backBtnRef">
-            <router-link to="/OTPFPass" class="back-button">
-              Back
-            </router-link>
-          </div>
+              <LoadingButton
+                class="login-button"
+                :loading="isLoading"
+                @click="handleResetPassword"
+              >
+                Reset Password
+              </LoadingButton>
+            </div>
+
+            <div ref="backBtnRef">
+              <router-link to="/OTPFPass" class="back-button">
+                Back
+              </router-link>
+            </div>
+
           </div>
 
         </form>
@@ -103,23 +111,28 @@ import { gsap } from 'gsap'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import LoadingButton from '@/views/loadingButton.vue'
 
 const router = useRouter()
 const toast = useToast()
 
-// Form fields
+/* FORM */
 const password = ref('')
 const confirmPassword = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
+/* ✅ LOADING */
+const isLoading = ref(false)
+
+/* TOGGLES */
 const togglePassword = () => showPassword.value = !showPassword.value
 const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value
 
-/* =========================
-   RESET PASSWORD LOGIC (YOUR REAL LOGIC ✅)
-========================= */
+/* ✅ RESET PASSWORD */
 const handleResetPassword = async () => {
+  if (isLoading.value) return
+
   const email = localStorage.getItem('reset_email')
 
   if (!email) {
@@ -143,6 +156,8 @@ const handleResetPassword = async () => {
     return
   }
 
+  isLoading.value = true
+
   try {
     await axios.post('/api/forgot-password/reset', {
       email: email,
@@ -152,7 +167,6 @@ const handleResetPassword = async () => {
 
     toast.success('Password successfully reset!')
 
-    // cleanup
     localStorage.removeItem('otp_expiry')
     localStorage.removeItem('reset_email')
 
@@ -161,12 +175,12 @@ const handleResetPassword = async () => {
   } catch (error) {
     console.log(error.response)
     toast.error(error.response?.data?.message || 'Reset failed')
+  } finally {
+    isLoading.value = false
   }
 }
 
-/* =========================
-   GSAP ANIMATION
-========================= */
+/* ANIMATION */
 const containerRef = ref(null)
 const leftRef = ref(null)
 const rightRef = ref(null)
@@ -203,18 +217,6 @@ onMounted(async () => {
     opacity: 0,
     stagger: 0.08
   }, 0.4)
-
-  tl.from(".overlay", { opacity: 0 }, 0.3)
-  tl.from(".title", { y: 50, opacity: 0 }, 0.4)
-  tl.from(".subtitle", { y: 25, opacity: 0 }, 0.5)
-  tl.from(".yellow-line", { width: 0, opacity: 0 }, 0.6)
-  tl.from(".subheading", { y: 25, opacity: 0 }, 0.7)
-
-  tl.from(".features", {
-    y: 25,
-    opacity: 0,
-    stagger: 0.2
-  }, 0.9)
 })
 </script>
 

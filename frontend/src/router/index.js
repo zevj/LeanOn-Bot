@@ -1,14 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Login from '../views/login.vue'
-import Signup from '../views/Signup.vue'
-import forgotPass from '../views/forgotpass.vue'
+import Login from '../views/studentLogin.vue'
+import Signup from '../views/studentSignup.vue'
+import forgotPass from '../views/forgotPass.vue'
 import OTPVerification from '../views/OTP.vue'
 import NewPass from '../views/NewPass.vue'
 import OTPFPass from '../views/OTPFPass.vue'
+import AdminDashboard from '../views/adminDashboard.vue'
+import StudentDashboard from '../views/studentDashboard.vue'
 import ChatConvo from '../views/ChatConvo.vue'
 import MyAccount from '../views/MyAccount.vue'
-import CrisisAlert from '../views/CrisisAlert.vue'
-import LandingPage from '../views/LandingPage.vue'
 
 const routes = [
    {
@@ -18,9 +18,27 @@ const routes = [
   },
 
   {
+    path: '/',
+    redirect: '/login'
+  },
+
+  {
     path: '/login',
     name: 'login',
     component: Login
+  },
+
+  {
+    path: '/studentDashboard',
+    name: 'studentDashboard',
+    component: StudentDashboard,
+    meta: { requiresAuth: true, role: 'student' }
+  },
+
+  {
+    path: '/adminDashboard',
+    component: AdminDashboard,
+    meta: { requiresAuth: true, role: 'guidance' }
   },
 
   {
@@ -29,25 +47,25 @@ const routes = [
     component: Signup
   },
 
-   {
+  {
     path: '/forgotPass',
     name: 'forgotPass',
     component: forgotPass
   },
 
-   {
+  {
     path: '/NewPass',
     name: 'NewPass',
     component: NewPass
   },
 
-     {
+  {
     path: '/OTPVerification',
     name: 'OTPVerification',
     component: OTPVerification
   },
 
-   {
+  {
     path: '/OTPFPass',
     name: 'OTPFPass',
     component: OTPFPass
@@ -67,11 +85,7 @@ const routes = [
     component: MyAccount
   },
 
-  {
-    path: '/CrisisAlert',
-    name: 'CrisisAlert',
-    component: CrisisAlert
-  },
+ 
 ]
 
 const router = createRouter({

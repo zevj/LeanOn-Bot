@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\PasswordOtp;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
+use App\Mail\OtpMail;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
@@ -39,6 +39,7 @@ class AuthController extends Controller
         }
 
         // ✅ Get authenticated user
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if (is_null($user->email_verified_at)) {
@@ -57,7 +58,7 @@ class AuthController extends Controller
     }
 
     public function register(Request $request) {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => [
@@ -66,9 +67,13 @@ class AuthController extends Controller
                 'unique:users,email'
             ],
             'password' => 'required|min:6|confirmed'
-        ], [
-            'email.regex' => 'Only Gordon College emails with 9-digit ID are allowed.'
         ]);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
     
         $otp = rand(100000, 999999);
     
@@ -79,23 +84,17 @@ class AuthController extends Controller
             'last_name' => $request->last_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'otp' => $otp,
+            'otp' => Hash::make($otp),
             'otp_expires_at' => $expiresAt,
             'role' => 'student',
         ]);
-    
-        Mail::raw("Your OTP is: $otp", function ($message) use ($user) {
-            $message->to($user->email)
-                    ->subject('LeanOn Bot OTP Verification');
-        });
-    
-        $token = $user->createToken('auth_token')->plainTextToken;
+
+        Mail::to($user->email)->send(new OtpMail($otp, 'register'));
     
         return response()->json([
             'message' => 'User registered successfully',
-            'token' => $token,
             'user' => $user,
-            'otp_expires_at' => $expiresAt // 🔥 REQUIRED FOR TIMER
+            'otp_expires_at' => $expiresAt
         ]);
     }
 
@@ -114,13 +113,8 @@ public function verifyOtp(Request $request)
         return response()->json(['message' => 'User not found'], 404);
     }
 
-    Log::info('OTP DEBUG', [
-        'input' => $request->otp,
-        'stored' => $user->otp
-    ]);
-
     // ✅ Check OTP match (FIXED)
-    if ($user->otp != $request->otp) {
+    if (!Hash::check($request->otp, $user->otp)) {
         return response()->json([
             'message' => 'Invalid OTP'
         ], 400);
@@ -175,15 +169,12 @@ public function resendOtp(Request $request)
     $otp = rand(100000, 999999);
     $expiresAt = Carbon::now()->addMinutes(2);
     $user->update([
-        'otp' => $otp,
-        'otp_expires_at' => now()->addMinutes(5),
+        'otp' => Hash::make($otp),
+        'otp_expires_at' => $expiresAt,
     ]);
 
     // Send email
-    Mail::raw("Your new OTP is: $otp", function ($message) use ($user) {
-        $message->to($user->email)
-                ->subject('LeanOn Bot - Resend OTP');
-    });
+    Mail::to($user->email)->send(new OtpMail($otp, 'register'));
 
     return response()->json([
         'message' => 'OTP resent successfully' , 'expires_at' => $expiresAt
@@ -197,21 +188,23 @@ public function sendOtp(Request $request)
     ]);
 
     $otp = rand(100000, 999999);
-    $expiresAt = Carbon::now()->addMinutes(2);
+    $expiresAt = now()->addMinutes(2);
+
     PasswordOtp::updateOrCreate(
         ['email' => $request->email],
         [
-            'otp' => $otp,
-            'expires_at' => Carbon::now()->addMinutes(5)
+            'otp' => Hash::make($otp),
+            'expires_at' => $expiresAt
         ]
     );
 
-    Mail::raw("Your OTP is: $otp", function ($message) use ($request) {
-        $message->to($request->email)
-                ->subject('LeanOn Bot Password Reset OTP');
-    });
+    // ✅ SEND EMAIL
+    Mail::to($request->email)->send(new OtpMail($otp, 'forgot'));
 
-    return response()->json(['message' => 'OTP sent', 'expires_at' => $expiresAt]);
+    return response()->json([
+        'message' => 'OTP sent',
+        'expires_at' => $expiresAt
+    ]);
 }
 
 public function verifyForgotPasswordOtp(Request $request)
@@ -221,15 +214,18 @@ public function verifyForgotPasswordOtp(Request $request)
         'otp' => 'required'
     ]);
 
-    $record = PasswordOtp::where('email', $request->email)
-        ->where('otp', $request->otp)
-        ->first();
+    $record = PasswordOtp::where('email', $request->email)->first();
 
     if (!$record) {
         return response()->json(['message' => 'Invalid OTP'], 400);
     }
 
-    if (Carbon::now()->gt($record->expires_at)) {
+    // ✅ FIX: HASH CHECK
+    if (!Hash::check($request->otp, $record->otp)) {
+        return response()->json(['message' => 'Invalid OTP'], 400);
+    }
+
+    if (now()->gt($record->expires_at)) {
         return response()->json(['message' => 'OTP expired'], 400);
     }
 
@@ -244,7 +240,9 @@ public function resetPassword(Request $request)
     ]);
 
     $user = User::where('email', $request->email)->first();
-
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
+    }
     $user->password = Hash::make($request->password);
     $user->save();
 

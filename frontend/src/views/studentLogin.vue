@@ -54,9 +54,15 @@
             Forgot Password?
           </router-link>
 
-          <button type="submit" class="login-button" ref="loginBtnRef">
-            Sign In
-          </button>
+          <div ref="loginBtnRef">
+            <LoadingButton 
+              :loading="isLoading"
+              type="submit"
+              class="login-button"
+            >
+              Sign In
+            </LoadingButton>
+          </div>
 
           <div class="divider">
             <span></span>
@@ -128,10 +134,12 @@ import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { gsap } from 'gsap'
+import LoadingButton from '@/views/loadingButton.vue'
 
 const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
+const isLoading = ref(false)
 
 const toast = useToast()
 const router = useRouter()
@@ -144,10 +152,14 @@ const togglePassword = () => {
    LOGIN LOGIC
 ========================= */
 const handleLogin = async () => {
+  if (isLoading.value) return
+
   if (!username.value || !password.value) {
     toast.error('Please enter both email and password!')
     return
   }
+
+  isLoading.value = true
 
   try {
     const res = await axios.post('http://127.0.0.1:8000/api/login', {
@@ -165,11 +177,14 @@ const handleLogin = async () => {
     if (role === 'guidance') {
       router.push('/adminDashboard')
     } else {
+      router.push('/studentDashboard')
       router.push('/ChatConvo')
     }
 
   } catch (err) {
     toast.error(err.response?.data?.message || 'Login failed!')
+  } finally {
+    isLoading.value = false
   }
 }
 

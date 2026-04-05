@@ -4,7 +4,9 @@
 
       <div class="left-container">
         <h1 class="login-title">Verify your account</h1>
-        <p class="login-subtitle">The code has been sent to your email, please enter your code.</p>
+        <p class="login-subtitle">
+          The code has been sent to your email, please enter your code.
+        </p>
 
         <form class="login-form" @submit.prevent="handleVerify">
 
@@ -16,32 +18,28 @@
             <input class="otp-input" maxlength="1" v-model="otp5" @input="next(5,$event)" ref="i5">
             <input class="otp-input" maxlength="1" v-model="otp6" @input="next(6,$event)" ref="i6">
           </div>
-          <p class="otp-timer">
-            <span v-if="timeLeft > 0">
-              OTP expires in {{ timeLeft }}s
-            </span>
+          <!-- ✅ VERIFY BUTTON -->
+          <LoadingButton
+            :loading="isVerifying"
+            type="submit"
+            class="login-button"
+          >
+            Verify OTP
+          </LoadingButton>
 
-            <span v-else class="expired"> 
-              OTP expired
-            </span>
-          </p>
-          <button type="submit" class="login-button">Verify OTP</button>
+          <!-- ✅ RESEND BUTTON -->
+          <LoadingButton
+            :loading="isResending"
+            :disabled="timeLeft > 0"
+            @click="handleResend"
+            class="login-button"
+          >
+            {{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}
+          </LoadingButton>
 
-            <!-- ✅ correct route for signup OTP flow -->
-            <router-link to="/signup" class="back-button">
-              Back
-            </router-link>
-
-            <div class="resend-otp">
-              <p
-                type="button"
-                class="resend-otp"
-                :disabled="timeLeft > 0"
-                @click="handleResend"
-              >
-                Didn't get a code? <span>{{ timeLeft > 0 ? 'Resend in ' + timeLeft + 's' : 'Resend OTP' }}</span>
-              </p>
-            </div>
+          <router-link to="/signup" class="back-button">
+            Back
+          </router-link>
 
         </form>
       </div>
@@ -85,13 +83,13 @@
 </template>
 
 <script setup>
-import { ref } from "vue"
+import { ref, onMounted, onUnmounted } from "vue"
 import { useToast } from "vue-toastification"
 import { useRouter } from "vue-router"
 import axios from "axios"
-import { useRoute } from 'vue-router'
-import { onMounted, onUnmounted } from 'vue'
+import LoadingButton from "@/views/loadingButton.vue"
 import { gsap } from 'gsap'
+
 
 // OTP fields
 const otp1 = ref("")
@@ -100,6 +98,10 @@ const otp3 = ref("")
 const otp4 = ref("")
 const otp5 = ref("")
 const otp6 = ref("")
+
+// Loading states
+const isVerifying = ref(false)
+const isResending = ref(false)
 
 // Refs for input auto-focus
 const i1 = ref(null)
@@ -111,7 +113,6 @@ const i6 = ref(null)
 
 const toast = useToast()
 const router = useRouter()
-const route = useRoute()
 
 const timeLeft = ref(0)
 let timer = null
@@ -120,13 +121,11 @@ const startTimer = () => {
   clearInterval(timer)
 
   const expiry = localStorage.getItem('signup_otp_expiry')
-
   if (!expiry) return
 
   timer = setInterval(() => {
     const now = new Date().getTime()
     const expiryTime = new Date(expiry).getTime()
-
     const diff = Math.floor((expiryTime - now) / 1000)
 
     if (diff > 0) {
@@ -154,10 +153,9 @@ onUnmounted(() => {
   clearInterval(timer)
 })
 
-// Move to next input & allow numbers only
+// Move to next input
 const next = (index, e) => {
   e.target.value = e.target.value.replace(/[^0-9]/g, '')
-
   const inputs = [i1, i2, i3, i4, i5, i6]
 
   if (e.target.value.length === 1 && index < 6) {
@@ -165,14 +163,12 @@ const next = (index, e) => {
   }
 }
 
-// Handle OTP verification
+// ✅ VERIFY OTP
 const handleVerify = async () => {
-  const email = localStorage.getItem('signup_email') // ✅ ALWAYS GET HERE
+  if (isVerifying.value) return
 
-  console.log("EMAIL:", email)
-
+  const email = localStorage.getItem('signup_email')
   const otp = otp1.value + otp2.value + otp3.value + otp4.value + otp5.value + otp6.value
-  console.log("OTP ENTERED:", otp)
 
   if (otp.length < 6) {
     toast.error("Please enter the 6-digit OTP correctly!")
@@ -184,10 +180,12 @@ const handleVerify = async () => {
     return
   }
 
+  isVerifying.value = true
+
   try {
     const response = await axios.post('http://127.0.0.1:8000/api/verify-otp', {
-      email: email,
-      otp: otp
+      email,
+      otp
     })
 
     localStorage.setItem('token', response.data.token)
@@ -196,18 +194,15 @@ const handleVerify = async () => {
     router.push('/login')
 
   } catch (error) {
-    console.log("ERROR:", error)
-
-    if (error.response) {
-      toast.error(error.response.data.message)
-    } else {
-      toast.error("Something went wrong")
-    }
+    toast.error(error.response?.data?.message || "Something went wrong")
+  } finally {
+    isVerifying.value = false
   }
 }
 
+// ✅ RESEND OTP
 const handleResend = async () => {
-  if (timeLeft.value > 0) return // 🔥 use real expiry
+  if (isResending.value || timeLeft.value > 0) return
 
   const email = localStorage.getItem('signup_email')
 
@@ -216,20 +211,22 @@ const handleResend = async () => {
     return
   }
 
+  isResending.value = true
+
   try {
     const response = await axios.post('http://127.0.0.1:8000/api/resend-otp', {
-      email: email
+      email
     })
 
-    // 🔥 update expiry from backend
     localStorage.setItem('signup_otp_expiry', response.data.expires_at)
 
     toast.success("OTP resent successfully!")
-
-    startTimer() 
+    startTimer()
 
   } catch (error) {
     toast.error(error.response?.data?.message || "Failed to resend OTP")
+  } finally {
+    isResending.value = false
   }
 }
 
