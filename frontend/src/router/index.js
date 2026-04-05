@@ -7,7 +7,16 @@ import NewPass from '../views/NewPass.vue'
 import OTPFPass from '../views/OTPFPass.vue'
 import ChatConvo from '../views/ChatConvo.vue'
 import MyAccount from '../views/MyAccount.vue'
+import CrisisAlert from '../views/CrisisAlert.vue'
+import LandingPage from '../views/LandingPage.vue'
+
 const routes = [
+   {
+    path: '/',
+    name: 'LandingPage',
+    component: LandingPage
+  },
+
   {
     path: '/login',
     name: 'login',
@@ -56,6 +65,12 @@ const routes = [
     path: '/MyAccount',
     name: 'MyAccount',
     component: MyAccount
+  },
+
+  {
+    path: '/CrisisAlert',
+    name: 'CrisisAlert',
+    component: CrisisAlert
   },
 ]
 
