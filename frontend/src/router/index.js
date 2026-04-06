@@ -9,11 +9,19 @@ import AdminDashboard from '../views/adminDashboard.vue'
 import StudentDashboard from '../views/studentDashboard.vue'
 import ChatConvo from '../views/ChatConvo.vue'
 import MyAccount from '../views/MyAccount.vue'
+import LandingPage from '../views/LandingPage.vue'
+import CrisisAlert from '../views/CrisisAlert.vue'
 
 const routes = [
   {
     path: '/',
-    redirect: '/login'
+    redirect: '/LandingPage'
+  },
+
+  {
+    path: '/LandingPage',
+    name: 'LandingPage',
+    component: LandingPage
   },
 
   {
@@ -79,7 +87,11 @@ const routes = [
     component: MyAccount
   },
 
-
+  {
+    path: '/CrisisAlert',
+    name: 'CrisisAlert',
+    component: CrisisAlert
+  },
 ]
 
 const router = createRouter({
