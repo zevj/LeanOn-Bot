@@ -11,12 +11,6 @@ import ChatConvo from '../views/ChatConvo.vue'
 import MyAccount from '../views/MyAccount.vue'
 
 const routes = [
-   {
-    path: '/',
-    name: 'LandingPage',
-    component: LandingPage
-  },
-
   {
     path: '/',
     redirect: '/login'
@@ -85,7 +79,7 @@ const routes = [
     component: MyAccount
   },
 
- 
+
 ]
 
 const router = createRouter({
