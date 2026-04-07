@@ -1,16 +1,20 @@
 <template>
     <div class="layout">
-        <SidebarStudent></SidebarStudent>
+        <SidebarStudent />
 
         <main>
-            <HeaderStudent></HeaderStudent>
+            <HeaderStudent />
 
             <div class="main-container">
+                <!-- HEADER -->
                 <div class="title-header">
                     <h1 class="title">Crisis Alert</h1>
-                    <p class="subtext">Report a crisis or emergency situation to the appropriate authorities.</p>
+                    <p class="subtext">
+                        Report a crisis or emergency situation to the appropriate authorities.
+                    </p>
                 </div>
 
+                <!-- STATS -->
                 <div class="whole-stat-card">
                     <div class="high-stat-card">
                         <div class="stat-card-title-high">
@@ -45,6 +49,7 @@
                     </div>
                 </div>
 
+                <!-- FILTER -->
                 <div class="filter-tabs">
                     <button 
                         v-for="tab in ['All', 'High', 'Severe', 'Moderate', 'Low']" 
@@ -57,57 +62,82 @@
                     </button>
                 </div>
 
+                <!-- ALERT GRID -->
                 <div class="alert-container">
                     <div 
-                        v-for="alert in filteredAlerts" 
-                        :key="alert.id" 
                         class="alert-item" 
-                        :class="{ 'expanded': expandedId === alert.id }"
+                        v-for="alert in filteredAlerts" 
+                        :key="alert.id"
                         :style="{ borderTopColor: getStatusColor(alert.status) }"
                     >
-                        <div class="alert-header" @click="toggleExpand(alert.id)">
+                        <div class="alert-header" @click="openModal(alert)">
                             <div class="alert-header-left">
-                                <span class="status-dot pulse" :style="{ backgroundColor: getStatusColor(alert.status), '--pulse-color': getStatusColor(alert.status) }"></span>
+                                <span class="status-dot pulse"
+                                    :style="{ backgroundColor: getStatusColor(alert.status) }"></span>
                                 <span class="alert-text">{{ alert.message }}</span>
                             </div>
-                            <i class='bx bx-chevron-down toggle-icon'></i>
                         </div>
 
-                        <div class="alert-preview-meta" v-if="expandedId !== alert.id">
+                        <div class="alert-preview-meta">
                             <span class="status-badge" :style="getBadgeStyle(alert.status)">
                                 {{ alert.status.toUpperCase() }}
                             </span>
-                            <span class="timestamp"><i class='bx bx-time-five'></i> {{ alert.time }}</span>
+                            <span class="timestamp">
+                                <i class='bx bx-time-five'></i> {{ alert.time }}
+                            </span>
                         </div>
-
-                        <Transition name="expand">
-                            <div class="alert-details" v-if="expandedId === alert.id">
-                                <div class="keyword-section">
-                                    <p class="section-label">TRIGGERED KEYWORDS</p>
-                                    <div class="keyword-tags">
-                                        <span v-for="tag in alert.keywords" :key="tag" class="tag" :style="getBadgeStyle(alert.status)">
-                                            {{ tag }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div class="recommendation-box">
-                                    <div class="rec-header">
-                                        <i class='bx bx-shield-quarter'></i>
-                                        <strong>Recommended: {{ alert.recommendation.title }}</strong>
-                                    </div>
-                                    <p>{{ alert.recommendation.desc }}</p>
-                    
-                                    <div class="action-buttons">
-                                        <button class="btn-email-link" @click="openGmail(alert)">
-                                            <i class='bx bx-envelope'></i> Request Consultation
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </Transition>
                     </div>
                 </div>
+
+                <!-- MODAL -->
+                <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+                <div class="modal-content">
+
+                    <div class="modal-top-bar">
+                    <div class="modal-top-bar-left">
+                        <div class="modal-status-row">
+                        <div class="modal-dot" :style="{ backgroundColor: getStatusColor(selectedAlert.status) }"></div>
+                        <span class="status-badge" :style="getBadgeStyle(selectedAlert.status)">
+                            {{ selectedAlert.status.toUpperCase() }}
+                        </span>
+                        <span class="modal-time">
+                            <i class='bx bx-time-five'></i> {{ selectedAlert.time }}
+                        </span>
+                        </div>
+                        <h3>{{ selectedAlert.message }}</h3>
+                    </div>
+                    <button class="close-btn" @click="closeModal">&times;</button>
+                    </div>
+
+                    <div class="modal-body">
+                    <div class="keyword-section">
+                        <p class="section-label">Triggered Keywords</p>
+                        <div class="keyword-tags">
+                        <span
+                            v-for="tag in selectedAlert.keywords"
+                            :key="tag"
+                            class="tag"
+                            :style="getBadgeStyle(selectedAlert.status)"
+                        >
+                            {{ tag }}
+                        </span>
+                        </div>
+                    </div>
+
+                    <div class="recommendation-box">
+                        <div class="rec-header">
+                        <i class='bx bx-shield-quarter'></i>
+                        Recommended: {{ selectedAlert.recommendation.title }}
+                        </div>
+                        <p>{{ selectedAlert.recommendation.desc }}</p>
+                        <button class="btn-email-link" @click="openGmail(selectedAlert)">
+                        <i class='bx bx-envelope'></i>
+                        Request Consultation
+                        </button>
+                    </div>
+                    </div>
+                </div>
+            </div>
             </div>
         </main>
     </div>
@@ -118,7 +148,6 @@ import { ref, computed } from 'vue';
 import SidebarStudent from '@/components/sidebar.vue';
 import HeaderStudent from '@/components/header.vue';
 
-// 1. Mockup Data aligned with your specific design requirements
 const alerts = ref([
     {
         id: 1,
@@ -128,7 +157,7 @@ const alerts = ref([
         keywords: ['hopeless', 'give up'],
         recommendation: {
             title: 'In-Person Consultation',
-            desc: 'Speaking with a counselor face-to-face can really help. Everything shared is confidential.'
+            desc: 'Speaking with a counselor face-to-face can really help.'
         }
     },
     {
@@ -139,7 +168,7 @@ const alerts = ref([
         keywords: ['distress', 'urgent'],
         recommendation: {
             title: 'Immediate Intervention',
-            desc: 'A crisis responder has been notified. Please stay on the line.'
+            desc: 'A crisis responder has been notified.'
         }
     },
     {
@@ -150,41 +179,29 @@ const alerts = ref([
         keywords: ['anxiety', 'exams'],
         recommendation: {
             title: 'Resource Materials',
-            desc: 'We recommend reviewing our stress management guides.'
+            desc: 'Review stress management guides.'
         }
     },
     {
         id: 4,
         status: 'severe',
-        message: 'User is experiencing mild academic anxiety',
-        time: '3h ago',
-        keywords: ['anxiety', 'exams'],
+        message: 'User flagged with severe emotional distress',
+        time: '2h ago',
+        keywords: ['panic', 'fear'],
         recommendation: {
-            title: 'Resource Materials',
-            desc: 'We recommend reviewing our stress management guides.'
+            title: 'Urgent Counseling',
+            desc: 'Immediate counselor intervention required.'
         }
     }
 ]);
 
-// Add this inside <script setup>
-const openGmail = (alert) => {
-    const email = "guidance@gc.edu.ph"; // Your GC domain email
-    const subject = encodeURIComponent(`Crisis Alert Consultation: ${alert.status.toUpperCase()}`);
-    const body = encodeURIComponent(`Hello Guidance Office,\n\nI am requesting a consultation regarding the following alert:\n\nMessage: ${alert.message}\nStatus: ${alert.status}\nTime: ${alert.time}\n\nPlease let me know when we can meet.`);
-    
-    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
-};
-
 const currentFilter = ref('All');
-const expandedId = ref(null);
 
-// 2. Logic for Filtering
 const filteredAlerts = computed(() => {
     if (currentFilter.value === 'All') return alerts.value;
     return alerts.value.filter(a => a.status === currentFilter.value.toLowerCase());
 });
 
-// 3. Logic for Stats Summary
 const stats = computed(() => ({
     high: alerts.value.filter(a => a.status === 'high').length,
     severe: alerts.value.filter(a => a.status === 'severe').length,
@@ -192,11 +209,6 @@ const stats = computed(() => ({
     low: alerts.value.filter(a => a.status === 'low').length,
 }));
 
-const toggleExpand = (id) => {
-    expandedId.value = expandedId.value === id ? null : id;
-};
-
-// 4. Color Management using your specific Hex Codes
 const statusColors = {
     low: '#0A9569',
     moderate: '#9F7A00',
@@ -204,15 +216,36 @@ const statusColors = {
     high: '#DC2625'
 };
 
-const getStatusColor = (status) => statusColors[status] || '#ff4d6d';
+const getStatusColor = (status) => statusColors[status];
 
 const getBadgeStyle = (status) => {
     const color = getStatusColor(status);
     return {
-        color: color,
-        backgroundColor: `${color}15`, // 15 is ~8% opacity
-        border: `1px solid ${color}40` // 40 is ~25% opacity
+        color,
+        backgroundColor: `${color}15`,
+        border: `1px solid ${color}40`
     };
+};
+
+// MODAL
+const showModal = ref(false);
+const selectedAlert = ref(null);
+
+const openModal = (alert) => {
+    selectedAlert.value = alert;
+    showModal.value = true;
+};
+
+const closeModal = () => {
+    showModal.value = false;
+    selectedAlert.value = null;
+};
+
+const openGmail = (alert) => {
+    const email = "guidance@gc.edu.ph";
+    const subject = encodeURIComponent(`Crisis Alert Consultation: ${alert.status.toUpperCase()}`);
+    const body = encodeURIComponent(`Message: ${alert.message}`);
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
 };
 </script>
 
