@@ -10,7 +10,7 @@
 .left-container {
     flex: 1 1 50%;
     min-width: 320px; /* prevents too narrow */
-    padding: 3.3vh 5vw; /* relative padding */
+    padding: 10vh 5vw; /* relative padding */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -18,123 +18,76 @@
 }
 
 .login-form {
-    width: 700px;
+    width: 800px;
 }
 
 .login-title {
-    font-size: clamp(15px, 5vw, 20px); /* responsive */
+    font-size: clamp(24px, 5vw, 25px); /* responsive */
     font-weight: 700;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
 }
 
 .login-subtitle {
     padding-bottom: 25px;
-    font-size: 12px;
 }
 
 span {
     color: #049516;
 }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+
+
+/* otp */
+.otp-container{
+  display:flex;
+  gap:38px;
+  margin-bottom: 30px;
+
 }
 
-.form-group label {
-    font-size: 12px;
-    margin-bottom: 7px;
-    font-weight: 500;
+.otp-input{
+  width:68.5px;
+  height:80px;
+  text-align:center;
+  font-size:22px;
+  border:2px solid #ccc;
+  border-radius:8px;
+  outline:none;
+  transition: 0.15s ease-in-out all;
 }
 
-
-.input-wrapper {
-  position: relative;
-  ;width: 100%
+.resend-otp {
+    text-align: center;
+    padding-right: 100px;
+    padding-top: 10px;
+    font-size: 14px;
+    transition: 0.15s ease-in-out all;
 }
 
-.input-wrapper input {
-  width: 86%;
-  height: 43px;
-  padding-left: 36px; /* space for the icon */
-  border-radius: 8px;
-  margin-right: 50px;
-  border: 2px solid #ccc;
-  font-size: 14px;
-  margin-bottom: 20px;
-  transition: 0.15s ease-in-out border-color, 0.15s ease-in-out outline;
-  -webkit-appearance: none; /* removes default browser styles */
+.resend-otp span:hover {
+    color: #0b4706;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
-.input-icon {
-  position: absolute;
-  left: 12px;
-  top: 53%;
-  transform: translateY(-50%);
-  font-size: 16px;
-  color: #555;
-}
-
-.eye-icon {
-  position: absolute;
-  right: 60px;
-  top: 55%;
-  transform: translateY(-50%);
-  font-size: 1.2rem;
-  color: #555;
-  cursor: pointer;
-}
-
-/* Hide default password reveal icon (Edge / IE) */
-input[type="password"]::-ms-reveal,
-input[type="password"]::-ms-clear {
-  display: none;
-}
-
-/* Hide default icon in Chromium browsers */
-input[type="password"]::-webkit-credentials-auto-fill-button,
-input[type="password"]::-webkit-textfield-decoration-container {
-  display: none !important;
-}
-
-
-.form-group input:focus {
-    border-color: #049516;
-    outline: none;
-}
-
-.password-row {
-  display: flex;
-  gap: 20px;
-  width: 100%;
-  max-width: 645px;
-}
-
-.password-row .form-group {
-  flex: 1; /* equal width */
-}
-
-.group-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    margin-top: 5px;
+.otp-input:focus{
+  border-color:#42b883;
 }
 
 .login-button {
     display: block;
     width: 100%;
     max-width: 600px;
-    height: 50px;
+    height: 55px;
     background-color: #0E6008;
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 14px;
     text-align: center;
     cursor: pointer;
     text-decoration: none;
+    margin-bottom: 20px;
     transition: background-color 0.15s ease-in-out;
 }
 
@@ -146,13 +99,13 @@ input[type="password"]::-webkit-textfield-decoration-container {
     display: block;
     width: 100%;
     max-width: 600px;
-    height: 50px;
+    height: 55px;
     background-color: #fff;
     color: #0b4706;
     border: none;
     border: 2px solid #0b4706;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 14px;
     text-align: center;
     padding-top: 12px;
     cursor: pointer;
@@ -163,47 +116,6 @@ input[type="password"]::-webkit-textfield-decoration-container {
 .back-button:hover {
     background-color: #0b4706;
     color: white;
-}
-
-.divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 25px 0;
-    color: #888;
-    width: 100%;
-    max-width: 600px;
-}
-
-.divider span {
-    height: 1px;
-    background: #ccc;
-    flex: 1;
-}
-
-.divider p {
-    margin: 0 10px;
-    font-size: 12px;
-}
-
-.google-signin {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    max-width: 600px;
-    height: 50px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    background: #fff;
-    cursor: pointer;
-    font-weight: 500;
-    transition: 0.2s;
-}
-
-.google-signin:hover {
-    background: #f1f1f1;
 }
 
 /* RIGHT SIDE */

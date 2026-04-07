@@ -1,0 +1,56 @@
+.send-container {
+  background-color: white;
+  width: auto;
+  margin: 0 auto; /* center sa parent */
+  box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.2);
+  height: 90px;
+  display: flex;
+  justify-content: center; /* center horizontally */
+  align-items: center; /* center vertically */
+  padding: 0 10px;
+  border-radius: 8px; /* optional, mas maganda */
+}
+
+.chat-send-input-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 700px; /* control width */
+}
+
+.chat-send-input-container input {
+  flex: 1; /* input will take available space */
+  height: 50px;
+  padding: 0 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px 0 0 8px; /* rounded left side only */
+  outline: none;
+  transition: 0.15s ease-in-out all;
+}
+
+.chat-send-input-container input:focus {
+    outline: none;
+    border: 2px solid #0E6008;
+}
+
+.chat-send-input-container button.send {
+  height: 50px;
+  width: 50px;
+  border: none;
+  background-color: #0e6008; /* green example */
+  color: white;
+  border-radius: 0 8px 8px 0; /* rounded right side only */
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: 0.15s ease-in-out all;
+}
+
+.chat-send-input-container button.send:hover {
+  background-color: #095004;
+}
+
+button i {
+    font-size: 20px;
+}

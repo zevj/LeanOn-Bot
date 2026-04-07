@@ -13,9 +13,13 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "axios": "^1.13.6",
+    "gsap": "^3.14.2",
     "pinia": "^3.0.4",
     "vue": "^3.5.29",
-    "vue-router": "^5.0.3"
+    "vue-router": "^4.5.0",
+    "vue-toastification": "^2.0.0-rc.5",
+    "vue3-google-login": "^2.0.37"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

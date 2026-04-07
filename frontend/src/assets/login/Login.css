@@ -22,13 +22,14 @@
 }
 
 .login-title {
-    font-size: clamp(24px, 5vw, 32px); /* responsive */
+    font-size: clamp(24px, 5vw, 25px); /* responsive */
     font-weight: 700;
     margin-bottom: 0.5rem;
 }
 
 .login-subtitle {
     padding-bottom: 2rem;
+    font-size: 13px;
 }
 
 span {
@@ -42,21 +43,9 @@ span {
 }
 
 .form-group label {
-    font-size: 16px;
+    font-size: 14px;
     margin-bottom: 8px;
     font-weight: 500;
-}
-
-.form-group input {
-    width: 100%;
-    max-width: 730px;
-    height: 55px;
-    border-radius: 8px;
-    padding-left: 20px;
-    border: 2px solid #ccc;
-    margin-bottom: 20px;
-    font-size: 16px;
-    transition: 0.15s ease-in-out border-color, 0.15s ease-in-out outline;
 }
 
 .form-group input:focus {
@@ -64,14 +53,63 @@ span {
     outline: none;
 }
 
+/* Wrapper for inputs with icons */
+.input-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+}
+
+.input-wrapper input {
+  width: 100%;
+  height: 49px;
+  padding-left: 45px; /* space for icon on the left */
+  padding-right: 50px; /* space for eye icon if needed */
+  border-radius: 8px;
+  border: 2px solid #ccc;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.email-icon, .password-icon {
+  position: absolute;
+  left: 15px;
+  top: 36%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.password-wrapper .eye-icon {
+  position: absolute;
+  right: 26px;
+  top: 36%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #555;
+}
+
+/* Hide default password reveal icon (Edge / IE) */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+/* Hide default icon in Chromium browsers */
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-textfield-decoration-container {
+  display: none !important;
+}
+
 .forgot-password {
-    font-size: 14px;
+    font-size: 12px;
     color: #242424;
     text-decoration: none;
     margin-bottom: 30px;
     display: block;
     text-align: right;
-    width: 91%;
+    width: 74%;
 }
 
 .forgot-password:hover {
@@ -82,15 +120,14 @@ span {
 .login-button {
     display: block;
     width: 100%;
-    max-width: 730px;
-    height: 60px;
+    max-width: 600px;
+    height: 55px;
     background-color: #0E6008;
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 16px;
+    font-size: 14px;
     text-align: center;
-    padding-top: 16px;
     cursor: pointer;
     text-decoration: none;
     transition: background-color 0.15s ease-in-out;
@@ -107,7 +144,7 @@ span {
     margin: 25px 0;
     color: #888;
     width: 100%;
-    max-width: 725px;
+    max-width: 600px;
 }
 
 .divider span {
@@ -127,7 +164,7 @@ span {
     justify-content: center;
     gap: 10px;
     width: 100%;
-    max-width: 730px;
+    max-width: 600px;
     height: 50px;
     border-radius: 8px;
     border: 1px solid #ccc;
@@ -143,10 +180,10 @@ span {
 
 .new-student {
     margin-top: 20px;
-    font-size: 13px;
+    font-size: 12px;
     color: #555;
     text-align: center;
-    padding-right: 30px;
+    padding-right: 140px;
 }
 
 .new-student a {
@@ -171,7 +208,7 @@ span {
     align-items: flex-end;
     color: white;
     text-align: right;
-    background-image: url('/public/forest.jpg');
+    background-image: url('/forest.jpg');
     background-size: cover;
     background-position: center;
 }

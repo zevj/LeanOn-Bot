@@ -1,0 +1,644 @@
+main {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+
+.main-container {
+  padding-top: 40px;
+  padding-bottom: 40px;
+  padding-left: 70px;
+}
+
+.title-header {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding-bottom: 30px;
+}
+
+.title {
+    color: #0E6008;
+}
+
+.subtext {
+    font-size: 14px;
+}
+
+/* STAT CARD */
+
+.whole-stat-card {
+  display: flex;
+  justify-content: space-between;
+  padding-right: 50px;
+  gap: 40px;
+  margin-bottom: 30px;
+}
+
+/* HIGH */
+.high-stat-card {
+  position: relative; /* for absolute positioning of icon */
+  background-color: var(--universal-color);
+  width: 400px;
+  height: 160px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.09);
+  border: 2px solid #3431311f;
+  border-radius: 8px;
+  display: flex;
+  transition: 0.15s ease-in-out border;
+}
+
+.high-stat-card:hover {
+  border: 2px solid #DC2625;
+}
+
+.title-stat {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1E1E1E;
+}
+
+
+.stat-card-title-severe {
+  z-index: 1; /* above icon if needed */
+  padding-left: 25px;
+  padding-top: 20px;
+}
+
+.stat-number {
+  font-size: 40px;
+    font-weight: 600;
+}
+
+.icon-bg-high {
+  position: absolute; /* position at top right */
+  top: 40px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  color: #DC2625;
+  justify-content: center;
+  border: 2px solid #DC2625;
+  background-color: #FEF2F1; /* light background */
+  border-radius: 10px;
+  transition:  0.15s ease-in-out background-color,
+  0.15s ease-in-out color;
+}
+
+.icon-bg-high:hover {
+  background-color: #f8e5e3;
+}
+
+.icon-bg-high i {
+  font-size: 1.80rem;
+  font-weight: 500;
+  color: #DC2625; /* for pending */
+  transition: 0.15s ease-in-out color;
+}
+
+/* SEVERE */
+.severe-stat-card {
+  position: relative; /* for absolute positioning of icon */
+  background-color: var(--universal-color);
+  width: 400px;
+  height: 160px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.09);
+  border: 2px solid #3431311f;
+  border-radius: 8px;
+  display: flex;
+  transition: 0.15s ease-in-out border;
+}
+
+.severe-stat-card:hover {
+  border: 2px solid #FC9149;
+}
+
+.stat-card-title-high {
+  z-index: 1; /* above icon if needed */
+  padding-left: 25px;
+  padding-top: 20px;
+}
+
+.title-stat {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1E1E1E;
+}
+
+.stat-number {
+  font-size: 40px;
+    font-weight: 600;
+}
+
+.icon-bg-severe {
+  position: absolute; /* position at top right */
+  top: 40px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  color: #FC9149;
+  justify-content: center;
+  background-color: #ffe2cf; /* light background */
+  border-radius: 10px;
+  border: 2px solid #FC9149;
+  transition:  0.15s ease-in-out background-color,
+  0.15s ease-in-out color;
+}
+
+.icon-bg-severe:hover {
+  background-color: #ffd6bb;
+}
+
+.icon-bg-severe i {
+  font-size: 1.80rem;
+  font-weight: 500;
+  color: #FC9149; /* for pending */
+  transition: 0.15s ease-in-out color;
+}
+
+/* MODERATE */
+.stat-card {
+  position: relative; /* for absolute positioning of icon */
+  background-color: var(--universal-color);
+  width: 400px;
+  height: 160px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.09);
+  border: 2px solid #3431311f;
+  border-radius: 8px;
+  display: flex;
+  transition: 0.15s ease-in-out border;
+}
+
+.stat-card:hover {
+  border: 2px solid #9F7A00;
+}
+
+.title-stat {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1E1E1E;
+}
+
+.stat-number {
+  font-size: 40px;
+    font-weight: 600;
+}
+
+.icon-bg-moderate {
+  position: absolute; /* position at top right */
+  top: 40px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  color: #9F7A00;
+  border: 2px solid #9F7A00;
+  justify-content: center;
+  background-color: #FFF9E0; /* light background */
+  border-radius: 10px;
+  transition:  0.15s ease-in-out background-color,
+  0.15s ease-in-out color;
+}
+
+.icon-bg-moderate:hover {
+  background-color: #fdf2c8;
+}
+
+.icon-bg-moderate i {
+  font-size: 1.80rem;
+  font-weight: 500;
+  color: #9F7A00; /* for pending */
+  transition: 0.15s ease-in-out color;
+}
+
+/* LOW */
+.low-stat-card {
+  position: relative; /* for absolute positioning of icon */
+  background-color: var(--universal-color);
+  width: 400px;
+  height: 160px;
+  box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.09);
+  border: 2px solid #3431311f;
+  border-radius: 8px;
+  display: flex;
+  transition: 0.15s ease-in-out border;
+}
+
+.low-stat-card:hover {
+  border: 2px solid #0A9569;
+}
+
+.title-stat {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1E1E1E;
+}
+
+.stat-card-title-low {
+  z-index: 1; /* above icon if needed */
+  padding-left: 25px;
+  padding-top: 20px;
+}
+
+.stat-number {
+  font-size: 40px;
+    font-weight: 600;
+}
+
+.icon-bg-low {
+  position: absolute; /* position at top right */
+  top: 40px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  border: 2px solid #0A9569;
+  color: #0A9569;
+  justify-content: center;
+  background-color: #ECFDF5; /* light background */
+  border-radius: 10px;
+  transition:  0.15s ease-in-out background-color,
+  0.15s ease-in-out color;
+}
+
+.icon-bg-low:hover {
+  background-color: #defff0;
+}
+
+.icon-bg-low i {
+  font-size: 1.80rem;
+  font-weight: 500;
+  color: #0A9569; /* for pending */
+  transition: 0.15s ease-in-out color;
+}
+
+/* Filter Tabs */
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+/* Filter Tabs */
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    cursor: pointer;
+    color: #666;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+/* Updated to your specific green hex code */
+.tab.active {
+    background: #0E6008; 
+    color: white;
+    border-color: #0E6008;
+    font-weight: 500;
+}
+
+/* Subtle hover effect for inactive tabs */
+.tab:hover:not(.active) {
+    background: #f4f4f4;
+    border-color: #0E6008;
+    color: #0E6008;
+}
+
+/* Alert Card */
+
+.alert-container {
+    display: flex;
+    flex-direction: column;
+    padding-right: 50px;
+    justify-content: space-between;
+    gap: 20px;
+}
+.alert-item {
+    border: 1px solid #ffcad4; /* Light pinkish border */
+    border-top: 3px solid #ff4d6d; /* Red accent top */
+    border-radius: 12px;
+    padding: 15px 20px;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.alert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.alert-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    background: #ff4d6d;
+    border-radius: 50%;
+    box-shadow: 0 0 5px rgba(255, 77, 109, 0.5);
+}
+
+.alert-text {
+    font-size: 1.1rem;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.toggle-icon {
+    font-size: 1.5rem;
+    color: #95a5a6;
+    transition: transform 0.3s ease;
+}
+
+.alert-item.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.alert-preview-meta {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.badge-moderate {
+    background: #fff0f3;
+    color: #ff4d6d;
+    padding: 2px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    border: 1px solid #ffccd5;
+}
+
+.timestamp {
+    color: #95a5a6;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Expanded Content */
+.alert-details {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 20px;
+}
+
+.section-label {
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    color: #7f8c8d;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.keyword-tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 25px;
+}
+
+.tag {
+    background: #fff0f3;
+    color: #ff4d6d;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+}
+
+.recommendation-box {
+    background: #f0f9f4; /* Light green background */
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.rec-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #1a5d3b;
+    margin-bottom: 8px;
+}
+
+.recommendation-box p {
+    color: #555;
+    font-size: 0.95rem;
+    margin-bottom: 20px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-email-link {
+    background: #049516;
+    color: white; /* Ensure text stays white */
+    text-decoration: none; /* Remove underline */
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    border-style: none;
+    transition: background 0.3s ease;
+}
+
+.btn-email-link:hover {
+    background: #2e7d32;
+    color: white;
+}
+
+/* Update your alert-item to remove the hardcoded border-top-color */
+.alert-item {
+    border: 1px solid #e0e0e0;
+    border-top-width: 4px; /* Thickness for the status color */
+    border-radius: 12px;
+    padding: 15px 20px;
+    background: white;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+/* Base style for status badges */
+.status-badge {
+    padding: 2px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    border: 1px solid transparent;
+    font-weight: 600;
+}
+
+/* Stat Card Colors using your Hex Codes */
+.icon-bg-low { 
+    background: #0A956920; 
+    color: #0A9569; 
+}
+
+.icon-bg-moderate { 
+    background: #9F7A0020; 
+    color: #9F7A00; 
+}
+
+.icon-bg-severe { 
+    background: #FC914920; 
+    color: #FC9149; 
+}
+
+.icon-bg-high { 
+    background: #DC262520; 
+    color: #DC2625; 
+}
+
+
+/* Filter logic */
+.tab.active {
+    background: #0E6008;
+    color: white;
+}
+
+/* Ensure the layout for stat cards is consistent */
+.base-stat-card {
+    flex: 1;
+    min-width: 200px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Ensure alert-item doesn't have a hardcoded border-top-color anymore */
+.alert-item {
+    border: 1px solid #e0e0e0;
+    border-top-width: 4px; /* Dynamic color is applied via :style in Template */
+    border-radius: 12px;
+    padding: 15px 20px;
+    background: white;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+/* Base style for the dynamic status badges */
+.status-badge {
+    padding: 2px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+/* Base style for dynamic keyword tags */
+.tag {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+}
+
+/* Ensure filter tabs look like the screenshot */
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.tab {
+    padding: 8px 20px;
+    border-radius: 20px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    cursor: pointer;
+    color: #666;
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
+
+.tab.active {
+    background: #0E6008; /* Your preferred dark green */
+    color: white;
+    border-color: #0E6008;
+}
+
+/* --- Pulse Animation Corrected --- */
+.status-dot.pulse {
+    position: relative;
+    z-index: 1;
+}
+
+.status-dot.pulse::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: inherit; /* Matches the dot color */
+    border-radius: 50%;
+    z-index: -1;
+    animation: pulse-ring 1.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+}
+
+@keyframes pulse-ring {
+    0% { 
+        transform: scale(.7); 
+        opacity: 0.8; 
+    }
+
+    80%, 100% { 
+        transform: scale(2.1); 
+        opacity: 0; 
+    }
+}
+
+/* --- Smooth Slide Dropdown --- */
+/* This class is applied while the transition is happening */
+.expand-enter-active,
+.expand-leave-active {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 1000px; /* High enough to contain content */
+    overflow: hidden;
+}
+
+/* The state before entering and after leaving */
+.expand-enter-from,
+.expand-leave-to {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Base style for the details to ensure it has a starting point */
+.alert-details {
+    overflow: hidden;
+}
+
+/* Icon Rotation */
+.toggle-icon {
+    transition: transform 0.4s ease;
+}
+
+.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
