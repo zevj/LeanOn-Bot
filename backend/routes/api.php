@@ -3,6 +3,13 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\MoodController;
+
+// Public (can be accessed by guests, but will attach user_id if valid auth token passed)
+Route::post('/chat', [ChatController::class, 'chat']);
+Route::get('/chat/history', [ChatController::class, 'history']);
+Route::post('/mood', [MoodController::class, 'store']);
 
 Route::post('/login', [AuthController::class, 'login']);
 

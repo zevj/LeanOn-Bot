@@ -18,10 +18,11 @@
 import { ref } from 'vue'
 
 const message = ref('')
+const emit = defineEmits(['send'])
 
 const sendMessage = () => {
   if (!message.value.trim()) return
-  console.log('Message sent:', message.value)
+  emit('send', message.value)
   message.value = ''
 }
 </script>
