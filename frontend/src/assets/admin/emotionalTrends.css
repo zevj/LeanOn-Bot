@@ -1,0 +1,165 @@
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-container {
+  padding: 40px 70px;
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-bottom: 30px;
+}
+
+.title {
+  color: #0E6008;
+}
+
+.subtext {
+  font-size: 14px;
+}
+
+/* CHARTS CONTAINER */
+.charts-container {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.charts-separation {
+  flex: 1;
+  min-width: 0;
+}
+
+.charts-flex {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  width: 520px;
+  flex-shrink: 0;
+}
+
+/* REFERRALS */
+.referrals-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 15px rgba(0, 0, 0, 0.2);
+  border: 2px solid #a8a8a848;
+  transition: 0.15s ease-in-out all;
+}
+
+.referrals-card:hover {
+    border: 2px solid var(--primary-color);
+}
+.referrals-card__title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin: 0 0 12px;
+}
+
+.referrals-card__divider {
+  height: 1px;
+  background: #ebebeb;
+  margin-bottom: 4px;
+}
+
+.referrals-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.referrals-card__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.referrals-card__row + .referrals-card__row {
+  border-top: 1px solid #f3f3f3;
+}
+
+.referrals-card__label {
+  font-size: 14px;
+  color: #555;
+}
+
+.referrals-card__value {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.referrals-card__value--total    { color: #1a1a1a; }
+.referrals-card__value--accepted { color: #2e9e5b; }
+.referrals-card__value--pending  { color: #7dc86e; }
+
+/* TOP EMOTIONS */
+.card {
+  width: 100%;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 1px 15px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  border: 2px solid #a8a8a848;
+  transition: 0.15s ease-in-out all;
+}
+
+.card:hover {
+    border: 2px solid var(--primary-color);
+}
+
+.emotion-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 16px;
+}
+
+.emotion-item {
+  margin-bottom: 14px;
+}
+
+.emotion-item:last-child {
+  margin-bottom: 0;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.name {
+  font-size: 14px;
+  color: #374151;
+}
+
+.percent {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* PROGRESS BAR */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #d1f0d3;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #0E6008;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
