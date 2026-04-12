@@ -43,14 +43,20 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
-import SidebarStudent from '@/components/sidebar.vue';
-import HeaderStudent from '@/components/header.vue';
+import SidebarStudent from '@/components/sidebarStudent.vue';
+import HeaderStudent from '@/components/headerStudent.vue';
 import SendChat from '@/components/SendChat.vue';
+import { useChats } from '@/composables/useChats';
 
 const messages = ref([]);
 const chatContainer = ref(null);
+const route = useRoute();
+const router = useRouter();
+const { addConversation, updateConversation } = useChats();
+const isAutoCreating = ref(false);
 
 const getTimeString = () => {
     const now = new Date();
@@ -71,6 +77,22 @@ const scrollToBottom = async () => {
 
 const handleSend = async (text) => {
     if (!text.trim()) return;
+    let conversationId = route.query.conversation_id;
+
+    if (!conversationId) {
+        isAutoCreating.value = true;
+        try {
+            const res = await axios.post('/api/conversations');
+            conversationId = res.data.id;
+            addConversation(res.data);
+            await router.replace({ query: { conversation_id: conversationId } });
+        } catch (error) {
+            console.error("Failed to auto-create conversation", error);
+            alert("Failed to start chat.");
+            isAutoCreating.value = false;
+            return;
+        }
+    }
 
     // Add user message
     messages.value.push({
@@ -83,7 +105,8 @@ const handleSend = async (text) => {
 
     try {
         const response = await axios.post('http://localhost:8000/api/chat', {
-            message: text
+            message: text,
+            conversation_id: conversationId
         }, {
             headers: {
                 'Content-Type': 'application/json',
@@ -93,6 +116,13 @@ const handleSend = async (text) => {
 
         const replyData = response.data;
         
+        // Update sidebar's last message optimistically
+        updateConversation(conversationId, { 
+            title: text.substring(0, 50) + (text.length > 50 ? '...' : ''), 
+            last_message: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+            updated_at: new Date().toISOString()
+        });
+
         messages.value.push({
             text: replyData.reply,
             isBot: true,
@@ -114,6 +144,48 @@ const handleSend = async (text) => {
     
     scrollToBottom();
 };
+
+const fetchHistory = async (conversationId) => {
+    if (!conversationId) {
+        messages.value = [];
+        return;
+    }
+    try {
+        const response = await axios.get(`http://localhost:8000/api/chat/history?conversation_id=${conversationId}`);
+        messages.value = response.data.map(msg => [
+            { 
+                text: msg.message, 
+                isBot: false, 
+                time: new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+            },
+            { 
+                text: msg.reply, 
+                isBot: true, 
+                time: new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                quickReplies: msg.is_crisis ? [] : [
+                    "I'm feeling stressed",
+                    "I'm anxious about exams",
+                    "I just need someone to talk to"
+                ]
+            }
+        ]).flat();
+        scrollToBottom();
+    } catch (error) {
+        console.error('API Error fetching history:', error);
+    }
+};
+
+onMounted(() => {
+    fetchHistory(route.query.conversation_id);
+});
+
+watch(() => route.query.conversation_id, (newId) => {
+    if (isAutoCreating.value) {
+        isAutoCreating.value = false;
+        return; // skip history fetch to preserve optimistic UI
+    }
+    fetchHistory(newId);
+});
 
 const sendSuggestion = (text) => {
     handleSend(text);

@@ -145,8 +145,8 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import SidebarStudent from '@/components/sidebar.vue';
-import HeaderStudent from '@/components/header.vue';
+import SidebarStudent from '@/components/sidebarStudent.vue';
+import HeaderStudent from '@/components/headerStudent.vue';
 
 const alerts = ref([
     {
