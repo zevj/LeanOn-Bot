@@ -12,6 +12,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
@@ -66,7 +68,10 @@ class AuthController extends Controller
                 'regex:/^[0-9]{9}@gordoncollege\.edu\.ph$/',
                 'unique:users,email'
             ],
-            'password' => 'required|min:6|confirmed'
+            'password' => 'required|min:6|confirmed',
+            'department' => 'required|string',
+            'program' => 'required|string',
+            'year_level' => 'required|string',
         ]);
         
         if ($validator->fails()) {
@@ -87,6 +92,9 @@ class AuthController extends Controller
             'otp' => Hash::make($otp),
             'otp_expires_at' => $expiresAt,
             'role' => 'student',
+            'department' => $request->department,
+            'program' => $request->program,
+            'year_level' => $request->year_level,
         ]);
 
         Mail::to($user->email)->send(new OtpMail($otp, 'register'));
@@ -296,4 +304,129 @@ public function resetPassword(Request $request)
 //         'user' => $user
 //     ]);
 // }
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'phone_number' => 'nullable|string|max:11'
+        ]);
+
+        $user = $request->user();
+        $user->update([
+            'phone_number' => $request->phone_number
+        ]);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user
+        ]);
+    }
+
+    public function sendChangePasswordOtp(Request $request)
+    {
+        $user = $request->user();
+        $otp = rand(100000, 999999);
+        $expiresAt = now()->addMinutes(2);
+
+        PasswordOtp::updateOrCreate(
+            ['email' => $user->email],
+            [
+                'otp' => Hash::make($otp),
+                'expires_at' => $expiresAt
+            ]
+        );
+
+        Mail::to($user->email)->send(new OtpMail($otp, 'forgot'));
+
+        return response()->json([
+            'message' => 'OTP sent to your email',
+            'expires_at' => $expiresAt
+        ]);
+    }
+
+    public function verifyChangePasswordOtp(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required'
+        ]);
+
+        $user = $request->user();
+        $record = PasswordOtp::where('email', $user->email)->first();
+
+        if (!$record || !Hash::check($request->otp, $record->otp)) {
+            return response()->json(['message' => 'Invalid OTP'], 400);
+        }
+
+        if (now()->gt($record->expires_at)) {
+            return response()->json(['message' => 'OTP expired'], 400);
+        }
+
+        return response()->json(['message' => 'OTP verified']);
+    }
+
+    public function changePassword(Request $request)
+    {
+        // 1. Validate request
+        $request->validate([
+            'new_password' => 'required|min:6|confirmed',
+            'otp' => 'required'
+        ]);
+
+        // 2. Get authenticated user
+        /** @var \App\Models\User $user */
+        $user = Auth::user(); 
+
+        // 3. Find OTP record in PasswordOtp table
+        $record = PasswordOtp::where('email', $user->email)->first();
+
+        // 4. Verify OTP
+        if (!$record || !Hash::check($request->otp, $record->otp)) {
+            return response()->json(['message' => 'Invalid or missing OTP'], 400);
+        }
+
+        if (now()->gt($record->expires_at)) {
+            return response()->json(['message' => 'OTP expired'], 400);
+        }
+
+        // 5. Update Password
+        // Use Hash::make as requested by user
+        $user->password = Hash::make($request->new_password);
+        $saved = $user->save();
+
+        // 6. Invalidate OTP
+        $record->delete();
+
+        if (!$saved) {
+            return response()->json(['message' => 'Failed to save password to database'], 500);
+        }
+
+        return response()->json(['message' => 'Password updated successfully']);
+    }
+
+    public function uploadProfileImage(Request $request)
+    {
+        $request->validate([
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if ($request->hasFile('profile_image')) {
+            // Delete old image if it exists
+            if ($user->profile_image) {
+                Storage::disk('public')->delete($user->profile_image);
+            }
+
+            $path = $request->file('profile_image')->store('profile_images', 'public');
+            $user->profile_image = $path;
+            $user->save();
+
+            return response()->json([
+                'message' => 'Profile image uploaded successfully',
+                'user' => $user->fresh() // Returns the user with the profile_image_url append
+            ]);
+        }
+
+        return response()->json(['message' => 'No image provided'], 400);
+    }
 }

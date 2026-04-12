@@ -27,6 +27,11 @@ class User extends Authenticatable {
         'otp_expires_at',
         'email_verified_at',
         'role',
+        'department',
+        'program',
+        'year_level',
+        'phone_number',
+        'profile_image',
     ];
 
     /**
@@ -40,6 +45,26 @@ class User extends Authenticatable {
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = ['profile_image_url'];
+
+    /**
+     * Get the full URL for the profile image.
+     *
+     * @return string|null
+     */
+    public function getProfileImageUrlAttribute()
+    {
+        if (!$this->profile_image) {
+            return null;
+        }
+        return asset('storage/' . $this->profile_image);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -49,7 +74,7 @@ class User extends Authenticatable {
         return [
             'otp_expires_at' => 'datetime',
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            // 'password' => 'hashed', // Disabled to prevent double hashing when using Hash::make manually
         ];
     }
 }

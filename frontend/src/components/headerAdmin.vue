@@ -10,7 +10,7 @@
 
       <div class="logo-separation">
         <span class="logo-text">LeanOnBot</span>
-        <p class="subtext">Your wellness companion</p>
+        <p class="subtext">Admin Panel</p>
       </div>
       
     </div>
@@ -28,7 +28,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import Sidebar from '../components/sidebar.vue'
+import Sidebar from '../components/sidebarAdmin.vue'
 
 
 // Sidebar state lifted to header
@@ -47,4 +47,4 @@ function toggleNotif() {
 }
 </script>
 
-<style scoped src="../assets/Header & Sidebar/header.css"></style>
+<style scoped src="../assets/Header & Sidebar/headerAdmin.css"></style>
