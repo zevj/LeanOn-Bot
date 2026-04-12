@@ -13,8 +13,23 @@ Route::post('/mood', [MoodController::class, 'store']);
 
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+use App\Http\Controllers\ConversationController;
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::get('/conversations', [ConversationController::class, 'index']);
+    Route::post('/conversations', [ConversationController::class, 'store']);
+    Route::patch('/conversations/{id}', [ConversationController::class, 'update']);
+    Route::delete('/conversations/{id}', [ConversationController::class, 'destroy']);
+    
+    Route::put('/user', [AuthController::class, 'updateProfile']);
+    Route::post('/user/image', [AuthController::class, 'uploadProfileImage']);
+    Route::post('/send-otp', [AuthController::class, 'sendChangePasswordOtp']);
+    Route::post('/verify-otp-password', [AuthController::class, 'verifyChangePasswordOtp']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
 });
 
 Route::post('/register', [AuthController::class, 'register']);

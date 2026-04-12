@@ -22,7 +22,7 @@
               id="firstName"
               placeholder="Enter your first name..."
               v-model="firstName"
-              @input="firstName = firstName.replace(/[^a-zA-Z]/g, '')"
+              @input="firstName = firstName.replace(/[^a-zA-Z\s]/g, '')"
             />
           </div>
 
@@ -30,7 +30,7 @@
           <div class="form-group input-wrapper" ref="lastNameRef">
             <label for="lastName">Last Name</label>
             <i class="bx bx-user input-icon"></i>
-            <input type="text" id="lastName" placeholder="Enter your last name..." v-model="lastName" @input="lastName = lastName.replace(/[^a-zA-Z]/g, '')"/>
+            <input type="text" id="lastName" placeholder="Enter your last name..." v-model="lastName" @input="lastName = lastName.replace(/[^a-zA-Z\s]/g, '')"/>
           </div>
 
           <!-- Email -->
@@ -38,6 +38,44 @@
             <label for="email">Email Address</label>
             <i class="bx bx-envelope input-icon"></i>
             <input type="text" id="email" placeholder="Enter your email..." v-model="email"/>
+          </div>
+
+          <!-- Department -->
+          <div class="form-group input-wrapper" ref="departmentRef">
+            <label for="department">Department</label>
+            <i class="bx bx-buildings input-icon"></i>
+            <select id="department" v-model="department" required @change="onDepartmentChange">
+              <option value="" disabled>Select Department</option>
+              <option value="CAHS">College of Allied Health Studies (CAHS)</option>
+              <option value="CBA">College of Business and Accountancy (CBA)</option>
+              <option value="CCS">College of Computer Studies (CCS)</option>
+              <option value="CEAS">College of Education, Arts, and Sciences (CEAS)</option>
+              <option value="CHTM">College of Hospitality and Tourism Management (CHTM)</option>
+            </select>
+          </div>
+
+          <!-- Program -->
+          <div class="form-group input-wrapper" ref="programRef">
+            <label for="program">Program</label>
+            <i class="bx bx-book input-icon"></i>
+            <select id="program" v-model="program" required :disabled="!department">
+              <option value="" disabled>Select Program</option>
+              <option v-for="p in availablePrograms" :key="p" :value="p">{{ p }}</option>
+            </select>
+            <p v-if="!department" class="program-hint" style="color: #888; font-size: 11px; margin-top: -15px; margin-bottom: 10px;">Please select a department to see programs</p>
+          </div>
+
+          <!-- Year Level -->
+          <div class="form-group input-wrapper" ref="yearLevelRef">
+            <label for="yearLevel">Year Level</label>
+            <i class="bx bx-list-ul input-icon"></i>
+            <select id="yearLevel" v-model="yearLevel" required>
+              <option value="" disabled>Select Year Level</option>
+              <option value="1st Year">1st Year</option>
+              <option value="2nd Year">2nd Year</option>
+              <option value="3rd Year">3rd Year</option>
+              <option value="4th Year">4th Year</option>
+            </select>
           </div>
 
           <!-- Password Row -->
@@ -113,7 +151,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { gsap } from 'gsap'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
@@ -128,6 +166,9 @@ const password = ref('')
 const confirmPassword = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
+const department = ref('')
+const program = ref('')
+const yearLevel = ref('')
 
 /* REFS */
 const containerRef = ref(null)
@@ -149,6 +190,9 @@ const lineRef = ref(null)
 const firstNameRef = ref(null)
 const lastNameRef = ref(null)
 const emailRef = ref(null)
+const departmentRef = ref(null)
+const programRef = ref(null)
+const yearLevelRef = ref(null)
 const passwordRef = ref(null)
 const confirmPasswordRef = ref(null)
 
@@ -166,10 +210,54 @@ const isLoading = ref(false)
 const togglePassword = () => showPassword.value = !showPassword.value
 const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value
 
+const programsMap = {
+  CAHS: [
+    'Bachelor of Science in Nursing',
+    'Bachelor of Science in Midwifery'
+  ],
+  CBA: [
+    'Bachelor of Science in Accountancy',
+    'BSBA Major in Financial Management',
+    'BSBA Major in Human Resource Management',
+    'BSBA Major in Marketing Management',
+    'Bachelor of Science in Customs Administration'
+  ],
+  CCS: [
+    'Bachelor of Science in Computer Science',
+    'Bachelor of Science in Entertainment and Multimedia Computing',
+    'Bachelor of Science in Information Technology'
+  ],
+  CEAS: [
+    'Bachelor of Arts in Communication',
+    'Bachelor of Early Childhood Education',
+    'Bachelor of Culture and Arts Education',
+    'Bachelor of Physical Education',
+    'Bachelor of Elementary Education (General Education)',
+    'BSEd Major in English',
+    'BSEd Major in Filipino',
+    'BSEd Major in Mathematics',
+    'BSEd Major in Social Studies',
+    'BSEd Major in Sciences',
+    'Teacher Certificate Program (TCP)'
+  ],
+  CHTM: [
+    'Bachelor of Science in Hospitality Management',
+    'Bachelor of Science in Tourism Management'
+  ]
+}
+
+const availablePrograms = computed(() => {
+  return department.value ? (programsMap[department.value] || []) : []
+})
+
+const onDepartmentChange = () => {
+  program.value = ''
+}
+
 const handleSignup = async () => {
   if (isLoading.value) return // 🚫 prevent double click
 
-  if (!firstName.value || !lastName.value || !email.value || !password.value || !confirmPassword.value) {
+  if (!firstName.value || !lastName.value || !email.value || !password.value || !confirmPassword.value || !department.value || !program.value || !yearLevel.value) {
     toast.error('Please fill out all fields!')
     return
   }
@@ -193,7 +281,10 @@ const handleSignup = async () => {
       last_name: lastName.value,
       email: email.value,
       password: password.value,
-      password_confirmation: confirmPassword.value
+      password_confirmation: confirmPassword.value,
+      department: department.value,
+      program: program.value,
+      year_level: yearLevel.value
     })
 
     localStorage.setItem('signup_otp_expiry', response.data.otp_expires_at)
@@ -231,7 +322,16 @@ onMounted(() => {
   tl.from(titleRef.value, { y: 40, opacity: 0 }, 0.3)
   tl.from(subtitleRef.value, { y: 25, opacity: 0 }, 0.4)
 
-  const inputs = [firstNameRef.value, lastNameRef.value, emailRef.value, passwordRef.value, confirmPasswordRef.value]
+  const inputs = [
+    firstNameRef.value, 
+    lastNameRef.value, 
+    emailRef.value, 
+    departmentRef.value,
+    programRef.value,
+    yearLevelRef.value,
+    passwordRef.value, 
+    confirmPasswordRef.value
+  ]
   inputs.forEach((input, i) => tl.from(input, { y: 30, opacity: 0, ease: 'power2.out' }, 0.5 + i*0.1))
 
   // Buttons & Divider

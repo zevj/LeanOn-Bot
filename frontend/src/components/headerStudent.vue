@@ -28,22 +28,15 @@
 
 <script setup>
 import { ref } from 'vue'
-import Sidebar from '../components/sidebar.vue'
+import Sidebar from './sidebarStudent.vue'
 
 
 // Sidebar state lifted to header
 const openSidebar = ref(false)
 
-// Notification state
-const showNotif = ref(false)
-
 // Toggle functions
 function toggleSidebar() {
   openSidebar.value = !openSidebar.value
-}
-
-function toggleNotif() {
-  showNotif.value = !showNotif.value
 }
 </script>
 

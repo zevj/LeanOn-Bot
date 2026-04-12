@@ -5,8 +5,6 @@ import forgotPass from '../views/forgotPass.vue'
 import OTPVerification from '../views/OTP.vue'
 import NewPass from '../views/NewPass.vue'
 import OTPFPass from '../views/OTPFPass.vue'
-import AdminDashboardTest from '../views/adminDashboard.vue'
-import StudentDashboard from '../views/studentDashboard.vue'
 import ChatConvo from '../views/ChatConvo.vue'
 import MyAccount from '../views/MyAccount.vue'
 import LandingPage from '../views/LandingPage.vue'
@@ -32,19 +30,6 @@ const routes = [
     path: '/login',
     name: 'login',
     component: Login
-  },
-
-  {
-    path: '/studentDashboard',
-    name: 'studentDashboard',
-    component: StudentDashboard,
-    meta: { requiresAuth: true, role: 'student' }
-  },
-
-  {
-    path: '/AdminDashboardTest',
-    component: AdminDashboardTest,
-    meta: { requiresAuth: true, role: 'guidance' }
   },
 
   {
@@ -82,7 +67,8 @@ const routes = [
   {
     path: '/ChatConvo',
     name: 'ChatConvo',
-    component: ChatConvo
+    component: ChatConvo,
+    meta: { requiresAuth: true, role: 'student' }
   },
 
   {
@@ -98,12 +84,11 @@ const routes = [
   },
 
   /* ADMIN */
-  /* ADMIN */
   {
     path: '/AdminDashboard',
     name: 'AdminDashboard',
     component: AdminDashboard,
-   /*  meta: { requiresAuth: true, role: 'guidance' } */
+    meta: { requiresAuth: true, role: 'guidance' }
   },
 
   {

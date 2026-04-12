@@ -177,7 +177,6 @@ const handleLogin = async () => {
     if (role === 'guidance') {
       router.push('/adminDashboard')
     } else {
-      router.push('/studentDashboard')
       router.push('/ChatConvo')
     }
 

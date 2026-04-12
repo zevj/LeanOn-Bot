@@ -23,10 +23,10 @@
       <nav class="menu">
 
         <div class="button-container">
-          <router-link to="/ChatConvo" class="new-convo-btn">
+          <div class="new-convo-btn" @click="createNewChat" style="cursor: pointer;">
             <i class='bx bx-message-square-add'></i>
             New Chat
-          </router-link>
+          </div>
         </div>
 
         <div class="main-menu">
@@ -44,12 +44,12 @@
 
         <!-- CHAT LIST -->
         <div class="chat-convo-module">
-          <div v-for="(chat, index) in chats" :key="index" class="chat-convo-container">
+          <div v-for="(chat, index) in chats" :key="chat.id" class="chat-convo-container" :class="{ 'active-chat': isSelected(chat.id) }" @click="selectChat(chat.id)" style="cursor: pointer;">
             <div class="title-3dots-separation">
 
               <div class="chat-text">
                 <h4 class="chat-title">{{ chat.title }}</h4>
-                <p class="chat-time">{{ chat.time }}</p>
+                <p class="chat-time">{{ formatDate(chat.updated_at) }}</p>
               </div>
 
               <div class="menu-wrapper">
@@ -84,12 +84,12 @@
       <div class="logout">
         <div class="picture-info-separation" @click="openModal">
           <div class="picture">
-            <img src="/leanOnBot.png" class="logo-icon" />
+            <img :src="userProfile.profile_image_url || '/leanOnBot.png'" class="logo-icon" style="object-fit: cover; border-radius: 50%;" />
           </div>
 
           <div class="title-footer">
-            <span class="logo-text">Allysa C. Lingad</span>
-            <p class="subtext">202310636@gordoncollege.edu.ph</p>
+            <span class="logo-text">{{ userProfile.first_name }} {{ userProfile.last_name }}</span>
+            <p class="subtext">{{ userProfile.email }}</p>
           </div>
         </div>
 
@@ -143,7 +143,7 @@
             >
               <div class="archived-text">
                 <h4>{{ chat.title }}</h4>
-                <p>{{ chat.date }}</p>
+                <p>{{ formatDate(chat.updated_at) }}</p>
               </div>
 
               <div class="archived-actions">
@@ -187,7 +187,7 @@
             >
               <div class="saved-text">
                 <h4>{{ chat.title }}</h4>
-                <p>{{ chat.date }}</p>
+                <p>{{ formatDate(chat.updated_at) }}</p>
               </div>
 
               <div class="saved-actions">
@@ -229,9 +229,9 @@
       />
 
       <div class="search-results">
-        <div v-for="(chat, index) in filteredSearchResults" :key="index" class="search-result-item">
+        <div v-for="(chat, index) in filteredSearchResults" :key="index" class="search-result-item" @click="selectChat(chat.id)" style="cursor: pointer;">
           <h4>{{ chat.title }}</h4>
-          <p>{{ chat.date || chat.time }}</p>
+          <p>{{ formatDate(chat.updated_at) }}</p>
         </div>
         <p v-if="filteredSearchResults.length === 0" class="search-empty">No results found</p>
       </div>
@@ -241,34 +241,67 @@
   </div>
 </transition>
 
+    <!-- CONFIRMATION MODAL -->
+    <ConfirmationModal 
+      :visible="confirmModal.visible"
+      :title="confirmModal.title"
+      :message="confirmModal.message"
+      :confirmText="confirmModal.confirmText"
+      :cancelText="confirmModal.cancelText"
+      :type="confirmModal.type"
+      @confirm="executeConfirm"
+      @cancel="cancelConfirm"
+    />
+
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { useChats } from '@/composables/useChats'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import axios from 'axios'
 
+const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 
-/* Sidebar props */
+const emit = defineEmits(['toggle', 'select-chat'])
 defineProps({ open: Boolean })
 
-/* MOCK DATA */
-const chats = ref([
-  { title: 'How to install XAMPP', time: 'Just now' },
-  { title: 'Vue Sidebar Design', time: '5 mins ago' },
-  { title: 'Fix CSS alignment issue', time: '10 mins ago' },
-  { title: 'Database normalization', time: '30 mins ago' },
-])
+const userProfile = ref({
+  first_name: 'Loading...',
+  last_name: '',
+  email: ''
+})
 
-/* Archived chats */
-const archivedChats = ref([])
+const fetchUserProfile = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const res = await axios.get('/api/user', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    userProfile.value = res.data
+  } catch {
+    console.error('Failed to fetch user profile')
+  }
+}
+
+/* API DATA */
+const { chats, fetchConversations, addConversation, removeConversation, updateConversation } = useChats()
+
+onMounted(() => {
+  fetchConversations()
+  fetchUserProfile()
+})
 
 /* Saved chats */
-const savedChats = ref([
-  { title: 'How to install XAMPP', date: '2026-03-31 12:00 PM' },
-  { title: 'Vue Sidebar Design', date: '2026-03-31 11:45 AM' },
-])
+const savedChats = computed(() => {
+  return chats.value.filter(c => c.is_saved)
+})
+
 const showSavedModal = ref(false)
 const openSavedModal = () => showSavedModal.value = true
 const closeSavedModal = () => showSavedModal.value = false
@@ -276,46 +309,39 @@ const closeSavedModal = () => showSavedModal.value = false
 /* SEARCH CHAT MODAL */
 const showSearchModal = ref(false)
 const searchQuery = ref('')
-
-// Open search modal
-const openSearchModal = () => {
-  showSearchModal.value = true
-  searchQuery.value = ''
-}
-
-// Close search modal
+const openSearchModal = () => { showSearchModal.value = true; searchQuery.value = '' }
 const closeSearchModal = () => showSearchModal.value = false
 
-// Computed filtered search results from chats, archivedChats, savedChats
-import { computed } from 'vue'
 const filteredSearchResults = computed(() => {
   const query = searchQuery.value.toLowerCase().trim()
-
-  // combine all chats
   const allChats = [
-    ...chats.value.map(c => ({ ...c, type: 'Chat' })),
-    ...archivedChats.value.map(c => ({ ...c, type: 'Archived Chat' })),
-    ...savedChats.value.map(c => ({ ...c, type: 'Saved Chat' }))
+    ...chats.value.map(c => ({ ...c, type: 'Chat' }))
   ]
-
-  // if query is empty, show all chats
   if (!query) return allChats
-
-  // otherwise, filter
-  return allChats.filter(c => c.title.toLowerCase().includes(query))
+  return allChats.filter(c => (c.title && c.title.toLowerCase().includes(query)) || (c.last_message && c.last_message.toLowerCase().includes(query)))
 })
 
-/* Logout Modal */
+/* Logout / Modals */
 const showLogoutModal = ref(false)
 const openModal = () => showLogoutModal.value = true
 const closeModal = () => showLogoutModal.value = false
 const confirmLogout = () => {
-  localStorage.removeItem("token")
-  window.location.href = "/login"
+    closeModal() // Close the user menu modal first
+    openConfirmModal({
+        title: 'Logout',
+        message: 'Are you sure you want to logout?',
+        confirmText: 'Logout',
+        type: 'danger',
+        actionCallback: () => {
+            localStorage.removeItem("token");
+            window.location.href = "/login"
+        }
+    })
 }
 
 /* Archived Modal */
 const showArchivedModal = ref(false)
+const archivedChats = ref([])
 const openArchivedModal = () => showArchivedModal.value = true
 const closeArchivedModal = () => showArchivedModal.value = false
 
@@ -324,74 +350,174 @@ const dropdown = ref({ visible: false, top: 0, left: 0, index: null })
 const openDropdown = (event, index) => {
   event.stopPropagation()
   const rect = event.target.getBoundingClientRect()
-  const dropdownHeight = 120
-  const spaceBelow = window.innerHeight - rect.bottom
-  const spaceAbove = rect.top
-  let topPos = spaceBelow >= dropdownHeight 
-    ? rect.bottom + window.scrollY
-    : spaceAbove >= dropdownHeight 
-      ? rect.top + window.scrollY - dropdownHeight
-      : Math.max(0, window.innerHeight - dropdownHeight + window.scrollY)
-  dropdown.value = { visible: true, top: topPos, left: rect.left + window.scrollX, index }
+  dropdown.value = { visible: true, top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, index }
 }
 const closeDropdown = () => { dropdown.value.visible = false }
 onMounted(() => window.addEventListener('click', closeDropdown))
 onBeforeUnmount(() => window.removeEventListener('click', closeDropdown))
 
-/* ARCHIVE / RESTORE / DELETE */
-const archiveChat = (index) => {
-  if (index == null) return
-  const chat = chats.value[index]
-  // Remove from main chats
-  chats.value.splice(index, 1)
-  // Add to archived
-  archivedChats.value.unshift({ ...chat, date: new Date().toLocaleString() })
-  // Close dropdown
-  closeDropdown()
-  // Show success toast
-  toast.success('Chat archived successfully!')
+/* ACTIONS */
+const createNewChat = async () => {
+  try {
+    const res = await axios.post('/api/conversations')
+    addConversation(res.data)
+    emit('select-chat', res.data.id)
+    if (router.currentRoute.value.path !== '/ChatConvo') {
+      router.push({ path: '/ChatConvo', query: { conversation_id: res.data.id } })
+    } else {
+      router.push({ query: { conversation_id: res.data.id } })
+    }
+  } catch {
+    toast.error('Failed to create new chat')
+  }
 }
 
-const restoreChat = (index) => {
-  const chat = archivedChats.value[index]
-  archivedChats.value.splice(index, 1)
-  chats.value.unshift(chat)
-  toast.success('Chat restored successfully!')
+const selectChat = (id) => {
+  emit('select-chat', id)
+  if (router.currentRoute.value.path !== '/ChatConvo') {
+    router.push({ path: '/ChatConvo', query: { conversation_id: id }})
+  } else {
+    router.push({ query: { conversation_id: id }})
+  }
+}
+
+const isSelected = (id) => {
+  return route.query.conversation_id == id
+}
+
+/* CONFIRM MODAL STATE */
+const confirmModal = ref({
+  visible: false,
+  title: '',
+  message: '',
+  confirmText: '',
+  cancelText: 'Cancel',
+  type: 'primary',
+  actionCallback: null
+})
+
+const openConfirmModal = (options) => {
+  confirmModal.value = { ...confirmModal.value, ...options, visible: true }
+}
+const cancelConfirm = () => {
+  confirmModal.value.visible = false
+}
+const executeConfirm = async () => {
+  if (confirmModal.value.actionCallback) {
+    await confirmModal.value.actionCallback()
+  }
+  confirmModal.value.visible = false
+}
+
+const archiveChat = () => {
+  openConfirmModal({
+    title: 'Archive Chat',
+    message: 'Are you sure you want to archive this chat?',
+    confirmText: 'Archive',
+    type: 'primary',
+    actionCallback: () => {
+      toast.info('Archive feature coming soon')
+      closeDropdown()
+    }
+  })
 }
 
 const deleteChat = (index) => {
   if (index == null) return
-  chats.value.splice(index, 1)       // remove chat
-  closeDropdown()                     // close dropdown menu
-  toast.success('Chat deleted successfully!')  // show toast
+  const id = chats.value[index].id
+  
+  openConfirmModal({
+    title: 'Delete Chat',
+    message: 'Are you sure you want to permanently delete this chat?',
+    confirmText: 'Delete',
+    type: 'danger',
+    actionCallback: async () => {
+      try {
+        await axios.delete(`/api/conversations/${id}`)
+        removeConversation(id)
+        closeDropdown()
+        toast.success('Chat deleted successfully!')
+      } catch {
+        toast.error("Failed to delete chat")
+      }
+    }
+  })
 }
 
-const deleteArchivedChat = (index) => {
-  if (index == null) return
-  archivedChats.value.splice(index, 1)      // remove archived chat
-  toast.success('Archived chat deleted successfully!')  // show toast
-}
-
-/* SAVED CHAT */
 const saveChat = (index) => {
   if (index == null) return
   const chat = chats.value[index]
-  if (savedChats.value.find(c => c.title === chat.title)) {
+  if (chat.is_saved) {
     toast.info('Already saved!')
+    closeDropdown()
     return
   }
-  savedChats.value.unshift({ ...chat, date: new Date().toLocaleString() })
-  toast.success('Chat saved successfully!')
-  closeDropdown()
-}
 
-const viewChat = (chat) => {
-  toast.info(`Viewing: ${chat.title}`)
+  openConfirmModal({
+    title: 'Save Chat',
+    message: 'Do you want to save this chat to your bookmarks?',
+    confirmText: 'Save',
+    type: 'primary',
+    actionCallback: async () => {
+      try {
+        await axios.patch(`/api/conversations/${chat.id}`, { is_saved: true })
+        updateConversation(chat.id, { is_saved: true })
+        toast.success('Chat saved successfully!')
+        closeDropdown()
+      } catch {
+        toast.error("Failed to save chat")
+      }
+    }
+  })
 }
 
 const deleteSavedChat = (index) => {
-  savedChats.value.splice(index, 1)
-  toast.success('Removed from saved!')
+  const chat = savedChats.value[index]
+  
+  openConfirmModal({
+    title: 'Remove Saved Chat',
+    message: 'Remove this chat from your saved list?',
+    confirmText: 'Remove',
+    type: 'danger',
+    actionCallback: async () => {
+      try {
+        await axios.patch(`/api/conversations/${chat.id}`, { is_saved: false })
+        updateConversation(chat.id, { is_saved: false })
+        toast.success('Removed from saved!')
+      } catch {
+        toast.error("Failed to update chat")
+      }
+    }
+  })
+}
+
+const viewChat = (chat) => {
+  selectChat(chat.id)
+  closeSavedModal()
+}
+
+const deleteArchivedChat = () => {}
+const restoreChat = () => {}
+
+const formatDate = (dateString) => {
+  if (!dateString) return ''
+
+  const date = new Date(dateString)
+  const now = new Date()
+  const diff = Math.floor((now - date) / 60000)
+
+  if (diff < 1) return 'Just now'
+
+  const minutes = diff
+  const hours = Math.floor(diff / 60)
+
+  if (minutes < 60) {
+    return `${minutes} min${minutes > 1 ? 's' : ''} ago`
+  }
+  if (minutes < 1440) {
+    return `${hours} hr${hours > 1 ? 's' : ''} ago`
+  }
+  return date.toLocaleDateString()
 }
 </script>
 
