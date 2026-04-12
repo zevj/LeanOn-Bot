@@ -64,6 +64,7 @@ main {
 .stat-number {
   font-size: 40px;
   font-weight: 600;
+  color: black;
 }
 
 /* Padding per card */

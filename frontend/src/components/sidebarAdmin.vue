@@ -14,7 +14,7 @@
       <!-- HEADER -->
       <div class="sidebar-top">
         <div class="logo-box">
-          <img src="/leanOnBot.png" class="logo-icon" />
+          <i class='bx bx-heart'></i>
         </div>
 
         <div class="logo-texts">
@@ -32,7 +32,7 @@
           <span>Dashboard</span>
         </router-link>
 
-        <router-link to="/" class="menu-item" active-class="active">
+        <router-link to="/AdminCrisisAlerts" class="menu-item" active-class="active">
           <i class='bx bx-shield'></i>
           <span>Crisis Alerts</span>
         </router-link>

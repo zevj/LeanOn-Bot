@@ -13,6 +13,8 @@ import LandingPage from '../views/LandingPage.vue'
 import CrisisAlert from '../views/CrisisAlert.vue'
 import AdminDashboard from '../views/Admin/Dashboard.vue'
 import EmotionalTrends from '../views/Admin/EmotionalTrends.vue'
+import AdminCrisisAlerts from '../views/Admin/AdminCrisisAlert.vue'
+
 
 const routes = [
   {
@@ -108,6 +110,12 @@ const routes = [
     path: '/EmotionalTrends',
     name: 'EmotionalTrends',
     component: EmotionalTrends
+  },
+
+   {
+    path: '/AdminCrisisAlerts',
+    name: 'AdminCrisisAlerts',
+    component: AdminCrisisAlerts
   },
 ]
 
