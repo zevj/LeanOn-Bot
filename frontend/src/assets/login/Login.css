@@ -1,16 +1,31 @@
 /* CONTAINER */
 .login-container {
     display: flex;
-    flex-wrap: wrap; /* allow stacking on small screens */
+    flex-wrap: wrap;
+    /* allow stacking on small screens */
     min-height: 100vh;
     width: 100%;
+}
+
+.logo-link {
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+
+}
+
+.logo-link:hover {
+    text-decoration: none;
+    opacity: 0.7;
 }
 
 /* LEFT SIDE */
 .left-container {
     flex: 1 1 50%;
-    min-width: 320px; /* prevents too narrow */
-    padding: 10vh 5vw; /* relative padding */
+    min-width: 320px;
+    /* prevents too narrow */
+    padding: 10vh 5vw;
+    /* relative padding */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -22,7 +37,8 @@
 }
 
 .login-title {
-    font-size: clamp(24px, 5vw, 25px); /* responsive */
+    font-size: clamp(24px, 5vw, 25px);
+    /* responsive */
     font-weight: 700;
     margin-bottom: 0.5rem;
 }
@@ -55,51 +71,54 @@ span {
 
 /* Wrapper for inputs with icons */
 .input-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 600px;
+    position: relative;
+    width: 100%;
+    max-width: 600px;
 }
 
 .input-wrapper input {
-  width: 100%;
-  height: 49px;
-  padding-left: 45px; /* space for icon on the left */
-  padding-right: 50px; /* space for eye icon if needed */
-  border-radius: 8px;
-  border: 2px solid #ccc;
-  font-size: 14px;
-  margin-bottom: 20px;
+    width: 100%;
+    height: 49px;
+    padding-left: 45px;
+    /* space for icon on the left */
+    padding-right: 50px;
+    /* space for eye icon if needed */
+    border-radius: 8px;
+    border: 2px solid #ccc;
+    font-size: 14px;
+    margin-bottom: 20px;
 }
 
-.email-icon, .password-icon {
-  position: absolute;
-  left: 15px;
-  top: 36%;
-  transform: translateY(-50%);
-  font-size: 1.2rem;
-  color: #555;
+.email-icon,
+.password-icon {
+    position: absolute;
+    left: 15px;
+    top: 36%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    color: #555;
 }
 
 .password-wrapper .eye-icon {
-  position: absolute;
-  right: 26px;
-  top: 36%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  font-size: 1.2rem;
-  color: #555;
+    position: absolute;
+    right: 26px;
+    top: 36%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #555;
 }
 
 /* Hide default password reveal icon (Edge / IE) */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
-  display: none;
+    display: none;
 }
 
 /* Hide default icon in Chromium browsers */
 input[type="password"]::-webkit-credentials-auto-fill-button,
 input[type="password"]::-webkit-textfield-decoration-container {
-  display: none !important;
+    display: none !important;
 }
 
 .forgot-password {
@@ -305,14 +324,16 @@ input[type="password"]::-webkit-textfield-decoration-container {
 @keyframes pulse {
     0% {
         transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(155,196,76,0.7);
+        box-shadow: 0 0 0 0 rgba(155, 196, 76, 0.7);
     }
+
     70% {
         transform: scale(1.3);
-        box-shadow: 0 0 0 8px rgba(155,196,76,0);
+        box-shadow: 0 0 0 8px rgba(155, 196, 76, 0);
     }
+
     100% {
         transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(155,196,76,0);
+        box-shadow: 0 0 0 0 rgba(155, 196, 76, 0);
     }
 }

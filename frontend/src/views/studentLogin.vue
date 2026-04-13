@@ -4,7 +4,10 @@
 
       <div class="left-container" ref="leftRef">
         <h1 class="login-title" ref="titleRef">
-          Welcome <span>LeanOn Bot</span>
+          Welcome to 
+          <router-link to="/" class="logo-link">
+            <span>LeanOn Bot</span>
+          </router-link>
         </h1>
 
         <p class="login-subtitle" ref="subtitleRef">

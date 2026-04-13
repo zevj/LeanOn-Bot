@@ -84,7 +84,7 @@
       <div class="logout">
         <div class="picture-info-separation" @click="openModal">
           <div class="picture">
-            <img :src="userProfile.profile_image_url || '/leanOnBot.png'" class="logo-icon" style="object-fit: cover; border-radius: 50%;" />
+            <img :src="'/leanOnBot.png'" class="logo-icon" style="object-fit: cover; border-radius: 50%;" />
           </div>
 
           <div class="title-footer">
