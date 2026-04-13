@@ -9,8 +9,10 @@ import ChatConvo from '../views/ChatConvo.vue'
 import MyAccount from '../views/MyAccount.vue'
 import LandingPage from '../views/LandingPage.vue'
 import CrisisAlert from '../views/CrisisAlert.vue'
-import AdminDashboard from '../views/Admin/Dashboard.vue'
+import AdminDashboard from '../views/Admin/adminDashboard.vue'
 import EmotionalTrends from '../views/Admin/EmotionalTrends.vue'
+import AdminCrisisAlerts from '../views/Admin/AdminCrisisAlert.vue'
+
 
 const routes = [
   {
@@ -83,8 +85,8 @@ const routes = [
 
   /* ADMIN */
   {
-    path: '/AdminDashboard',
-    name: 'AdminDashboard',
+    path: '/adminDashboard',
+    name: 'adminDashboard',
     component: AdminDashboard,
     meta: { requiresAuth: true, role: 'guidance' }
   },
@@ -93,6 +95,12 @@ const routes = [
     path: '/EmotionalTrends',
     name: 'EmotionalTrends',
     component: EmotionalTrends
+  },
+
+   {
+    path: '/AdminCrisisAlerts',
+    name: 'AdminCrisisAlerts',
+    component: AdminCrisisAlerts
   },
 ]
 

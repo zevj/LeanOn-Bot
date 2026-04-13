@@ -1,9 +1,9 @@
 <template>
     <div class="layout">
-        <SidebarAdmin />
+        <sidebarAdmin/>
 
         <main>
-            <HeaderAdmin />
+            <headerAdmin/>
 
             <div class="main-container">
 
@@ -58,9 +58,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import SidebarAdmin from '@/components/sidebarAdmin.vue';
-import HeaderAdmin from '@/components/headerAdmin.vue';
+import sidebarAdmin from '@/components/sidebarAdmin.vue';
+import headerAdmin from '@/components/headerAdmin.vue';
 import DailyInteractionsChart from '@/components/DailyInteractionsChart.vue';
 import MonthlyTrendChart from '@/components/MonthlyTrendChart.vue';
 </script>

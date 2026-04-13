@@ -14,7 +14,7 @@
       <!-- HEADER -->
       <div class="sidebar-top">
         <div class="logo-box">
-          <img src="/leanOnBot.png" class="logo-icon" />
+          <i class='bx bx-heart'></i>
         </div>
 
         <div class="logo-texts">
@@ -32,7 +32,8 @@
           <span>Dashboard</span>
         </router-link>
 
-        <router-link to="/" class="menu-item" active-class="active">
+        
+        <router-link to="/AdminCrisisAlerts" class="menu-item" active-class="active">
           <i class='bx bx-shield'></i>
           <span>Crisis Alerts</span>
         </router-link>
@@ -54,8 +55,8 @@
           <img src="/leanOnBot.png" class="logo-icon" />
 
           <div class="title-footer">
-            <span class="logo-text">Allysa C. Lingad</span>
-            <p class="subtext">202310636@gordoncollege.edu.ph</p>
+            <span class="logo-text">Test User</span>
+            <p class="subtext">123456789@gordoncollege.edu.ph</p>
           </div>
         </div>
       </div>
@@ -83,7 +84,7 @@
 
           <div class="modal-item logout-item" @click="confirmLogout">
             <i class='bx bx-log-out'></i>
-            <router-link to="/MyAccount" class="logout-item">
+            <router-link to="/login" class="logout-item">
             <span>Logout</span>
             </router-link>
           </div>
