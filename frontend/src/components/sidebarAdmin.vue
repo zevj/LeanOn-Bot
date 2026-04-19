@@ -69,14 +69,14 @@
 
           <div class="modal-item">
             <i class='bx bx-user'></i>
-            <router-link to="/MyAccount" class="my-account">
+            <router-link to="/AdminProfile" class="my-account">
               My Account
             </router-link>
           </div>
 
           <div class="modal-item" @click="openArchivedModal">
             <i class='bx bx-cog'></i>
-            <router-link to="/MyAccount" class="my-account">
+            <router-link to="/AdminConfig" class="my-account">
             <span>Configuration</span>
             </router-link>
           </div>

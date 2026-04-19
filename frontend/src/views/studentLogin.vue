@@ -98,7 +98,7 @@
           <div class="yellow-line"></div>
 
           <p class="subheading">
-            An AI-Assisted Mental Health Wellness Support System for Students
+            An AI-Assisted Mental Health Wellness Support System for Gordon College Students
           </p>
         </div>
 

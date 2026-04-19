@@ -1,4 +1,3 @@
-
 main {
   flex:1;
   display:flex;
@@ -13,11 +12,11 @@ main {
 .account-info-separation {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start; /* top-aligned */
+  align-items: flex-start;
   gap: 30px;
   padding: 0 60px;
-  flex-wrap: wrap; /* allow left/right to stay together on zoom out */
-  max-width: 100%; /* ensures it won’t overflow */
+  flex-wrap: wrap;
+  max-width: 100%;
   box-sizing: border-box;
 }
 
@@ -86,12 +85,11 @@ hr {
   gap: 10px;
   font-size: 13px;
   padding-bottom: 15px;
-
 }
 
 .info-item i {
   font-size: 18px;
-  color: #4CAF50; /* pwede mo palitan */
+  color: #4CAF50;
 }
 
 .info-item span {
@@ -99,7 +97,6 @@ hr {
 }
 
 /* RIGHT SIDE */
-
 .right-side {
   display: flex;
   flex-direction: column;
@@ -107,16 +104,16 @@ hr {
   align-items: center;
 }
 
+/* PROFILE INPUT CONTAINER */
 .profile-input-container {
-    background-color: #FFFFFF;
-    box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.09);
-    border: 2px solid #bdbdbd7a;
-    width: 950px;
-    height: 485px;
-    padding-bottom: 300px;
-    border-radius: 10px;
-    transition: 0.15s ease-in-out all;
-    margin-right: 0px;
+  background-color: #FFFFFF;
+  box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.09);
+  border: 2px solid #bdbdbd7a;
+  width: 950px;
+  border-radius: 10px;
+  transition: 0.15s ease-in-out all;
+  margin-right: 0px;
+  padding-bottom: 30px;
 }
 
 .profile-input-container:hover {
@@ -146,19 +143,22 @@ hr {
   opacity: 0.4;
 }
 
+/* INPUT GRID LAYOUT */
 .input-info-container {
   display: flex;
-  gap: 30px; /* space between left and right */
-  padding: 10px 40px;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 40px 10px;
 }
 
-.left-side-input,
-.right-side-input {
-  padding-top: 20px;
-  flex: 1; /* equal width */
-  display: flex;
-  flex-direction: column;
-  gap: 25px; /* space between inputs vertically */
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.full-width-input {
+  grid-column: 1 / -1;
 }
 
 .name-input {
@@ -172,19 +172,44 @@ hr {
   font-weight: 500;
 }
 
-.input-info,
-.input-info select {
+.input-info {
   width: 100%;
   padding: 10px 15px;
   border-radius: 8px;
   border: 2px solid #b4b4b4;
   transition: 0.15s ease-in-out all;
+  background-color: #fff;
+  box-sizing: border-box;
 }
 
-.input-info:focus,
-.input-info select:focus {
+.input-info:focus {
   outline: none;
   border: 2px solid #0E6008;
+}
+
+/* SELECT styling consistent with input */
+select.input-info {
+  appearance: auto;
+  cursor: pointer;
+}
+
+select.input-info:focus {
+  outline: none;
+  border: 2px solid #0E6008;
+}
+
+select.input-info:disabled {
+  background-color: #f5f5f5;
+  color: #aaa;
+  cursor: not-allowed;
+  border-color: #ddd;
+}
+
+/* Disabled state class for program dropdown */
+.input-disabled {
+  background-color: #f5f5f5;
+  color: #aaa;
+  cursor: not-allowed;
 }
 
 .action-btn {
@@ -228,9 +253,7 @@ hr {
   color: white;
 }
 
-
 /* CHANGE PASSWORD */
-
 .password-container {
     background-color: #FFFFFF;
     box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.09);
@@ -257,9 +280,9 @@ hr {
     padding: 20px;
 }
 
-.password-whole-container{
+.password-whole-container {
   display: flex;
-  gap: 30px; /* space between left and right */
+  gap: 30px;
   padding: 10px 40px;
 }
 
@@ -284,10 +307,10 @@ hr {
 
 .password-separation {
   padding-top: 20px;
-  flex: 1; /* equal width */
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 25px; /* space between inputs vertically */
+  gap: 25px;
 }
 
 .password-wrapper {
@@ -342,7 +365,7 @@ input:-webkit-autofill {
     box-shadow: 0 0 0px 1000px white inset !important;
 }
 
-/* Optional: hide IE/Edge legacy icons */
+/* Hide IE/Edge legacy icons */
 input::-ms-reveal {
     display: none;
 }
@@ -352,18 +375,6 @@ input::-ms-reveal {
   display: flex;
   gap: 10px;
   align-items: center;
-}
-
-.password-input {
-  flex: 1;
-  padding: 10px 15px;
-  border-radius: 8px;
-  border: 2px solid #b4b4b4;
-}
-
-.password-input:focus {
-  outline: none;
-  border-color: #0E6008;
 }
 
 .send-btn {
@@ -426,7 +437,7 @@ input::-ms-reveal {
   color: #000;
 }
 
-/* OTP Label with horizontal line */
+/* OTP Label */
 .otp-label-container {
   display: flex;
   align-items: start;

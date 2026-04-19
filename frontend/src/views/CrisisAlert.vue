@@ -1,9 +1,8 @@
 <template>
     <div class="layout">
-        <SidebarStudent />
-
+        <sidebarStudent/>
         <main>
-            <HeaderStudent />
+            <headerStudent />
 
             <div class="main-container">
                 <!-- HEADER -->
@@ -145,8 +144,8 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import SidebarStudent from '@/components/sidebarStudent.vue';
-import HeaderStudent from '@/components/headerStudent.vue';
+import sidebarStudent from '@/components/sidebarStudent.vue';
+import headerStudent from '@/components/headerStudent.vue';
 
 const alerts = ref([
     {

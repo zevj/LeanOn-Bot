@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/studentLogin.vue'
 import Signup from '../views/studentSignup.vue'
-import forgotPass from '../views/forgotPass.vue'
+import forgotPass from '../views/forgotpass.vue'
 import OTPVerification from '../views/OTP.vue'
 import NewPass from '../views/NewPass.vue'
 import OTPFPass from '../views/OTPFPass.vue'
@@ -12,6 +12,8 @@ import CrisisAlert from '../views/CrisisAlert.vue'
 import AdminDashboard from '../views/Admin/Dashboard.vue'
 import EmotionalTrends from '../views/Admin/EmotionalTrends.vue'
 import AdminCrisisAlerts from '../views/Admin/AdminCrisisAlert.vue'
+import AdminConfig from '../views/Admin/Configuration.vue'
+import AdminProfile from '../views/Admin/AdminProfile.vue'
 
 
 const routes = [
@@ -85,8 +87,8 @@ const routes = [
 
   /* ADMIN */
   {
-    path: '/AdminDashboard',
-    name: 'AdminDashboard',
+    path: '/adminDashboard',
+    name: 'adminDashboard',
     component: AdminDashboard,
     meta: { requiresAuth: true, role: 'guidance' }
   },
@@ -97,10 +99,22 @@ const routes = [
     component: EmotionalTrends
   },
 
-   {
+  {
     path: '/AdminCrisisAlerts',
     name: 'AdminCrisisAlerts',
     component: AdminCrisisAlerts
+  },
+
+  {
+    path: '/AdminConfig',
+    name: 'AdminConfig',
+    component: AdminConfig
+  },
+
+  {
+    path: '/AdminProfile',
+    name: 'AdminProfile',
+    component: AdminProfile
   },
 ]
 
