@@ -82,16 +82,6 @@
                 </div>
               </div>
 
-              <div class="info-row">
-                <div class="info-icon-wrap">
-                  <i class='bx bx-calendar'></i>
-                </div>
-                <div class="info-text">
-                  <span class="info-key">Joined</span>
-                  <p class="info-val">{{ profile.joined || 'N/A' }}</p>
-                </div>
-              </div>
-
             </div>
           </div>
 
@@ -113,12 +103,24 @@
 
                 <div class="form-group">
                   <label class="form-label">First Name</label>
-                  <input type="text" class="form-input" v-model="form.first_name" placeholder="Enter first name..." />
+                  <input
+                    type="text"
+                    class="form-input"
+                    v-model="form.first_name"
+                    @input="form.first_name = form.first_name.replace(/[^a-zA-Z\s]/g, '')"
+                    placeholder="Enter first name..."
+                  />
                 </div>
 
                 <div class="form-group">
                   <label class="form-label">Last Name</label>
-                  <input type="text" class="form-input" v-model="form.last_name" placeholder="Enter last name..." />
+                  <input
+                    type="text"
+                    class="form-input"
+                    v-model="form.last_name"
+                    @input="form.last_name = form.last_name.replace(/[^a-zA-Z\s]/g, '')"
+                    placeholder="Enter last name..."
+                  />
                 </div>
 
                 <div class="form-group">
@@ -217,7 +219,7 @@
                 </div>
 
                 <!-- Row 2: Confirm Password (full width) -->
-                <div class="form-group form-group--full">
+                <div class="form-group">
                   <label class="form-label">Confirm New Password</label>
                   <div class="input-icon-wrap">
                     <input

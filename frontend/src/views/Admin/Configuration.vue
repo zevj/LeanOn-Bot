@@ -119,37 +119,6 @@
               />
             </div>
           </div>
-
-          <!-- Allow Anonymous Users -->
-          <div class="setting-card">
-            <div class="setting-info">
-              <h4 class="setting-label">Allow Anonymous Users</h4>
-              <p class="setting-desc">Permit users to chat without logging in</p>
-            </div>
-            <div class="setting-control">
-              <label class="toggle-switch">
-                <input type="checkbox" v-model="settings.allowAnonymous" />
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Crisis Alert Email -->
-          <div class="setting-card">
-            <div class="setting-info">
-              <h4 class="setting-label">Crisis Alert Email</h4>
-              <p class="setting-desc">Email address to notify when a crisis is detected</p>
-            </div>
-            <div class="setting-control">
-              <input
-                type="email"
-                class="setting-input setting-input--text"
-                v-model="settings.crisisEmail"
-                placeholder="admin@school.edu"
-              />
-            </div>
-          </div>
-
         </div>
       </div>
     </main>
