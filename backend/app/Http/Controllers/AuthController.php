@@ -323,7 +323,19 @@ public function resetPassword(Request $request)
 
     public function sendChangePasswordOtp(Request $request)
     {
+        $request->validate([
+            'current_password' => 'required'
+        ]);
+
         $user = $request->user();
+
+        // Verify current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'message' => 'Incorrect current password'
+            ], 401);
+        }
+
         $otp = rand(100000, 999999);
         $expiresAt = now()->addMinutes(2);
 
@@ -367,6 +379,7 @@ public function resetPassword(Request $request)
     {
         // 1. Validate request
         $request->validate([
+            'current_password' => 'required',
             'new_password' => 'required|min:6|confirmed',
             'otp' => 'required'
         ]);
@@ -375,10 +388,17 @@ public function resetPassword(Request $request)
         /** @var \App\Models\User $user */
         $user = Auth::user(); 
 
-        // 3. Find OTP record in PasswordOtp table
+        // 3. Verify current password (redundant but safe)
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'message' => 'Incorrect current password'
+            ], 401);
+        }
+
+        // 4. Find OTP record in PasswordOtp table
         $record = PasswordOtp::where('email', $user->email)->first();
 
-        // 4. Verify OTP
+        // 5. Verify OTP
         if (!$record || !Hash::check($request->otp, $record->otp)) {
             return response()->json(['message' => 'Invalid or missing OTP'], 400);
         }
@@ -387,12 +407,12 @@ public function resetPassword(Request $request)
             return response()->json(['message' => 'OTP expired'], 400);
         }
 
-        // 5. Update Password
+        // 6. Update Password
         // Use Hash::make as requested by user
         $user->password = Hash::make($request->new_password);
         $saved = $user->save();
 
-        // 6. Invalidate OTP
+        // 7. Invalidate OTP
         $record->delete();
 
         if (!$saved) {
