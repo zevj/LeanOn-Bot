@@ -25,8 +25,8 @@
           <!-- Max Session Length -->
           <div class="setting-card">
             <div class="setting-info">
-              <h4 class="setting-label">Max Session Length (minutes)</h4>
-              <p class="setting-desc">Maximum duration for a single chat session</p>
+              <h4 class="setting-label">Inactivity Session Length (minutes)</h4>
+              <p class="setting-desc">Set the maximum inactivity duration for a single chat session</p>
             </div>
             <div class="setting-control">
               <input

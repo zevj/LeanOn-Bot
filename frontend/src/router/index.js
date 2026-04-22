@@ -1,8 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/studentLogin.vue'
-import Signup from '../views/studentSignup.vue'
 import forgotPass from '../views/forgotpass.vue'
-import OTPVerification from '../views/OTP.vue'
 import NewPass from '../views/NewPass.vue'
 import OTPFPass from '../views/OTPFPass.vue'
 import ChatConvo from '../views/ChatConvo.vue'
@@ -35,12 +33,6 @@ const routes = [
   },
 
   {
-    path: '/signup',
-    name: 'signup',
-    component: Signup
-  },
-
-  {
     path: '/forgotPass',
     name: 'forgotPass',
     component: forgotPass
@@ -50,12 +42,6 @@ const routes = [
     path: '/NewPass',
     name: 'NewPass',
     component: NewPass
-  },
-
-  {
-    path: '/OTPVerification',
-    name: 'OTPVerification',
-    component: OTPVerification
   },
 
   {

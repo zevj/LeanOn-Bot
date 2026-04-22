@@ -74,11 +74,6 @@
             Sign in with Google Account
           </button>
 
-          <p class="new-student">
-            New Student?
-            <router-link to="/signup">Learn more about LeanOn Bot</router-link>
-          </p>
-
         </form>
       </div>
 

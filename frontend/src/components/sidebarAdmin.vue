@@ -44,7 +44,7 @@
 
         <div class="menu-item">
           <i class='bx bx-message'></i>
-          <span>Chatbot Responses</span>
+          <span>Log Records</span>
         </div>
       </nav>
 
