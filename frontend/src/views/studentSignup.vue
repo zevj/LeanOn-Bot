@@ -13,107 +13,134 @@
 
         <form class="login-form" @submit.prevent="handleSignup" ref="formRef">
 
-          <!-- First Name -->
-          <div class="form-group input-wrapper" ref="firstNameRef">
-            <label for="firstName">First Name</label>
-            <i class="bx bx-user input-icon"></i>
-            <input
-              type="text"
-              id="firstName"
-              placeholder="Enter your first name..."
-              v-model="firstName"
-              @input="firstName = firstName.replace(/[^a-zA-Z\s]/g, '')"
-            />
-          </div>
+          <!-- 🔥 GRID WRAPPER -->
+          <div class="form-grid">
 
-          <!-- Last Name -->
-          <div class="form-group input-wrapper" ref="lastNameRef">
-            <label for="lastName">Last Name</label>
-            <i class="bx bx-user input-icon"></i>
-            <input type="text" id="lastName" placeholder="Enter your last name..." v-model="lastName" @input="lastName = lastName.replace(/[^a-zA-Z\s]/g, '')"/>
-          </div>
+            <!-- First Name -->
+            <div class="form-group input-wrapper" ref="firstNameRef">
+              <label for="firstName">First Name</label>
+              <i class="bx bx-user input-icon"></i>
+              <input
+                type="text"
+                id="firstName"
+                placeholder="Enter your first name..."
+                v-model="firstName"
+                @input="firstName = firstName.replace(/[^a-zA-Z\s]/g, '')"
+              />
+            </div>
 
-          <!-- Email -->
-          <div class="form-group input-wrapper" ref="emailRef">
-            <label for="email">Email Address</label>
-            <i class="bx bx-envelope input-icon"></i>
-            <input type="text" id="email" placeholder="Enter your email..." v-model="email"/>
-          </div>
+            <!-- Last Name -->
+            <div class="form-group input-wrapper" ref="lastNameRef">
+              <label for="lastName">Last Name</label>
+              <i class="bx bx-user input-icon"></i>
+              <input
+                type="text"
+                id="lastName"
+                placeholder="Enter your last name..."
+                v-model="lastName"
+                @input="lastName = lastName.replace(/[^a-zA-Z\s]/g, '')"
+              />
+            </div>
 
-          <!-- Department -->
-          <div class="form-group input-wrapper" ref="departmentRef">
-            <label for="department">Department</label>
-            <i class="bx bx-buildings input-icon"></i>
-            <select id="department" v-model="department" required @change="onDepartmentChange">
-              <option value="" disabled>Select Department</option>
-              <option value="CAHS">College of Allied Health Studies (CAHS)</option>
-              <option value="CBA">College of Business and Accountancy (CBA)</option>
-              <option value="CCS">College of Computer Studies (CCS)</option>
-              <option value="CEAS">College of Education, Arts, and Sciences (CEAS)</option>
-              <option value="CHTM">College of Hospitality and Tourism Management (CHTM)</option>
-            </select>
-          </div>
+            <!-- Email -->
+            <div class="form-group input-wrapper" ref="emailRef">
+              <label for="email">Email Address</label>
+              <i class="bx bx-envelope input-icon"></i>
+              <input
+                type="text"
+                id="email"
+                placeholder="Enter your email..."
+                v-model="email"
+              />
+            </div>
 
-          <!-- Program -->
-          <div class="form-group input-wrapper" ref="programRef">
-            <label for="program">Program</label>
-            <i class="bx bx-book input-icon"></i>
-            <select id="program" v-model="program" required :disabled="!department">
-              <option value="" disabled>Select Program</option>
-              <option v-for="p in availablePrograms" :key="p" :value="p">{{ p }}</option>
-            </select>
-            <p v-if="!department" class="program-hint" style="color: #888; font-size: 11px; margin-top: -15px; margin-bottom: 10px;">Please select a department to see programs</p>
-          </div>
+            <!-- Department -->
+            <div class="form-group input-wrapper" ref="departmentRef">
+              <label for="department">Department</label>
+              <i class="bx bx-buildings input-icon"></i>
+              <select id="department" v-model="department" required @change="onDepartmentChange">
+                <option value="" disabled>Select Department</option>
+                <option value="CAHS">College of Allied Health Studies (CAHS)</option>
+                <option value="CBA">College of Business and Accountancy (CBA)</option>
+                <option value="CCS">College of Computer Studies (CCS)</option>
+                <option value="CEAS">College of Education, Arts, and Sciences (CEAS)</option>
+                <option value="CHTM">College of Hospitality and Tourism Management (CHTM)</option>
+              </select>
+            </div>
 
-          <!-- Year Level -->
-          <div class="form-group input-wrapper" ref="yearLevelRef">
-            <label for="yearLevel">Year Level</label>
-            <i class="bx bx-list-ul input-icon"></i>
-            <select id="yearLevel" v-model="yearLevel" required>
-              <option value="" disabled>Select Year Level</option>
-              <option value="1st Year">1st Year</option>
-              <option value="2nd Year">2nd Year</option>
-              <option value="3rd Year">3rd Year</option>
-              <option value="4th Year">4th Year</option>
-            </select>
-          </div>
+            <!-- Program -->
+            <div class="form-group input-wrapper" ref="programRef">
+              <label for="program">Program</label>
+              <i class="bx bx-book input-icon"></i>
+              <select id="program" v-model="program" required :disabled="!department">
+                <option value="" disabled>Select Program</option>
+                <option v-for="p in availablePrograms" :key="p" :value="p">{{ p }}</option>
+              </select>
+              <!-- <p v-if="!department" class="program-hint" style="color: #888; font-size: 11px; margin-top: -15px;">
+                Please select a department to see programs
+              </p> -->
+            </div>
 
-          <!-- Password Row -->
-          <div class="password-row">
+            <!-- Year Level -->
+            <div class="form-group input-wrapper" ref="yearLevelRef">
+              <label for="yearLevel">Year Level</label>
+              <i class="bx bx-list-ul input-icon"></i>
+              <select id="yearLevel" v-model="yearLevel" required>
+                <option value="" disabled>Select Year Level</option>
+                <option value="1st Year">1st Year</option>
+                <option value="2nd Year">2nd Year</option>
+                <option value="3rd Year">3rd Year</option>
+                <option value="4th Year">4th Year</option>
+              </select>
+            </div>
 
             <!-- Password -->
             <div class="form-group input-wrapper" ref="passwordRef">
               <label for="password">Create Password</label>
               <i class="bx bx-lock input-icon"></i>
-              <input :type="showPassword ? 'text' : 'password'" id="password" placeholder="Enter your new password..." v-model="password"/>
-              <i :class="showPassword ? 'bx bx-show eye-icon' : 'bx bx-hide eye-icon'" @click="togglePassword"></i>
+              <input
+                :type="showPassword ? 'text' : 'password'"
+                id="password"
+                placeholder="Enter your new password..."
+                v-model="password"
+              />
+              <i class="bx bx-hide eye-icon" @click="togglePassword"></i>
             </div>
 
             <!-- Confirm Password -->
             <div class="form-group input-wrapper" ref="confirmPasswordRef">
               <label for="confirmPassword">Confirm Password</label>
               <i class="bx bx-lock input-icon"></i>
-              <input :type="showConfirmPassword ? 'text' : 'password'" id="confirmPassword" placeholder="Confirm your password..." v-model="confirmPassword"/>
-              <i :class="showConfirmPassword ? 'bx bx-show eye-icon' : 'bx bx-hide eye-icon'" @click="toggleConfirmPassword"></i>
+              <input
+                :type="showConfirmPassword ? 'text' : 'password'"
+                id="confirmPassword"
+                placeholder="Confirm your password..."
+                v-model="confirmPassword"
+              />
+              <i class="bx bx-hide eye-icon" @click="toggleConfirmPassword"></i>
             </div>
 
           </div>
 
+          <!-- BUTTONS -->
           <div class="group-buttons">
-            <LoadingButton type="submit" class="login-button" :loading="isLoading" ref="signupBtnRef">Sign Up</LoadingButton>
+            <LoadingButton type="submit" class="login-button" :loading="isLoading" ref="signupBtnRef">
+              Sign Up
+            </LoadingButton>
 
-            <div ref="backBtnRef">
-               <router-link to="/login" class="back-button" ref="backBtnRef">Back</router-link>
-            </div>
-            
+            <router-link to="/login" class="back-button" ref="backBtnRef">
+              Back
+            </router-link>
           </div>
 
+          <!-- DIVIDER -->
           <div class="divider" ref="dividerRef">
             <span></span>
             <p>or</p>
             <span></span>
           </div>
 
+          <!-- GOOGLE -->
           <button type="button" class="google-signin" ref="googleBtnRef">
             Sign in with Google Account
           </button>
@@ -121,17 +148,15 @@
         </form>
       </div>
 
-      <!-- RIGHT SIDE -->
+      <!-- RIGHT SIDE (unchanged) -->
       <div class="right-container" ref="rightRef">
-        <div class="overlay" ref="overlayRef"></div>
+        <div class="overlay"></div>
 
         <div class="headings">
-          <h1 class="title" ref="rightTitleRef">LeanOn <span>Bot</span></h1>
-          <p class="subtitle" ref="rightSubtitleRef">Always There. Always Ready.</p>
-
-          <div class="yellow-line" ref="lineRef"></div>
-
-          <p class="subheading" ref="subheadingRef">
+          <h1 class="title">LeanOn <span>Bot</span></h1>
+          <p class="subtitle">Always There. Always Ready.</p>
+          <div class="yellow-line"></div>
+          <p class="subheading">
             An AI-Assisted Mental Health Wellness Support System for Students
           </p>
         </div>
@@ -180,11 +205,11 @@ const signupBtnRef = ref(null)
 const backBtnRef = ref(null)
 const dividerRef = ref(null)
 const googleBtnRef = ref(null)
-const overlayRef = ref(null)
-const rightTitleRef = ref(null)
-const rightSubtitleRef = ref(null)
-const subheadingRef = ref(null)
-const lineRef = ref(null)
+// const overlayRef = ref(null)
+// const rightTitleRef = ref(null)
+// const rightSubtitleRef = ref(null)
+// const subheadingRef = ref(null)
+// const lineRef = ref(null)
 
 /* INPUT REFS */
 const firstNameRef = ref(null)
