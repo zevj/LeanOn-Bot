@@ -115,10 +115,7 @@
             <i class='bx bx-archive'></i>
             <span>Archived</span>
           </div>
-          <router-link to="/CrisisAlert" class="modal-item">
-            <i class='bx bx-error-circle'></i>
-            <span class="crisis-text">Crisis Alerts</span>
-          </router-link>
+
           <div class="modal-item logout-item" @click="confirmLogout">
             <i class='bx bx-log-out'></i>
             <span>Logout</span>

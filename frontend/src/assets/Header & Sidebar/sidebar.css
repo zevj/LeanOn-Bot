@@ -201,7 +201,7 @@ hr {
   border-radius: 8px;
   background: none;
   justify-content: space-between;
-  padding: 8px 8px 8px 10px;
+  padding: 10px 8px 8px 10px;
   align-items: flex-start;  /* top-align so dots stay at top when title wraps */
   cursor: pointer;
   transition: 0.15s ease-in-out all;
@@ -228,8 +228,6 @@ hr {
   line-height: 1.4;
   /* clamp to 2 lines max to keep the list tidy */
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .chat-time {

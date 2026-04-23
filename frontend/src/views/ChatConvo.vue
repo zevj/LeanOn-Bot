@@ -13,7 +13,7 @@
                     </div>
 
                     <div class="main-buttons">
-                        <button class="sugguestion-buttons" @click="sendSuggestion('I’m feeling stressed, what would you recommend to calm down?')">I’m feeling stressed, what would you recommend to calm down?</button>
+                        <button class="sugguestion-buttons" @click="sendSuggestion('I\'m feeling stressed, what would you recommend to calm down?')">I'm feeling stressed, what would you recommend to calm down?</button>
                         <button class="sugguestion-buttons" @click="sendSuggestion('I feel anxious about my upcoming exams.')">I feel anxious about my upcoming exams.</button>
                         <button class="sugguestion-buttons" @click="sendSuggestion('I just need someone to talk to right now.')">I just need someone to talk to right now.</button>
                     </div>
@@ -26,8 +26,7 @@
                             <p>{{ msg.text }}</p>
                         </div>
                         <span class="message-time">{{ msg.time }}</span>
-                        
-                        <!-- Quick Replies (only show after specific bot messages if needed, here mimicking the mockup) -->
+
                         <div v-if="msg.isBot && msg.quickReplies && msg.quickReplies.length > 0" class="quick-replies">
                             <button v-for="reply in msg.quickReplies" :key="reply" class="quick-reply-pill" @click="sendSuggestion(reply)">
                                 {{ reply }}
@@ -40,16 +39,38 @@
             <SendChat @send="handleSend"></SendChat>
         </main>
     </div>
+
+    <!-- Terms & Policy Modal — frontend only, zero backend impact -->
+    <TermsModal
+        :visible="showTermsModal"
+        :userId="currentUserId"
+        @accept="onTermsAccepted"
+        @decline="onTermsDeclined"
+    />
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, watch } from 'vue';
+import { ref, computed, nextTick, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import SidebarStudent from '@/components/sidebarStudent.vue';
 import HeaderStudent from '@/components/headerStudent.vue';
 import SendChat from '@/components/SendChat.vue';
+import TermsModal from '@/components/TermsModal.vue';
 import { useChats } from '@/composables/useChats';
+
+// ── Get the logged-in user's ID from localStorage.
+// Adjust 'user' below to whatever key your login stores the user object under.
+// e.g. if your login does: localStorage.setItem('auth_user', JSON.stringify(user))
+// then change it to: localStorage.getItem('auth_user')
+const currentUserId = computed(() => {
+    try {
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        return user?.id ?? 'guest';
+    } catch {
+        return 'guest';
+    }
+});
 
 const messages = ref([]);
 const chatContainer = ref(null);
@@ -58,13 +79,43 @@ const router = useRouter();
 const { addConversation, updateConversation } = useChats();
 const isAutoCreating = ref(false);
 
+// ── Terms Modal ──────────────────────────────────────────────────────────────
+const showTermsModal = ref(false);
+
+// The localStorage key is user-specific so each unique user only sees
+// the modal once per device, and it won't re-appear on every login.
+const termsStorageKey = computed(() => `leanon_terms_v1_${currentUserId.value}`);
+
+onMounted(() => {
+    const alreadyAccepted = localStorage.getItem(termsStorageKey.value);
+    if (!alreadyAccepted) {
+        // First time this user accepts on this device — show the modal.
+        // Hold off loading chat history until they accept.
+        showTermsModal.value = true;
+    } else {
+        // Already accepted — load chat normally, no interruption.
+        fetchHistory(route.query.conversation_id);
+    }
+});
+
+const onTermsAccepted = () => {
+    showTermsModal.value = false;
+    fetchHistory(route.query.conversation_id);
+};
+
+const onTermsDeclined = () => {
+    showTermsModal.value = false;
+    router.push('/login');
+};
+// ────────────────────────────────────────────────────────────────────────────
+
 const getTimeString = () => {
     const now = new Date();
     let hours = now.getHours();
     const minutes = now.getMinutes().toString().padStart(2, '0');
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
-    hours = hours ? hours : 12; 
+    hours = hours ? hours : 12;
     return `${hours}:${minutes}${ampm}`;
 };
 
@@ -94,13 +145,12 @@ const handleSend = async (text) => {
         }
     }
 
-    // Add user message
     messages.value.push({
         text: text,
         isBot: false,
         time: getTimeString(),
     });
-    
+
     scrollToBottom();
 
     try {
@@ -115,10 +165,9 @@ const handleSend = async (text) => {
         });
 
         const replyData = response.data;
-        
-        // Update sidebar's last message optimistically
-        updateConversation(conversationId, { 
-            title: text.substring(0, 50) + (text.length > 50 ? '...' : ''), 
+
+        updateConversation(conversationId, {
+            title: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
             last_message: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
             updated_at: new Date().toISOString()
         });
@@ -141,7 +190,7 @@ const handleSend = async (text) => {
         });
         console.error('API Error:', error);
     }
-    
+
     scrollToBottom();
 };
 
@@ -153,15 +202,15 @@ const fetchHistory = async (conversationId) => {
     try {
         const response = await axios.get(`http://localhost:8000/api/chat/history?conversation_id=${conversationId}`);
         messages.value = response.data.map(msg => [
-            { 
-                text: msg.message, 
-                isBot: false, 
-                time: new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
+            {
+                text: msg.message,
+                isBot: false,
+                time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             },
-            { 
-                text: msg.reply, 
-                isBot: true, 
-                time: new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            {
+                text: msg.reply,
+                isBot: true,
+                time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 quickReplies: msg.is_crisis ? [] : [
                     "I'm feeling stressed",
                     "I'm anxious about exams",
@@ -175,14 +224,10 @@ const fetchHistory = async (conversationId) => {
     }
 };
 
-onMounted(() => {
-    fetchHistory(route.query.conversation_id);
-});
-
 watch(() => route.query.conversation_id, (newId) => {
     if (isAutoCreating.value) {
         isAutoCreating.value = false;
-        return; // skip history fetch to preserve optimistic UI
+        return;
     }
     fetchHistory(newId);
 });
