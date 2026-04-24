@@ -4,8 +4,9 @@
     <!-- Left Logo + Sidebar Toggle -->
     <div class="logo-section">
       <!-- Sidebar Toggle Button -->
-      <i class='bx bx-menu menu-toggle' @click="toggleSidebar"></i>
-
+      <button class="toggle-btn" @click="handleToggleSidebar">
+  ☰
+</button>
       <img src="/leanOnBot.png" class="logo-icon" />
 
       <div class="logo-separation">
@@ -17,18 +18,18 @@
 
     <!-- Right Section -->
     <div class="right-section">
-    
-
+      <!-- Notification Component -->
+      <NotificationPanel @view-all="handleViewAll" />
     </div>
   </header>
 
-  <!-- Include Sidebar and pass state -->
-  <Sidebar :open="openSidebar" @toggle="toggleSidebar" />
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import Sidebar from './sidebarStudent.vue'
+import NotificationPanel from '../components/NotificationPanel.vue'
+
 
 
 // Sidebar state lifted to header
@@ -41,3 +42,4 @@ function toggleSidebar() {
 </script>
 
 <style scoped src="../assets/Header & Sidebar/header.css"></style>
+

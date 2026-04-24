@@ -101,7 +101,7 @@ span {
 .password-wrapper .eye-icon {
     position: absolute;
     right: 26px;
-    top: 36%;
+    top: 50%;
     transform: translateY(-50%);
     cursor: pointer;
     font-size: 1.2rem;

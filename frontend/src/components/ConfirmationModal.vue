@@ -1,16 +1,18 @@
 <template>
-  <transition name="modal">
-    <div v-if="visible" class="modal-overlay" @click="cancel">
-      <div class="modal-container" @click.stop>
-        <h3 class="modal-title">{{ title }}</h3>
-        <p class="modal-message">{{ message }}</p>
-        <div class="modal-buttons">
-          <button class="cancel-btn" @click="cancel">{{ cancelText }}</button>
-          <button :class="['confirm-btn', type]" @click="confirm">{{ confirmText }}</button>
+  <teleport to="body">
+    <transition name="modal">
+      <div v-if="visible" class="confirmation-overlay" @click="cancel">
+        <div class="confirmation-container" @click.stop>
+          <h3 class="confirmation-title">{{ title }}</h3>
+          <p class="confirmation-message">{{ message }}</p>
+          <div class="confirmation-buttons">
+            <button class="confirmation-cancel-btn" @click="cancel">{{ cancelText }}</button>
+            <button :class="['confirmation-confirm-btn', type]" @click="confirm">{{ confirmText }}</button>
+          </div>
         </div>
       </div>
-    </div>
-  </transition>
+    </transition>
+  </teleport>
 </template>
 
 <script setup>
@@ -22,94 +24,114 @@ defineProps({
   message: { type: String, default: 'Are you sure you want to proceed?' },
   confirmText: { type: String, default: 'Confirm' },
   cancelText: { type: String, default: 'Cancel' },
-  type: { type: String, default: 'primary' } // 'primary' or 'danger'
+  type: { type: String, default: 'primary' }
 })
 
 const emit = defineEmits(['confirm', 'cancel'])
-
-const confirm = () => {
-  emit('confirm')
-}
-
-const cancel = () => {
-  emit('cancel')
-}
+const confirm = () => emit('confirm')
+const cancel = () => emit('cancel')
 </script>
 
 <style scoped>
-.modal-overlay {
+.confirmation-overlay {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 1000;
+  justify-content: center;
+  z-index: 999999;
 }
 
-.modal-container {
+.confirmation-container {
   background: white;
-  padding: 24px;
-  border-radius: 12px;
+  padding: 28px 24px;
+  border-radius: 14px;
   width: 90%;
   max-width: 400px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   text-align: center;
 }
 
-.modal-title {
-  font-size: 1.25rem;
-  margin-bottom: 12px;
-  color: #333;
+.confirmation-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: #1a1a1a;
 }
 
-.modal-message {
-  font-size: 0.95rem;
+.confirmation-message {
+  font-size: 0.92rem;
   color: #666;
   margin-bottom: 24px;
+  line-height: 1.5;
 }
 
-.modal-buttons {
+.confirmation-buttons {
   display: flex;
   justify-content: center;
   gap: 12px;
 }
 
-button {
-  padding: 8px 24px;
+.confirmation-cancel-btn {
+  padding: 9px 24px;
   border-radius: 8px;
   border: none;
   font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-button:hover {
-  opacity: 0.8;
-}
-
-.cancel-btn {
   background: #e2e8f0;
   color: #475569;
+  transition: background 0.15s;
 }
 
-.confirm-btn.primary {
-  background: #007bff;
+.confirmation-cancel-btn:hover {
+  background: #cbd5e1;
+}
+
+.confirmation-confirm-btn {
+  padding: 9px 24px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
   color: white;
+  transition: opacity 0.15s;
 }
 
-.confirm-btn.danger {
+.confirmation-confirm-btn:hover {
+  opacity: 0.88;
+}
+
+.confirmation-confirm-btn.primary {
+  background: #0E6008;
+}
+
+.confirmation-confirm-btn.danger {
   background: #ef4444;
-  color: white;
 }
 
-/* Transitions */
-.modal-enter-active, .modal-leave-active {
-  transition: opacity 0.2s;
+/* Transition */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.2s ease;
 }
-.modal-enter-from, .modal-leave-to {
+
+.modal-enter-active .confirmation-container,
+.modal-leave-active .confirmation-container {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .confirmation-container,
+.modal-leave-to .confirmation-container {
+  transform: scale(0.95);
   opacity: 0;
 }
 </style>

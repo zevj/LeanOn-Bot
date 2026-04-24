@@ -1,9 +1,12 @@
 <template>
     <div class="layout">
-        <SidebarStudent></SidebarStudent>
+        <SidebarStudent
+            :open="sidebarOpen"
+            @toggle="sidebarOpen = !sidebarOpen"
+        />
 
         <main>
-            <HeaderStudent></HeaderStudent>
+            <HeaderStudent @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
             <div class="main-container">
                 <div class="account-info-separation">
@@ -287,6 +290,7 @@ import { useToast } from 'vue-toastification'
 import axios from 'axios'
 
 const toast = useToast();
+const sidebarOpen = ref(false)
 const isOTPVerified = ref(false)
 const isLoading = ref(true)
 const isSaving = ref(false)

@@ -1,15 +1,39 @@
 <template>
-  <div>
-    <!-- Overlay -->
-    <div v-if="open" class="overlay" @click="$emit('toggle')"></div>
+  <aside :class="[
+  'sidebar',
+  { active: open, collapsed: !open }
+]">
 
-    <!-- Sidebar -->
-    <aside :class="['sidebar', { active: open }]">
+    <!-- 🔻 COLLAPSED RAIL -->
+    <div v-if="!open" class="rail-nav">
 
-      <!-- CLOSE -->
-      <div class="close-sidebar" @click="$emit('toggle')">
-        <i class='bx bx-x'></i>
-      </div>
+      <button class="sidebar-toggle rail-toggle" @click="handleToggle">
+        <i class='bx bx-dock-left'></i>
+      </button>
+
+      <router-link to="/AdminDashboard" class="rail-btn">
+        <i class='bx bx-grid-alt'></i>
+      </router-link>
+
+      <router-link to="/AdminCrisisAlerts" class="rail-btn">
+        <i class='bx bx-shield'></i>
+      </router-link>
+
+      <router-link to="/EmotionalTrends" class="rail-btn">
+        <i class='bx bx-line-chart'></i>
+      </router-link>
+
+      <div class="rail-divider"></div>
+
+      <!-- 👇 BOTTOM AVATAR -->
+      <button class="rail-btn bottom-avatar" @click="showLogoutModal = true">
+        <img src="/leanOnBot.png" />
+      </button>
+
+    </div>
+
+    <!-- 🔻 EXPANDED SIDEBAR -->
+    <div v-else class="sidebar-full">
 
       <!-- HEADER -->
       <div class="sidebar-top">
@@ -21,6 +45,10 @@
           <h3>LeanOn Bot</h3>
           <span>Admin Panel</span>
         </div>
+
+        <button class="sidebar-toggle" @click="handleToggle">
+          <i class='bx bx-dock-left'></i>
+        </button>
       </div>
 
       <!-- MENU -->
@@ -60,9 +88,9 @@
         </div>
       </div>
 
-    </aside>
+    </div>
 
-    <!-- MODAL -->
+    <!-- MODAL (UNCHANGED) -->
     <transition name="modal">
       <div v-if="showLogoutModal" class="modal-overlay" @click="closeModal">
         <div class="modal-container" @click.stop>
@@ -74,44 +102,43 @@
             </router-link>
           </div>
 
-          <div class="modal-item" @click="openArchivedModal">
+          <div class="modal-item">
             <i class='bx bx-cog'></i>
             <router-link to="/AdminConfig" class="my-account">
-            <span>Configuration</span>
+              <span>Configuration</span>
             </router-link>
           </div>
 
           <div class="modal-item logout-item" @click="confirmLogout">
             <i class='bx bx-log-out'></i>
-            <router-link to="/MyAccount" class="logout-item">
             <span>Logout</span>
-            </router-link>
           </div>
 
         </div>
       </div>
     </transition>
 
-  </div>
+  </aside>
 </template>
 
 <script setup>
 import { ref } from "vue"
 
-defineProps({
+const props = defineProps({
   open: Boolean
 })
 
-defineEmits(["toggle"])
+const emit = defineEmits(["toggle"])
 
 const showLogoutModal = ref(false)
 
-const closeModal = () => {
-  showLogoutModal.value = false
+/* optional safety toggle handler */
+const handleToggle = () => {
+  emit("toggle")
 }
 
-const openArchivedModal = () => {
-  console.log("Open Configuration Modal")
+const closeModal = () => {
+  showLogoutModal.value = false
 }
 
 const confirmLogout = () => {

@@ -1,9 +1,12 @@
 <template>
     <div class="layout">
-        <SidebarStudent></SidebarStudent>
+        <SidebarStudent
+            :open="sidebarOpen"
+            @toggle="sidebarOpen = !sidebarOpen"
+        />
 
-        <main>
-            <HeaderStudent></HeaderStudent>
+        <main class="main-area">
+            <HeaderStudent @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
             <div class="main-container">
                 <!-- Empty State -->
@@ -36,11 +39,10 @@
                 </div>
             </div>
 
-            <SendChat @send="handleSend"></SendChat>
+            <SendChat @send="handleSend" />
         </main>
     </div>
 
-    <!-- Terms & Policy Modal — frontend only, zero backend impact -->
     <TermsModal
         :visible="showTermsModal"
         :userId="currentUserId"
@@ -59,10 +61,9 @@ import SendChat from '@/components/SendChat.vue';
 import TermsModal from '@/components/TermsModal.vue';
 import { useChats } from '@/composables/useChats';
 
-// ── Get the logged-in user's ID from localStorage.
-// Adjust 'user' below to whatever key your login stores the user object under.
-// e.g. if your login does: localStorage.setItem('auth_user', JSON.stringify(user))
-// then change it to: localStorage.getItem('auth_user')
+// ── Sidebar state
+const sidebarOpen = ref(false)
+
 const currentUserId = computed(() => {
     try {
         const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -79,21 +80,15 @@ const router = useRouter();
 const { addConversation, updateConversation } = useChats();
 const isAutoCreating = ref(false);
 
-// ── Terms Modal ──────────────────────────────────────────────────────────────
+// ── Terms Modal
 const showTermsModal = ref(false);
-
-// The localStorage key is user-specific so each unique user only sees
-// the modal once per device, and it won't re-appear on every login.
 const termsStorageKey = computed(() => `leanon_terms_v1_${currentUserId.value}`);
 
 onMounted(() => {
     const alreadyAccepted = localStorage.getItem(termsStorageKey.value);
     if (!alreadyAccepted) {
-        // First time this user accepts on this device — show the modal.
-        // Hold off loading chat history until they accept.
         showTermsModal.value = true;
     } else {
-        // Already accepted — load chat normally, no interruption.
         fetchHistory(route.query.conversation_id);
     }
 });
@@ -107,7 +102,6 @@ const onTermsDeclined = () => {
     showTermsModal.value = false;
     router.push('/login');
 };
-// ────────────────────────────────────────────────────────────────────────────
 
 const getTimeString = () => {
     const now = new Date();
@@ -145,12 +139,7 @@ const handleSend = async (text) => {
         }
     }
 
-    messages.value.push({
-        text: text,
-        isBot: false,
-        time: getTimeString(),
-    });
-
+    messages.value.push({ text, isBot: false, time: getTimeString() });
     scrollToBottom();
 
     try {
@@ -158,10 +147,7 @@ const handleSend = async (text) => {
             message: text,
             conversation_id: conversationId
         }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
         });
 
         const replyData = response.data;
@@ -195,10 +181,7 @@ const handleSend = async (text) => {
 };
 
 const fetchHistory = async (conversationId) => {
-    if (!conversationId) {
-        messages.value = [];
-        return;
-    }
+    if (!conversationId) { messages.value = []; return; }
     try {
         const response = await axios.get(`http://localhost:8000/api/chat/history?conversation_id=${conversationId}`);
         messages.value = response.data.map(msg => [
@@ -225,16 +208,11 @@ const fetchHistory = async (conversationId) => {
 };
 
 watch(() => route.query.conversation_id, (newId) => {
-    if (isAutoCreating.value) {
-        isAutoCreating.value = false;
-        return;
-    }
+    if (isAutoCreating.value) { isAutoCreating.value = false; return; }
     fetchHistory(newId);
 });
 
-const sendSuggestion = (text) => {
-    handleSend(text);
-};
+const sendSuggestion = (text) => handleSend(text);
 </script>
 
 <style scoped src="../assets/users/ChatConvo.css"></style>

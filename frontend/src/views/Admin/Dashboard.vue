@@ -1,9 +1,13 @@
 <template>
     <div class="layout">
-        <SidebarAdmin />
+        <!-- Sidebar -->
+        <SidebarAdmin
+            :open="sidebarOpen"
+@toggle="sidebarOpen = !sidebarOpen"
+        />
 
-        <main>
-            <HeaderAdmin />
+        <main class="main-area">
+            <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
             <div class="main-container">
 
@@ -11,6 +15,7 @@
                     <h1 class="title">Dashboard Overview</h1>
                     <p class="subtext">Usage statistics and interaction analytics</p>
                 </div>
+
                 <!-- STATS -->
                 <div class="whole-stat-card">
                     <div class="high-stat-card">
@@ -36,33 +41,33 @@
                         </div>
                         <div class="icon-bg-moderate"><i class="bx bx-time-five"></i></div>
                     </div>
-
-                    <!-- <div class="low-stat-card">
-                        <div class="stat-card-title-low">
-                            <h4 class="title-stat">Low</h4>
-                            <p class="stat-number">12</p>
-                        </div>
-                        <div class="icon-bg-low"><i class="bx bx-check-shield"></i></div>
-                    </div> -->
                 </div>
 
                 <div class="graph-stats">
                     <DailyInteractionsChart />
-                    <MonthlyTrendChart/>
+                    <MonthlyTrendChart />
                 </div>
 
             </div>
         </main>
-
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import SidebarAdmin from '@/components/sidebarAdmin.vue';
 import HeaderAdmin from '@/components/headerAdmin.vue';
 import DailyInteractionsChart from '@/components/DailyInteractionsChart.vue';
 import MonthlyTrendChart from '@/components/MonthlyTrendChart.vue';
+
+
+
+/* ✅ Sidebar state (same pattern as ChatConvo.vue) */
+const sidebarOpen = ref(false);
+
+const toggleSidebar = () => {
+    sidebarOpen.value = !sidebarOpen.value;
+};
 </script>
 
 <style scoped src="@/assets/admin/adminDashboard.css"></style>

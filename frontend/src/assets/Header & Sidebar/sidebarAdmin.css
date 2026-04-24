@@ -1,19 +1,80 @@
-/* SIDEBAR */
 .sidebar {
   width: 280px;
+  min-width: 280px;
   background: #064e03;
   color: #e5ffe7;
   display: flex;
   flex-direction: column;
-  position: fixed;
+  height: 100vh;
   top: 0;
-  left: -280px;
-  height: 100%;
+  flex-shrink: 0;
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              min-width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              left 0.3s ease;
+
+  overflow: hidden;
   z-index: 1001;
-  transition: 0.3s;
   padding: 20px 16px;
 }
 
+/* ── COLLAPSED RAIL MODE ── */
+.sidebar.collapsed .menu-item span,
+.sidebar.collapsed .menu-label,
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .subtext {
+  display: none;
+}
+
+.sidebar.collapsed .menu-item {
+  justify-content: center;
+  padding: 12px;
+}
+
+.sidebar.collapsed .sidebar-top {
+  justify-content: center;
+}
+
+.sidebar.collapsed .logo-box {
+  margin: 0 auto;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 16px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  color: #e5ffe7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  transition: 0.15s ease;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+/* OPEN STATE */
+.sidebar.active {
+  left: 0;
+}
+
+/* when expanded */
+.sidebar:not(.collapsed) {
+    width: 280px;
+}
+
+/* COLLAPSED STATE (NEW - from student system) */
+.sidebar.collapsed {
+  width: 64px;
+  min-width: 64px;
+}
 .sidebar.active {
   left: 0;
 }
