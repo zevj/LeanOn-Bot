@@ -1,4 +1,9 @@
 <template>
+  <OtpModal
+  v-model="showOtp"
+  :email="username"
+  @verified="onOtpVerified"
+/>
   <main ref="mainRef">
     <div class="login-container" ref="containerRef">
 
@@ -77,11 +82,6 @@
             Sign in with Google Account
           </button>
 
-          <p class="new-student">
-            New Student?
-            <router-link to="/signup">Learn more about LeanOn Bot</router-link>
-          </p>
-
         </form>
       </div>
 
@@ -138,6 +138,9 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { gsap } from 'gsap'
 import LoadingButton from '@/views/loadingButton.vue'
+import OtpModal from '@/components/OtpModal.vue'
+
+const showOtp = ref(false)
 
 const username = ref('')
 const password = ref('')
@@ -172,22 +175,23 @@ const handleLogin = async () => {
 
     localStorage.setItem('token', res.data.token)
     localStorage.setItem('user', JSON.stringify(res.data.user))
-    
-    toast.success('Login successful!')
 
-    const role = res.data.user.role || 'student'
-    
-    if (role === 'guidance') {
-      router.push('/adminDashboard')
-    } else {
-      router.push('/ChatConvo')
-    }
+    // ❗ STOP redirect here
+    // 👉 SHOW OTP FIRST
+    showOtp.value = true
+
+    toast.success('OTP sent to your email!')
 
   } catch (err) {
     toast.error(err.response?.data?.message || 'Login failed!')
   } finally {
     isLoading.value = false
   }
+}
+
+const onOtpVerified = () => {
+  const role = JSON.parse(localStorage.getItem('user'))?.role || 'student'
+  role === 'guidance' ? router.push('/adminDashboard') : router.push('/ChatConvo')
 }
 
 /* =========================

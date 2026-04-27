@@ -194,7 +194,7 @@ const alerts = ref([
         message: "I just feel like I don't want to live anymore... everything feels pointless and I want to end it all.",
         keywords: ["don't want to live", 'end it all'],
         user: 'Anonymous #1041',
-        email: 'student1@gordoncollege.edu.ph',
+        email: '2023*****@gordoncollege.edu.ph',
     },
     {
         id: 2,
@@ -204,7 +204,7 @@ const alerts = ref([
         message: "I feel completely worthless. No one understands what I'm going through.",
         keywords: ['worthless', 'no one understands'],
         user: 'Anonymous #1038',
-        email: 'student2@gordoncollege.edu.ph',
+        email: '2023*****@gordoncollege.edu.ph',
     },
     {
         id: 3,
@@ -214,7 +214,7 @@ const alerts = ref([
         message: "I'm breaking down and I can't cope with everything anymore.",
         keywords: ['breaking down', "can't cope"],
         user: 'Anonymous #1035',
-        email: 'student3@gordoncollege.edu.ph',
+        email: '2023*****@gordoncollege.edu.ph',
     },
 ]);
 
