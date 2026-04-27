@@ -2,8 +2,24 @@
   <main>
     <div class="login-container" ref="containerRef">
 
+      <!-- Blur orb decorations — CSS hides these on desktop, shows on mobile -->
+      <div class="mobile-bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+        <div class="gradient-circle"></div>
+      </div>
+
       <!-- LEFT SIDE -->
       <div class="left-container" ref="leftRef">
+
+        <!-- Mobile-only brand badge -->
+        <div class="mobile-brand" ref="mobileBrandRef">
+          <div class="mobile-brand-dot"></div>
+          <span class="mobile-brand-label">LeanOn Bot &mdash; Mental Wellness Support</span>
+        </div>
+
         <h1 class="login-title" ref="titleRef">
           Forgot your <span>Password?</span>
         </h1>
@@ -93,7 +109,7 @@
 
         <div class="footer">
           <div class="footer-container">
-            <div class="features" v-for="(f,i) in features" :key="i" ref="setFeatureRef">
+            <div class="features" v-for="(f,i) in features" :key="i" :ref="setFeatureRef">
               <div class="green-circle"></div>
               <p class="feature-text">{{ f }}</p>
             </div>
@@ -180,30 +196,75 @@ const handleResetPassword = async () => {
   }
 }
 
-/* ANIMATION */
-const containerRef = ref(null)
-const leftRef = ref(null)
-const rightRef = ref(null)
-const titleRef = ref(null)
-const subtitleRef = ref(null)
-const newPassRef = ref(null)
-const confirmPassRef = ref(null)
-const enterBtnRef = ref(null)
-const backBtnRef = ref(null)
+/* ANIMATION REFS */
+const containerRef    = ref(null)
+const leftRef         = ref(null)
+const rightRef        = ref(null)
+const titleRef        = ref(null)
+const subtitleRef     = ref(null)
+const newPassRef      = ref(null)
+const confirmPassRef  = ref(null)
+const enterBtnRef     = ref(null)
+const backBtnRef      = ref(null)
+const mobileBrandRef  = ref(null)   // ← new
 
 const features = ['24/7 Available', 'Student Privacy', 'Fully Confidential']
-const featureRefs = ref([])
+const featureRefs  = ref([])
 const setFeatureRef = el => { if (el) featureRefs.value.push(el) }
 
 onMounted(async () => {
   await nextTick()
 
+  const isMobile = window.innerWidth <= 768
+
   const tl = gsap.timeline({
-    defaults: { duration: 0.6, ease: "power2.out" }
+    defaults: { duration: 0.6, ease: 'power2.out' }
   })
 
-  tl.from(leftRef.value, { x: -50, opacity: 0 }, 0)
-  tl.from(titleRef.value, { y: 30, opacity: 0 }, 0.1)
+  if (isMobile) {
+    // Fade in orbs
+    gsap.from('.orb', {
+      opacity: 0,
+      scale: 0.6,
+      duration: 1.4,
+      stagger: 0.25,
+      ease: 'power2.out'
+    })
+
+    // Animate the moving gradient circle
+    gsap.from('.gradient-circle', {
+      opacity: 0,
+      scale: 0.5,
+      duration: 1.8,
+      ease: 'power2.out',
+      delay: 0.3
+    })
+
+    // Mobile brand badge
+    if (mobileBrandRef.value) {
+      tl.from(mobileBrandRef.value, { y: -12, opacity: 0 }, 0.1)
+    }
+
+    tl.from(leftRef.value, { y: 28, opacity: 0 }, 0)
+
+  } else {
+    // Desktop — original slide-in, untouched
+    tl.from(leftRef.value,  { x: -50, opacity: 0 }, 0)
+    tl.from(rightRef.value, { x:  50, opacity: 0 }, 0)
+
+    tl.from('.overlay',     { opacity: 0        }, 0.3)
+    tl.from('.title',       { y: 50, opacity: 0 }, 0.4)
+    tl.from('.subtitle',    { y: 25, opacity: 0 }, 0.5)
+    tl.from('.yellow-line', { width: 0, opacity: 0 }, 0.6)
+    tl.from('.subheading',  { y: 25, opacity: 0 }, 0.7)
+
+    if (featureRefs.value.length) {
+      tl.from(featureRefs.value, { y: 25, opacity: 0, stagger: 0.2 }, 0.9)
+    }
+  }
+
+  // These run on both mobile and desktop
+  tl.from(titleRef.value,    { y: 30, opacity: 0 }, 0.1)
   tl.from(subtitleRef.value, { y: 20, opacity: 0 }, 0.2)
 
   tl.from([newPassRef.value, confirmPassRef.value], {

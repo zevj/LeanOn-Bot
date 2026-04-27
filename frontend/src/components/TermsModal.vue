@@ -3,8 +3,10 @@
     <Transition name="modal-fade">
       <div v-if="visible" class="terms-overlay">
         <div class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-title">
-
           <!-- Header -->
+                     <button class="modal-close-btn" @click="handleClose">
+            <i class='bx bx-x'></i>
+          </button>
           <div class="terms-header">
             <div class="terms-logo">
               <img src="/leanOnBot.png" class="logo-icon" alt="LeanOn Bot Logo" />
@@ -82,16 +84,15 @@
           <!-- Footer -->
           <div class="terms-footer">
             <div class="checkboxes">
-              <label class="checkbox-label" :class="{ checked: check1 }" @click="check1 = !check1">
-                <span class="custom-check">
-                  <svg v-if="check1" viewBox="0 0 12 10" fill="none">
-                    <path d="M1 5l3.5 3.5L11 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-                <span class="check-text">I understand that LeanOn Bot is <strong>not a substitute</strong> for professional mental health care or emergency services.</span>
-              </label>
 
-              <label class="checkbox-label" :class="{ checked: check2 }" @click="check2 = !check2">
+              <label 
+  class="checkbox-label"
+  :class="{ 
+    checked: check2, 
+    disabled: hasAccepted 
+  }"
+  @click="toggleCheck"
+>
                 <span class="custom-check">
                   <svg v-if="check2" viewBox="0 0 12 10" fill="none">
                     <path d="M1 5l3.5 3.5L11 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -122,49 +123,93 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false
-  },
-  // Pass the logged-in user's ID (e.g. from auth store) so the key is user-specific.
-  // This ensures the modal only shows once per user per device, not per session.
+  visible: Boolean,
   userId: {
     type: [String, Number],
     default: 'guest'
   }
-});
+})
 
-const emit = defineEmits(['accept', 'decline']);
+const emit = defineEmits(['accept', 'decline', 'close'])
+const router = useRouter()
 
-const router = useRouter();
-const check1 = ref(false);
-const check2 = ref(false);
-const hasScrolled = ref(false);
+/* ─────────────────────────────
+   STORAGE KEYS (per user)
+───────────────────────────── */
+const acceptedKey = `leanon_terms_accepted_${props.userId}`
+const checkedKey = `leanon_terms_checked_${props.userId}`
 
-const canAccept = computed(() => check1.value && check2.value);
+/* ─────────────────────────────
+   STATES
+───────────────────────────── */
+const hasAccepted = ref(false)
+const check2 = ref(false)
+const hasScrolled = ref(false)
 
+/* ─────────────────────────────
+   INIT STATE
+───────────────────────────── */
+onMounted(() => {
+  hasAccepted.value = localStorage.getItem(acceptedKey) === 'true'
+  check2.value = localStorage.getItem(checkedKey) === 'true'
+})
+
+/* ─────────────────────────────
+   COMPUTED LOGIC
+───────────────────────────── */
+const canAccept = computed(() => {
+  return check2.value && !hasAccepted.value
+})
+
+/* ─────────────────────────────
+   CHECKBOX TOGGLE
+───────────────────────────── */
+const toggleCheck = () => {
+  if (hasAccepted.value) return // 🔒 LOCK
+
+  check2.value = !check2.value
+  localStorage.setItem(checkedKey, check2.value)
+}
+
+/* ─────────────────────────────
+   SCROLL
+───────────────────────────── */
 const handleScroll = (e) => {
-  if (e.target.scrollTop > 80) hasScrolled.value = true;
-};
+  if (e.target.scrollTop > 80) {
+    hasScrolled.value = true
+  }
+}
 
-// localStorage key is tied to the specific user ID.
-// Once accepted on a device, the modal will never show again for that user.
-const storageKey = computed(() => `leanon_terms_v1_${props.userId}`);
-
+/* ─────────────────────────────
+   ACCEPT TERMS
+───────────────────────────── */
 const handleAccept = () => {
-  if (!canAccept.value) return;
-  localStorage.setItem(storageKey.value, 'true');
-  emit('accept');
-};
+  if (!canAccept.value) return
 
+  localStorage.setItem(acceptedKey, 'true')
+  hasAccepted.value = true
+
+  emit('accept') // close modal in parent
+}
+
+/* ─────────────────────────────
+   DECLINE
+───────────────────────────── */
 const handleDecline = () => {
-  emit('decline');
-  router.push('/login');
-};
+  emit('decline')
+  router.push('/login')
+}
+
+/* ─────────────────────────────
+   CLOSE MODAL (X button)
+───────────────────────────── */
+const handleClose = () => {
+  emit('close')
+}
 </script>
 
 <style scoped>
@@ -172,7 +217,7 @@ const handleDecline = () => {
 .terms-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 999999;
   background: rgba(8, 24, 8, 0.72);
   backdrop-filter: blur(8px);
   display: flex;
@@ -190,6 +235,7 @@ const handleDecline = () => {
   max-width: 600px;
   max-height: 92vh;
   display: flex;
+  position: relative;
   flex-direction: column;
   overflow: hidden;
   box-shadow:
@@ -246,7 +292,6 @@ const handleDecline = () => {
 .terms-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 3px 0;
   min-height: 0;
 }
 
@@ -265,21 +310,20 @@ const handleDecline = () => {
 
 /* Sections */
 .terms-section {
-  padding-bottom: 18px;
+  padding: 20px 20px;
   border-bottom: 1px solid #edf3ec;
-  margin-bottom: 18px;
+  margin: 0; /* remove uneven spacing */
 }
 
 .terms-section:last-of-type {
   border-bottom: none;
-  margin-bottom: 0;
 }
 
 .terms-section h3 {
   font-size: 11px;
   font-weight: 700;
   color: #0E6008;
-  margin: 0 0 10px;
+  margin: 0 0 8px; /* tighter + consistent */
   text-transform: uppercase;
   letter-spacing: 0.9px;
   display: flex;
@@ -305,8 +349,8 @@ const handleDecline = () => {
 .terms-section p {
   font-size: 13.5px;
   color: #374535;
-  line-height: 1.78;
-  margin: 0 0 10px;
+  line-height: 1.75;
+  margin: 0 0 8px;
 }
 
 .terms-section p:last-child {
@@ -513,5 +557,43 @@ const handleDecline = () => {
 .modal-fade-leave-to .terms-modal {
   transform: translateY(10px) scale(0.98);
   opacity: 0;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  background: white;
+  border-radius: 50%;
+
+  cursor: pointer;
+  font-size: 18px;
+
+  color: #0E6008;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+
+  z-index: 9999;
+}
+
+.modal-close-btn:hover {
+  background: #f2f7f1;
+  transform: scale(1.05);
+}
+.checkbox-label.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.btn-accept:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

@@ -1,28 +1,37 @@
 <template>
   <aside :class="['sidebar', { collapsed: !open }]">
 
-    <!-- ── COLLAPSED RAIL ── -->
-    <div v-if="!open" class="rail-nav">
-  <button class="sidebar-toggle rail-toggle" @click="$emit('toggle')" title="Open Sidebar">
+<!-- ── COLLAPSED RAIL ── -->
+    <div 
+  v-if="!open" 
+  class="rail-nav"
+  @click="handleRailClick"
+>
+  <button
+    class="sidebar-toggle rail-toggle"
+    @click.stop="$emit('toggle')"
+  >
     <i class='bx bx-dock-left'></i>
   </button>
 
-  <button class="rail-btn" @click="createNewChat" title="New Chat">
+  <button class="rail-btn" @click.stop="createNewChat">
     <i class='bx bx-message-square-add'></i>
   </button>
 
-  <button class="rail-btn" @click="openSearchModal" title="Search">
+  <button class="rail-btn" @click.stop="openSearchModal">
     <i class='bx bx-search'></i>
   </button>
 
-  <button class="rail-btn" @click="openSavedModal" title="Saved">
+  <button class="rail-btn" @click.stop="openSavedModal">
     <i class='bx bx-bookmark'></i>
   </button>
 
   <div class="rail-divider"></div>
 
-  <!-- 👇 ADD THIS CLASS -->
-  <button class="rail-btn rail-avatar bottom-avatar" @click="openModal" title="Account">
+  <button 
+    class="rail-btn rail-avatar bottom-avatar" 
+    @click.stop="openModal"
+  >
     <img :src="'/leanOnBot.png'" />
   </button>
 </div>
@@ -42,7 +51,7 @@
 
       <nav class="menu">
         <div class="button-container">
-          <div class="new-convo-btn" @click="createNewChat">
+          <div class="new-convo-btn" @click.stop="createNewChat">
             <i class='bx bx-message-square-add'></i>
             New Chat
           </div>
@@ -105,6 +114,7 @@
         </div>
         <div class="footer-buttons">
           <button class="archive-btn" @click="openArchivedModal">Archived</button>
+
           <button class="logout-btn" @click="openModal">Logout</button>
         </div>
       </div>
@@ -131,10 +141,18 @@
             <i class='bx bx-user'></i>
             <router-link to="/MyAccount" class="my-account">My Account</router-link>
           </div>
+
+          <!-- NEW BUTTON -->
+           <div class="modal-item" @click="openTermsModal">
+           <i class='bx bx-info-circle'></i>
+            <span>Terms & Privacy</span>
+          </div>
+
           <div class="modal-item" @click="openArchivedModal">
             <i class='bx bx-archive'></i>
             <span>Archived</span>
           </div>
+
           <div class="modal-item logout-item" @click="confirmLogout">
             <i class='bx bx-log-out'></i>
             <span>Logout</span>
@@ -248,6 +266,13 @@
       @cancel="cancelConfirm"
     />
 
+    <TermsModal
+  :visible="showTermsModal"
+  :userId="userProfile.email || 'guest'"
+  @accept="closeTermsModal"
+  @close="closeTermsModal"
+/>
+
   </aside>
 </template>
 
@@ -258,11 +283,29 @@ import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useChats } from '@/composables/useChats'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
+import TermsModal from '@/components/TermsModal.vue';
 import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
+
+const showTermsModal = ref(false)
+
+const openTermsModal = () => {
+  showTermsModal.value = true
+}
+
+const closeTermsModal = () => {
+  showTermsModal.value = false
+}
+
+const handleRailClick = (e) => {
+  // ignore buttons and their children (icons, img, etc.)
+  if (e.target.closest('button')) return
+
+  emit('toggle')
+}
 
 const emit = defineEmits(['toggle', 'select-chat'])
 defineProps({ open: Boolean })

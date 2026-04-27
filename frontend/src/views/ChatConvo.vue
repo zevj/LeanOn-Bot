@@ -48,6 +48,7 @@
         :userId="currentUserId"
         @accept="onTermsAccepted"
         @decline="onTermsDeclined"
+        @close="showTermsModal = false"
     />
 </template>
 
@@ -82,26 +83,22 @@ const isAutoCreating = ref(false);
 
 // ── Terms Modal
 const showTermsModal = ref(false);
-const termsStorageKey = computed(() => `leanon_terms_v1_${currentUserId.value}`);
-
-onMounted(() => {
-    const alreadyAccepted = localStorage.getItem(termsStorageKey.value);
-    if (!alreadyAccepted) {
-        showTermsModal.value = true;
-    } else {
-        fetchHistory(route.query.conversation_id);
-    }
-});
 
 const onTermsAccepted = () => {
-    showTermsModal.value = false;
-    fetchHistory(route.query.conversation_id);
-};
+    showTermsModal.value = false
+
+    // reload chat after accept
+    fetchHistory(route.query.conversation_id)
+}
 
 const onTermsDeclined = () => {
     showTermsModal.value = false;
     router.push('/login');
 };
+
+onMounted(() => {
+    showTermsModal.value = true
+})
 
 const getTimeString = () => {
     const now = new Date();
@@ -207,10 +204,18 @@ const fetchHistory = async (conversationId) => {
     }
 };
 
-watch(() => route.query.conversation_id, (newId) => {
-    if (isAutoCreating.value) { isAutoCreating.value = false; return; }
-    fetchHistory(newId);
-});
+watch(currentUserId, (id) => {
+    if (!id) return
+
+    const accepted = localStorage.getItem(`leanon_terms_accepted_${id}`)
+
+    if (accepted !== 'true') {
+        showTermsModal.value = true
+    } else {
+        showTermsModal.value = false
+        fetchHistory(route.query.conversation_id)
+    }
+}, { immediate: true })
 
 const sendSuggestion = (text) => handleSend(text);
 </script>

@@ -1,9 +1,12 @@
 <template>
   <div class="layout">
-    <SidebarAdmin></SidebarAdmin>
+    <SidebarAdmin
+            :open="sidebarOpen"
+            @toggle="sidebarOpen = !sidebarOpen"
+        />
 
     <main>
-      <HeaderAdmin></HeaderAdmin>
+      <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
       <div class="main-container">
 
@@ -315,7 +318,7 @@ const preview = ref(null)
 const showOTP = ref(false)
 const otpTimer = ref(0)
 let timerInterval = null
-
+const sidebarOpen = ref(false)
 const showCurrent = ref(false)
 const showNew = ref(false)
 const showConfirm = ref(false)
@@ -501,3 +504,4 @@ async function finalizePasswordChange() {
 </script>
 
 <style scoped src="@/assets/admin/AdminProfile.css"></style>
+<style src="@/assets/admin/admin-layout.css"></style>

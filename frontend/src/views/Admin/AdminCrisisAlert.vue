@@ -1,9 +1,12 @@
 <<template>
     <div class="layout">
-        <SidebarAdmin />
+        <SidebarAdmin
+            :open="sidebarOpen"
+            @toggle="sidebarOpen = !sidebarOpen"
+        />
 
         <main>
-            <HeaderAdmin />
+            <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
             <div class="main-container">
                 <div class="header-title">
@@ -162,6 +165,7 @@ import SidebarAdmin from '@/components/sidebarAdmin.vue';
 import HeaderAdmin from '@/components/headerAdmin.vue';
 
 const toast = useToast();
+const sidebarOpen = ref(false)
 
 // ── Keyword Reference ──────────────────────────────────────────
 const severityLevels = [
@@ -246,3 +250,4 @@ const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 </script>
 
 <style scoped src="@/assets/admin/AdminCrisisAlert.css"></style>>
+<style src="@/assets/admin/admin-layout.css"></style>

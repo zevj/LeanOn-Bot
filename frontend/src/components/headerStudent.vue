@@ -3,10 +3,7 @@
 
     <!-- Left Logo + Sidebar Toggle -->
     <div class="logo-section">
-      <!-- Sidebar Toggle Button -->
-      <button class="toggle-btn" @click="handleToggleSidebar">
-  ☰
-</button>
+
       <img src="/leanOnBot.png" class="logo-icon" />
 
       <div class="logo-separation">

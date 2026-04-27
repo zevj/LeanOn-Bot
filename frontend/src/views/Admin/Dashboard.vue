@@ -71,3 +71,4 @@ const toggleSidebar = () => {
 </script>
 
 <style scoped src="@/assets/admin/adminDashboard.css"></style>
+<style src="@/assets/admin/admin-layout.css"></style>

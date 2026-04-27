@@ -1,9 +1,12 @@
 <template>
   <div class="layout">
-    <SidebarAdmin />
+    <SidebarAdmin
+            :open="sidebarOpen"
+            @toggle="sidebarOpen = !sidebarOpen"
+        />
 
     <main>
-      <HeaderAdmin />
+      <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
       <div class="main-container">
         <div class="header-title">
@@ -64,6 +67,8 @@ import SidebarAdmin from '@/components/sidebarAdmin.vue';
 import HeaderAdmin from '@/components/headerAdmin.vue';
 import TrendsChart from '@/components/TrendsChart.vue';
 
+const sidebarOpen = ref(false)
+
 /* TRENDS PROGRESS*/
 const emotions = [
   { name: 'Stressed', value: 35 },
@@ -84,3 +89,4 @@ const stats = [
 
 
 <style scoped src="@/assets/admin/emotionalTrends.css"></style>
+<style src="@/assets/admin/admin-layout.css"></style>
