@@ -317,6 +317,10 @@ const fetchUserProfile = async () => {
     const token = localStorage.getItem('token')
     const res = await axios.get('/api/user', { headers: { Authorization: `Bearer ${token}` } })
     userProfile.value = res.data
+    // Auto show TermsModal for first time / newly verified logins
+    if (!res.data.terms_accepted_at) {
+      showTermsModal.value = true
+    }
   } catch { console.error('Failed to fetch user profile') }
 }
 
@@ -353,7 +357,16 @@ const confirmLogout = () => {
     message: 'Are you sure you want to logout?',
     confirmText: 'Logout',
     type: 'danger',
-    actionCallback: () => { localStorage.removeItem('token'); window.location.href = '/login' }
+    actionCallback: async () => {
+      try {
+        const token = localStorage.getItem('token')
+        await axios.post('/api/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
+      } catch (e) {
+        console.error('Logout API error:', e)
+      }
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+    }
   })
 }
 

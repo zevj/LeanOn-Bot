@@ -49,17 +49,6 @@
       <nav class="menu">
   <p class="menu-label">MENU</p>
 
-<<<<<<< HEAD
-        <router-link to="/AdminDashboard" class="menu-item" active-class="active">
-          <i class='bx bx-grid-alt'></i>
-          <span>Dashboard</span>
-        </router-link>
-        
-        <router-link to="/AdminCrisisAlerts" class="menu-item" active-class="active">
-          <i class='bx bx-shield'></i>
-          <span>Crisis Alerts</span>
-        </router-link>
-=======
   <router-link to="/AdminDashboard" class="menu-item" active-class="active">
     <i class='bx bx-grid-alt'></i>
     <span>Dashboard</span>
@@ -69,7 +58,6 @@
     <i class='bx bx-shield'></i>
     <span>Crisis Alerts</span>
   </router-link>
->>>>>>> origin/stage
 
   <router-link to="/EmotionalTrends" class="menu-item" active-class="active">
     <i class='bx bx-line-chart'></i>
@@ -121,24 +109,26 @@
 
 <script setup>
 import { ref } from 'vue'
+import axios from 'axios'
 
-<<<<<<< HEAD
 defineProps({
   open: Boolean
 })
 
 const emit = defineEmits(["toggle"])
-=======
-defineProps({ open: Boolean })
-const emit = defineEmits(['toggle'])
->>>>>>> origin/stage
 
 const showLogoutModal = ref(false)
 
 const closeModal = () => { showLogoutModal.value = false }
 
-const confirmLogout = () => {
+const confirmLogout = async () => {
   showLogoutModal.value = false
+  try {
+    const token = localStorage.getItem('token')
+    await axios.post('/api/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
+  } catch (e) {
+    console.error('Logout API error:', e)
+  }
   localStorage.removeItem('token')
   window.location.href = '/login'
 }

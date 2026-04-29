@@ -18,4 +18,14 @@ class ChatMessage extends Model
     {
         return $this->belongsTo(Conversation::class);
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function crisisAlert()
+    {
+        return $this->hasOne(CrisisAlert::class);
+    }
 }

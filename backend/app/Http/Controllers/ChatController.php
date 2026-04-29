@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\ChatMessage;
+use App\Models\CrisisAlert;
+use App\Models\EmotionLog;
 use OpenAI;
 
 class ChatController extends Controller {
-    private $crisisKeywords = [
+    private array $crisisKeywords = [
         // English keywords
         "suicide", "kill myself", "want to die", "self harm", "cut myself",
         "end my life", "don’t want to live", "i'm done", "give up",
@@ -20,12 +22,33 @@ class ChatController extends Controller {
         "magpakamatay", "saktan ang sarili"
     ];
 
-    private $safeResponse = 
+    private string $safeResponse = 
         "I'm really sorry you're feeling this way. You don’t have to go through this alone.
         It would really help to reach out to someone you trust or a counselor. If you feel unsafe, please contact emergency services or a crisis hotline right now.
         I'm here with you—do you want to share what’s been going on?";
 
-        private $mentalHealthKeywords = [
+    private array $highKeywords = [
+        "suicide", "kill myself", "want to die", "self harm", "cut myself",
+        "end my life", "don't want to live", "give up", "no reason to live",
+        "better off dead", "magpakamatay", "saktan ang sarili",
+    ];
+
+    private array $severeKeywords = [
+        "worthless", "hopeless", "i wish i was gone", "disappear",
+        "no one understands", "breaking down", "can't cope",
+        "wala nang kwenta", "hindi ko na kaya", "i'm done",
+        "pagod na ako", "ayoko na", "gusto ko nang mawala",
+    ];
+
+    private array $moderateKeywords = [
+        "stressed", "anxious", "overwhelmed", "struggling", "alone",
+    ];
+
+    private array $lowKeywords = [
+        "sad", "tired", "unmotivated", "worried", "frustrated",
+    ];
+
+        private array $mentalHealthKeywords = [
         // emotions
         "i feel sad", "i feel anxious", "i feel tired", "i feel empty",
         "i feel lost", "i feel overwhelmed",
@@ -46,7 +69,7 @@ class ChatController extends Controller {
         "not okay", "something feels off", "can i talk", "need someone"
         ];
     
-    private $systemPrompt = 
+    private string $systemPrompt = 
     "You are LeanOn Bot, a supportive AI mental health companion designed specifically for students.
 
     Your goal is to provide a safe, empathetic, and non-judgmental space where students can express their thoughts, 
@@ -148,12 +171,24 @@ class ChatController extends Controller {
 
         if ($isCrisis) {
             // Save to DB
-            ChatMessage::create([
+            $chatMsg = ChatMessage::create([
                 'user_id' => $userId,
                 'conversation_id' => $conversationId,
                 'message' => $userMessage,
                 'reply' => $this->safeResponse,
                 'is_crisis' => true,
+            ]);
+
+            // Auto-create crisis alert
+            $matchedKeywords = $this->getMatchedKeywords($userMessage);
+            $severity = $this->classifySeverity($userMessage);
+            CrisisAlert::create([
+                'user_id'           => $userId,
+                'chat_message_id'   => $chatMsg->id,
+                'message'           => $userMessage,
+                'severity'          => $severity,
+                'detected_keywords' => $matchedKeywords,
+                'status'            => 'new',
             ]);
 
             return response()->json([
@@ -249,6 +284,11 @@ class ChatController extends Controller {
                 'is_crisis' => false,
             ]);
 
+            // Classify emotion per conversation via Gemini
+            if ($userId) {
+                $this->classifyConversationEmotion($conversationId, $userId, $apiKey);
+            }
+
             return response()->json([
                 'reply' => $aiReply
             ]);
@@ -282,7 +322,7 @@ class ChatController extends Controller {
         return response()->json($history);
     }
 
-    private function checkForCrisis($message)
+    private function checkForCrisis(string $message)
     {
         $messageLower = strtolower($message);
         foreach ($this->crisisKeywords as $keyword) {
@@ -296,7 +336,7 @@ class ChatController extends Controller {
     /**
      * Checks if the message contains words related to mental health or academics.
      */
-    private function checkForMentalHealthTopic($message)
+    private function checkForMentalHealthTopic(string $message)
 {
     $messageLower = strtolower($message);
     $isMentalHealth = false;
@@ -319,4 +359,86 @@ class ChatController extends Controller {
 
     return $isMentalHealth;
 }
+
+    /**
+     * Get all crisis keywords that matched in the message.
+     */
+    private function getMatchedKeywords(string $message)
+    {
+        $messageLower = strtolower($message);
+        $matched = [];
+        foreach ($this->crisisKeywords as $keyword) {
+            if (str_contains($messageLower, $keyword)) {
+                $matched[] = $keyword;
+            }
+        }
+        return $matched;
+    }
+
+    /**
+     * Classify crisis severity based on matched keywords.
+     */
+    private function classifySeverity(string $message)
+    {
+        $messageLower = strtolower($message);
+
+        foreach ($this->highKeywords as $kw) {
+            if (str_contains($messageLower, $kw)) return 'high';
+        }
+        foreach ($this->severeKeywords as $kw) {
+            if (str_contains($messageLower, $kw)) return 'severe';
+        }
+        foreach ($this->moderateKeywords as $kw) {
+            if (str_contains($messageLower, $kw)) return 'moderate';
+        }
+        return 'low';
+    }
+
+    /**
+     * Use Gemini to classify the overall emotion of a conversation.
+     * Upserts one EmotionLog per conversation.
+     */
+    private function classifyConversationEmotion(int $conversationId, ?int $userId, string $apiKey)
+    {
+        try {
+            // Fetch all messages in this conversation
+            $messages = ChatMessage::where('conversation_id', $conversationId)
+                ->orderBy('created_at')
+                ->limit(20)
+                ->get();
+
+            if ($messages->isEmpty()) return;
+
+            // Build a summary of the conversation
+            $conversationText = '';
+            foreach ($messages as $msg) {
+                $conversationText .= "Student: {$msg->message}\n";
+            }
+
+            $prompt = "Analyze the following student conversation and classify the student's overall dominant emotion into exactly ONE of these categories: positive, sad, anxious, stressed, overwhelmed, lonely, angry, hopeful. Reply with ONLY the emotion word in lowercase, nothing else.\n\nConversation:\n" . $conversationText;
+
+            $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey, [
+                    'contents' => [
+                        ['role' => 'user', 'parts' => [['text' => $prompt]]]
+                    ]
+                ]);
+
+            if ($response->successful()) {
+                $emotion = strtolower(trim($response->json('candidates.0.content.parts.0.text') ?? ''));
+                $validEmotions = ['positive', 'sad', 'anxious', 'stressed', 'overwhelmed', 'lonely', 'angry', 'hopeful'];
+
+                if (in_array($emotion, $validEmotions)) {
+                    EmotionLog::updateOrCreate(
+                        ['conversation_id' => $conversationId],
+                        ['user_id' => $userId, 'emotion' => $emotion]
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently fail — emotion logging is non-critical
+            \Illuminate\Support\Facades\Log::warning('Emotion classification failed: ' . $e->getMessage());
+        }
+    }
 }

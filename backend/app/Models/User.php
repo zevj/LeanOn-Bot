@@ -32,6 +32,7 @@ class User extends Authenticatable {
         'year_level',
         'phone_number',
         'profile_image',
+        'terms_accepted_at',
     ];
 
     /**
@@ -74,7 +75,33 @@ class User extends Authenticatable {
         return [
             'otp_expires_at' => 'datetime',
             'email_verified_at' => 'datetime',
+            'terms_accepted_at' => 'datetime',
             // 'password' => 'hashed', // Disabled to prevent double hashing when using Hash::make manually
         ];
+    }
+
+    public function chatMessages()
+    {
+        return $this->hasMany(ChatMessage::class);
+    }
+
+    public function conversations()
+    {
+        return $this->hasMany(Conversation::class);
+    }
+
+    public function crisisAlerts()
+    {
+        return $this->hasMany(CrisisAlert::class);
+    }
+
+    public function emotionLogs()
+    {
+        return $this->hasMany(EmotionLog::class);
+    }
+
+    public function sessionLogs()
+    {
+        return $this->hasMany(SessionLog::class);
     }
 }

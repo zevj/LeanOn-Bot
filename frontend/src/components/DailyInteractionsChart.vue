@@ -7,7 +7,7 @@
         <h3>Daily Interactions</h3>
         <p>Overview of user activity from Monday to Sunday</p>
       </div>
-      <span class="total-badge">124 total</span>
+      <span class="total-badge">{{ total }} total</span>
     </div>
 
     <!-- CHART -->
@@ -19,6 +19,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import {
   Chart as ChartJS,
   Title,
@@ -33,12 +34,21 @@ import { Bar } from "vue-chartjs"
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
-const chartData = {
+const props = defineProps({
+  data: {
+    type: Array,
+    default: () => [0, 0, 0, 0, 0, 0, 0]
+  }
+})
+
+const total = computed(() => props.data.reduce((a, b) => a + b, 0))
+
+const chartData = computed(() => ({
   labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
   datasets: [
     {
       label: "Interactions",
-      data: [12, 19, 8, 15, 22, 30, 18],
+      data: props.data,
       backgroundColor: "rgba(14, 96, 8, 0.82)",
       hoverBackgroundColor: "#16a34a",
       borderRadius: 6,
@@ -46,7 +56,7 @@ const chartData = {
       barThickness: 40
     }
   ]
-}
+}))
 
 const chartOptions = {
   responsive: true,

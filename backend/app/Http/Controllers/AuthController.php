@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use App\Models\PasswordOtp;
 use App\Models\EmailOtp;
+use App\Models\SessionLog;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
@@ -61,10 +62,17 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Create session log entry
+        $sessionLog = SessionLog::create([
+            'user_id'       => $user->id,
+            'session_start' => Carbon::now(),
+        ]);
+
         return response()->json([
-            'message' => 'Login successful',
-            'token' => $token,
-            'user' => $user
+            'message'        => 'Login successful',
+            'token'          => $token,
+            'user'           => $user,
+            'session_log_id' => $sessionLog->id,
         ]);
     }
 
@@ -494,5 +502,28 @@ public function resetPassword(Request $request)
         Log::info("Login OTP sent to {$user->email}");
 
         return $expiresAt;
+    }
+
+    /**
+     * Logout: close session log and revoke token.
+     */
+    public function logout(Request $request)
+    {
+        $user = $request->user();
+
+        // Close the most recent open session for this user
+        $sessionLog = SessionLog::where('user_id', $user->id)
+            ->whereNull('session_end')
+            ->latest('session_start')
+            ->first();
+
+        if ($sessionLog) {
+            $sessionLog->update(['session_end' => Carbon::now()]);
+        }
+
+        // Revoke current token
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logged out successfully']);
     }
 }
