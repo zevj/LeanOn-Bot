@@ -131,7 +131,7 @@
 
                                 <!-- Row 4: Program (full width) -->
                                 <div class="input-row">
-                                    <div class="name-input full-width-input">
+                                    <div class="name-input">
                                         <label class="input-title">Program</label>
                                         <select 
                                             class="input-info" 

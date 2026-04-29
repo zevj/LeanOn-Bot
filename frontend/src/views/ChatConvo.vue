@@ -36,6 +36,15 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- TYPING INDICATOR -->
+                    <div v-if="isTyping" class="message-row bot-row">
+                        <div class="typing-indicator">
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -81,13 +90,14 @@ const router = useRouter();
 const { addConversation, updateConversation } = useChats();
 const isAutoCreating = ref(false);
 
+// ── Typing indicator
+const isTyping = ref(false);
+
 // ── Terms Modal
 const showTermsModal = ref(false);
 
 const onTermsAccepted = () => {
     showTermsModal.value = false
-
-    // reload chat after accept
     fetchHistory(route.query.conversation_id)
 }
 
@@ -139,6 +149,10 @@ const handleSend = async (text) => {
     messages.value.push({ text, isBot: false, time: getTimeString() });
     scrollToBottom();
 
+    // ── Show typing indicator
+    isTyping.value = true;
+    scrollToBottom();
+
     try {
         const response = await axios.post('http://localhost:8000/api/chat', {
             message: text,
@@ -172,9 +186,11 @@ const handleSend = async (text) => {
             time: getTimeString(),
         });
         console.error('API Error:', error);
+    } finally {
+        // ── Hide typing indicator
+        isTyping.value = false;
+        scrollToBottom();
     }
-
-    scrollToBottom();
 };
 
 const fetchHistory = async (conversationId) => {

@@ -121,8 +121,7 @@
   width: 24px; 
   height: 2px;
   background: var(--primary-color); 
-  border-radius: 2px; 
-  transition: .3s;
+  border-radius: 2px;
 }
 
 /* ── MOBILE MENU ── */
@@ -336,6 +335,18 @@
   display: grid; 
   place-items: center; 
   font-size: 1.2rem;
+}
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .chat-header-text h4 { 

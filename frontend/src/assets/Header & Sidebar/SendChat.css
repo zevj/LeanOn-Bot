@@ -1,56 +1,76 @@
 .send-container {
-  background-color: white;
+  background: #fff;
   width: auto;
-  margin: 0 auto; /* center sa parent */
-  box-shadow: 0px 2px 15px rgba(0, 0, 0, 0.2);
-  height: 90px;
+  margin: 0 auto;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  height: auto;
   display: flex;
-  justify-content: center; /* center horizontally */
-  align-items: center; /* center vertically */
-  padding: 0 10px;
-  border-radius: 8px; /* optional, mas maganda */
+  justify-content: center;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 16px;
 }
 
 .chat-send-input-container {
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 700px; /* control width */
+  max-width: 700px;
+  background: #f7f8f7;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 6px 6px 6px 16px;
+  gap: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.chat-send-input-container:focus-within {
+  border-color: #0E6008;
+  box-shadow: 0 0 0 3px rgba(14, 96, 8, 0.08);
+  background: #fff;
 }
 
 .chat-send-input-container input {
-  flex: 1; /* input will take available space */
-  height: 50px;
-  padding: 0 15px;
-  border: 1px solid #ccc;
-  border-radius: 8px 0 0 8px; /* rounded left side only */
+  flex: 1;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
   outline: none;
-  transition: 0.15s ease-in-out all;
+  font-size: 14px;
+  color: #1a1a1a;
+  line-height: 1.5;
 }
 
-.chat-send-input-container input:focus {
-    outline: none;
-    border: 2px solid #0E6008;
+.chat-send-input-container input::placeholder {
+  color: #b0b0b0;
+  font-weight: 400;
 }
 
 .chat-send-input-container button.send {
-  height: 50px;
-  width: 50px;
+  height: 38px;
+  width: 38px;
   border: none;
-  background-color: #0e6008; /* green example */
-  color: white;
-  border-radius: 0 8px 8px 0; /* rounded right side only */
+  background-color: #0E6008;
+  color: #fff;
+  border-radius: 9px;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: 0.15s ease-in-out all;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 
 .chat-send-input-container button.send:hover {
-  background-color: #095004;
+  background-color: #0a4d05;
+  box-shadow: 0 2px 8px rgba(14, 96, 8, 0.3);
+}
+
+.chat-send-input-container button.send:active {
+  transform: scale(0.94);
 }
 
 button i {
-    font-size: 20px;
+  font-size: 18px;
 }

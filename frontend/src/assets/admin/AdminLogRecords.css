@@ -1,0 +1,295 @@
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.main-container {
+  padding: 40px 0 40px 70px;
+}
+
+.header-title {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-bottom: 30px;
+}
+
+.title {
+  color: #0E6008;
+}
+
+.subtext {
+  font-size: 14px;
+}
+
+/* ── Stat cards ── */
+.audit-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 1.75rem;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #efefef;
+  border-left: 4px solid;
+  padding: 1rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 100px;
+  width: 90%;
+}
+
+.stat-card .sc-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stat-card .sc-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+}
+
+.stat-card .sc-val {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: #1a1a1a;
+}
+
+.stat-card .sc-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  border: 1.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-card .sc-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.sc-total  { border-left-color: #e53935; }
+.sc-total .sc-icon { background: #fff5f5; border-color: #e53935; }
+.sc-total .sc-icon svg { stroke: #e53935; }
+
+.sc-active { border-left-color: #f57c00; }
+.sc-active .sc-icon { background: #fff8f0; border-color: #f57c00; }
+.sc-active .sc-icon svg { stroke: #f57c00; }
+
+.sc-closed { border-left-color: #8d9a00; }
+.sc-closed .sc-icon { background: #f8fae0; border-color: #8d9a00; }
+.sc-closed .sc-icon svg { stroke: #8d9a00; }
+
+.sc-depts  { border-left-color: var(--primary-color); }
+.sc-depts .sc-icon { background: #eaf3de; border-color: var(--primary-color); }
+.sc-depts .sc-icon svg { stroke: var(--primary-color); }
+
+/* ── Controls ── */
+.log-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  width: 97.3%;
+}
+
+.log-controls input,
+.log-controls select {
+  padding: 7px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fff;
+  color: var(--black-color);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.log-controls input { flex: 1; min-width: 200px; }
+.log-controls input:focus,
+.log-controls select:focus { border-color: var(--primary-color); }
+
+/* ── Table wrapper ── */
+.log-table-wrap {
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  overflow: hidden;
+  overflow-x: auto;
+  background: #fff;
+  width: 97.2%;
+
+  /* ← limits height so tbody scrolls, thead sticks */
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: fixed;
+}
+
+/* Sticky header so it doesn't scroll away */
+.log-table thead tr {
+  background: #fafafa;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Column widths */
+.log-table th:nth-child(1) { width: 120px; }
+.log-table th:nth-child(2) { width: 175px; }
+.log-table th:nth-child(3) { width: 140px; }
+.log-table th:nth-child(4) { width: 70px;  }
+.log-table th:nth-child(5) { width: 160px; }
+.log-table th:nth-child(6) { width: 135px; }
+.log-table th:nth-child(7) { width: 135px; }
+
+.log-table th {
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 11px;
+  color: #999;
+  border-bottom: 1px solid #efefef;
+  text-align: center;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.log-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f5f5f5;
+  color: var(--black-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  text-align: center;
+}
+
+.log-table tbody tr:last-child td { border-bottom: none; }
+.log-table tbody tr:hover { background: #fafaf8; }
+
+/* Log ID chip */
+.log-id {
+  font-family: monospace;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #f4f4f0;
+  border: 1px solid #e5e5e0;
+  color: #666;
+  display: inline-block;
+}
+
+.log-email { font-size: 12px; color: #999; }
+
+/* ── Dept badges ── */
+.dept-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 5px;
+  font-weight: 600;
+}
+
+.dept-ccs  { background: #ffe6d5; color: #ff8838; }  /* green  */
+.dept-ceas { background: #e6f1fb; color: #0c447c; }  /* blue   */
+.dept-cahs { background: #FEF2F1; color: #DC2625; }  /* coral  */
+.dept-chtm { background: #FDF2F8; color: #DB2777; }  /* amber  */
+.dept-cba  { background: #FFF9E0; color: #9F7A00; }  /* purple */
+
+/* ── Session pills ── */
+.sess-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2px;
+}
+
+.sess-in  { background: #eaf3de; color: #27500a; }
+.sess-out { background: #f0f0ec; color: #666; }
+
+.sess-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-in  { background: #3b6d11; }
+.dot-out { background: #aaa; }
+
+.sess-time {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--black-color);
+}
+.sess-date {
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+}
+.sess-active-label { font-size: 12px; color: #bbb; }
+
+.log-empty {
+  text-align: center;
+  padding: 2.5rem;
+  color: #aaa;
+  font-size: 13px;
+}
+
+/* ── Pagination ── */
+.log-pag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0 0;
+  font-size: 12px;
+  width: 97%;
+}
+
+.log-pag-info { color: #aaa; }
+
+.log-pag-btns { display: flex; gap: 6px; }
+
+.log-pag-btns button {
+  padding: 5px 13px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--black-color);
+  cursor: pointer;
+  font-size: 12px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.log-pag-btns button:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.log-pag-btns button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}

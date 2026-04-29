@@ -19,7 +19,7 @@
     <i class='bx bx-line-chart'></i>
   </router-link>
 
-  <router-link to="/LogRecords" class="rail-btn" title="Log Records">
+  <router-link to="/AdminLogRecords" class="rail-btn" title="Log Records">
     <i class='bx bx-file'></i>
   </router-link>
 
@@ -64,7 +64,7 @@
     <span>Emotional Trends</span>
   </router-link>
 
-  <router-link to="/LogRecords" class="menu-item" active-class="active">
+  <router-link to="/AdminLogRecords" class="menu-item" active-class="active">
     <i class='bx bx-file'></i>
     <span>Log Records</span>
   </router-link>
