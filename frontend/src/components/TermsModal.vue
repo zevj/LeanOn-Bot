@@ -4,9 +4,7 @@
       <div v-if="visible" class="terms-overlay">
         <div class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-title">
           <!-- Header -->
-                     <button class="modal-close-btn" @click="handleClose">
-            <i class='bx bx-x'></i>
-          </button>
+
           <div class="terms-header">
             <div class="terms-logo">
               <img src="/leanOnBot.png" class="logo-icon" alt="LeanOn Bot Logo" />
@@ -88,8 +86,7 @@
               <label 
   class="checkbox-label"
   :class="{ 
-    checked: check2, 
-    disabled: hasAccepted 
+    checked: check2
   }"
   @click="toggleCheck"
 >
@@ -123,15 +120,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
-const props = defineProps({
-  visible: Boolean,
-  userId: {
-    type: [String, Number],
-    default: 'guest'
-  }
+defineProps({
+  visible: Boolean
 })
 
 const emit = defineEmits(['accept', 'decline', 'close'])
@@ -140,39 +134,31 @@ const router = useRouter()
 /* ─────────────────────────────
    STORAGE KEYS (per user)
 ───────────────────────────── */
-const acceptedKey = `leanon_terms_accepted_${props.userId}`
-const checkedKey = `leanon_terms_checked_${props.userId}`
+// Removed local storage keys
 
 /* ─────────────────────────────
    STATES
 ───────────────────────────── */
-const hasAccepted = ref(false)
 const check2 = ref(false)
 const hasScrolled = ref(false)
 
 /* ─────────────────────────────
    INIT STATE
 ───────────────────────────── */
-onMounted(() => {
-  hasAccepted.value = localStorage.getItem(acceptedKey) === 'true'
-  check2.value = localStorage.getItem(checkedKey) === 'true'
-})
+// Removed mounted local storage sync
 
 /* ─────────────────────────────
    COMPUTED LOGIC
 ───────────────────────────── */
 const canAccept = computed(() => {
-  return check2.value && !hasAccepted.value
+  return check2.value
 })
 
 /* ─────────────────────────────
    CHECKBOX TOGGLE
 ───────────────────────────── */
 const toggleCheck = () => {
-  if (hasAccepted.value) return // 🔒 LOCK
-
   check2.value = !check2.value
-  localStorage.setItem(checkedKey, check2.value)
 }
 
 /* ─────────────────────────────
@@ -187,29 +173,33 @@ const handleScroll = (e) => {
 /* ─────────────────────────────
    ACCEPT TERMS
 ───────────────────────────── */
-const handleAccept = () => {
+const handleAccept = async () => {
   if (!canAccept.value) return
 
-  localStorage.setItem(acceptedKey, 'true')
-  hasAccepted.value = true
-
-  emit('accept') // close modal in parent
+  try {
+    const token = localStorage.getItem('token')
+    await axios.post('/api/terms/accept', {}, { headers: { Authorization: `Bearer ${token}` } })
+    emit('accept') 
+  } catch (e) {
+    console.error('Failed to accept terms:', e)
+  }
 }
 
 /* ─────────────────────────────
    DECLINE
 ───────────────────────────── */
-const handleDecline = () => {
+const handleDecline = async () => {
   emit('decline')
+  try {
+    const token = localStorage.getItem('token')
+    await axios.post('/api/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
+  } catch (e) {
+    console.error('Logout error:', e)
+  }
+  localStorage.removeItem('token')
   router.push('/login')
 }
 
-/* ─────────────────────────────
-   CLOSE MODAL (X button)
-───────────────────────────── */
-const handleClose = () => {
-  emit('close')
-}
 </script>
 
 <style scoped>

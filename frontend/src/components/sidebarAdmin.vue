@@ -74,8 +74,8 @@
         <div class="picture-info-separation">
           <img src="/leanOnBot.png" class="logo-icon" />
           <div class="title-footer">
-            <span class="logo-text">Allysa C. Lingad</span>
-            <p class="subtext">202310636@gordoncollege.edu.ph</p>
+            <span class="logo-text">Test User</span>
+            <p class="subtext">123456789@gordoncollege.edu.ph</p>
           </div>
         </div>
       </div>
@@ -109,16 +109,26 @@
 
 <script setup>
 import { ref } from 'vue'
+import axios from 'axios'
 
-defineProps({ open: Boolean })
-const emit = defineEmits(['toggle'])
+defineProps({
+  open: Boolean
+})
+
+const emit = defineEmits(["toggle"])
 
 const showLogoutModal = ref(false)
 
 const closeModal = () => { showLogoutModal.value = false }
 
-const confirmLogout = () => {
+const confirmLogout = async () => {
   showLogoutModal.value = false
+  try {
+    const token = localStorage.getItem('token')
+    await axios.post('/api/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
+  } catch (e) {
+    console.error('Logout API error:', e)
+  }
   localStorage.removeItem('token')
   window.location.href = '/login'
 }

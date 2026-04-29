@@ -26,7 +26,10 @@
         </div>
 
         <h1 class="login-title" ref="titleRef">
-          Welcome <span>LeanOn Bot</span>
+          Welcome to 
+          <router-link to="/" class="logo-link">
+            <span>LeanOn Bot</span>
+          </router-link>
         </h1>
 
         <p class="login-subtitle" ref="subtitleRef">
@@ -187,11 +190,19 @@ const handleLogin = async () => {
       password: password.value
     })
 
-    localStorage.setItem('token', res.data.token)
-    localStorage.setItem('user', JSON.stringify(res.data.user))
-
-    showOtp.value = true
-    toast.success('OTP sent to your email!')
+    if (res.data.status === 'OTP_REQUIRED') {
+      // First-time login: store temp token, show OTP modal
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      showOtp.value = true
+      toast.success('OTP sent to your email!')
+    } else {
+      // Already verified: normal login
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      const role = res.data.user?.role || 'student'
+      role === 'guidance' ? router.push('/adminDashboard') : router.push('/ChatConvo')
+    }
 
   } catch (err) {
     toast.error(err.response?.data?.message || 'Login failed!')
@@ -200,8 +211,16 @@ const handleLogin = async () => {
   }
 }
 
-const onOtpVerified = () => {
-  const role = JSON.parse(localStorage.getItem('user'))?.role || 'student'
+const onOtpVerified = (data) => {
+  // Update token/user from verify response if provided
+  if (data?.token) {
+    localStorage.setItem('token', data.token)
+  }
+  if (data?.user) {
+    localStorage.setItem('user', JSON.stringify(data.user))
+  }
+  const user = data?.user || JSON.parse(localStorage.getItem('user'))
+  const role = user?.role || 'student'
   role === 'guidance' ? router.push('/adminDashboard') : router.push('/ChatConvo')
 }
 

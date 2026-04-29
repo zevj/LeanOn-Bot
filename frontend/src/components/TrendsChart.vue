@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import {
   Chart as ChartJS,
   Title, Tooltip, Legend,
@@ -57,6 +57,17 @@ import {
 import { Line } from 'vue-chartjs'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, Filler)
+
+const props = defineProps({
+  weeklyData: {
+    type: Object,
+    default: () => ({})
+  },
+  weekLabels: {
+    type: Array,
+    default: () => ['W1', 'W2', 'W3', 'W4', 'W5', 'W6']
+  }
+})
 
 const chartRef = ref(null)
 const chartKey = ref(0)
@@ -70,12 +81,21 @@ const filters = [
 const selectedFilter = ref('all')
 const hiddenSets = ref(new Set())
 
-const allLabels = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6']
-
 const ranges = {
   all:  { start: 0, end: 6 },
   w1_3: { start: 0, end: 3 },
   w4_6: { start: 3, end: 6 }
+}
+
+const emotionColors = {
+  positive:    { border: '#0A9569', fill: 'rgba(10,149,105,1)' },
+  sad:         { border: '#0066FF', fill: 'rgba(0,102,255,1)' },
+  anxious:     { border: '#9F7A00', fill: 'rgba(159,122,0,1)' },
+  stressed:    { border: '#DC2625', fill: 'rgba(220,38,37,1)' },
+  overwhelmed: { border: '#8B5CF6', fill: 'rgba(139,92,246,1)' },
+  lonely:      { border: '#EC4899', fill: 'rgba(236,72,153,1)' },
+  angry:       { border: '#F97316', fill: 'rgba(249,115,22,1)' },
+  hopeful:     { border: '#06B6D4', fill: 'rgba(6,182,212,1)' },
 }
 
 const gradientFill = (color) => (context) => {
@@ -88,40 +108,32 @@ const gradientFill = (color) => (context) => {
   return gradient
 }
 
-const rawDatasets = [
-  {
-    label: 'Positive',
-    data: [15, 16, 24, 30, 38, 44],
-    borderColor: '#0A9569',
-    fillColor: 'rgba(10,149,105,1)'
-  },
-  {
-    label: 'Sad',
-    data: [30, 34, 40, 45, 50, 54],
-    borderColor: '#0066FF',
-    fillColor: 'rgba(0,102,255,1)'
-  },
-  {
-    label: 'Anxious',
-    data: [60, 62, 65, 68, 70, 72],
-    borderColor: '#9F7A00',
-    fillColor: 'rgba(159,122,0,1)'
-  },
-  {
-    label: 'Stressed',
-    data: [100, 100, 100, 100, 100, 100],
-    borderColor: '#DC2625',
-    fillColor: 'rgba(220,38,37,1)'
+const buildDatasets = () => {
+  const data = props.weeklyData
+  if (!data || Object.keys(data).length === 0) {
+    // Fallback: empty datasets
+    return []
   }
-]
+
+  return Object.keys(data).map(emotion => {
+    const color = emotionColors[emotion] || { border: '#888', fill: 'rgba(136,136,136,1)' }
+    return {
+      label: emotion.charAt(0).toUpperCase() + emotion.slice(1),
+      data: data[emotion],
+      borderColor: color.border,
+      fillColor: color.fill,
+    }
+  })
+}
 
 const chartData = computed(() => {
   const { start, end } = ranges[selectedFilter.value]
+  const datasets = buildDatasets()
   return {
-    labels: allLabels.slice(start, end),
-    datasets: rawDatasets.map(d => ({
+    labels: props.weekLabels.slice(start, end),
+    datasets: datasets.map(d => ({
       label: d.label,
-      data: d.data.slice(start, end),
+      data: (d.data || []).slice(start, end),
       borderColor: d.borderColor,
       backgroundColor: gradientFill(d.fillColor),
       fill: true,
@@ -151,6 +163,10 @@ function toggleDataset(label) {
   next.has(label) ? next.delete(label) : next.add(label)
   hiddenSets.value = next
 }
+
+watch(() => props.weeklyData, () => {
+  chartKey.value++
+}, { deep: true })
 
 onMounted(() => { chartKey.value++ })
 

@@ -473,20 +473,23 @@ async function submitProfile() {
 
 // OTP
 async function sendOTP() {
-    if (otpTimer.value > 0) return
-
-    try {
-        const token = localStorage.getItem('token')
-        await axios.post('http://127.0.0.1:8000/api/send-otp', {}, {
-            headers: { Authorization: `Bearer ${token}` }
-        })
-        toast.success("OTP sent to your email")
-        showOTP.value = true
-        isOTPVerified.value = false
-        startTimer()
-    } catch {
-        toast.error("Failed to send OTP")
-    }
+  if (otpTimer.value > 0) return
+  
+  try {
+    const token = localStorage.getItem('token')
+    await axios.post('http://127.0.0.1:8000/api/send-otp', {
+        current_password: passwords.value.current
+    }, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+    toast.success("OTP sent to your email");
+    showOTP.value = true;
+    isOTPVerified.value = false
+    startTimer()
+  } catch (error) {
+    const msg = error.response?.data?.message || "Failed to send OTP";
+    toast.error(msg)
+  }
 }
 
 function startTimer() {

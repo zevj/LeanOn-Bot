@@ -55,6 +55,7 @@
 <script setup>
 import { ref, computed, watch, onUnmounted } from 'vue'
 import { useToast } from 'vue-toastification'
+import axios from 'axios'
 import LoadingButton from '@/views/loadingButton.vue'
 
 const props = defineProps({
@@ -122,13 +123,16 @@ const handleVerify = async () => {
 
   isVerifying.value = true
   try {
-    // Replace with your actual API call:
-    // await axios.post('/api/verify-otp', { email: props.email, otp: code })
-    await new Promise(r => setTimeout(r, 1200)) // simulate
-    emit('verified')
+    const res = await axios.post('http://127.0.0.1:8000/api/verify-otp', {
+      email: props.email,
+      otp: code
+    })
+    toast.success(res.data.message || 'Email verified!')
+    emit('verified', res.data)
     emit('update:modelValue', false)
-  } catch {
-    toast.error('Invalid or expired code. Try again.')
+  } catch (err) {
+    const msg = err.response?.data?.message || 'Invalid or expired code. Try again.'
+    toast.error(msg)
     digits.value = Array(6).fill('')
     inputRefs.value[0]?.focus()
   } finally {
@@ -138,9 +142,13 @@ const handleVerify = async () => {
 
 const handleResend = async () => {
   if (timer.value > 0) return
-  // await axios.post('/api/resend-otp', { email: props.email })
-  toast.success('Code resent!')
-  startTimer()
+  try {
+    await axios.post('http://127.0.0.1:8000/api/resend-otp', { email: props.email })
+    toast.success('Code resent!')
+    startTimer()
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Failed to resend code.')
+  }
 }
 </script>
 

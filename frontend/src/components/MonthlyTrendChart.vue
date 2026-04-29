@@ -8,7 +8,8 @@
         <h3>{{ activeFilter.label }}</h3>
       </div>
       <div class="header-right">
-        <span class="trend up">↑ 12.4%</span>
+        <span class="trend up" v-if="trendPercent >= 0">↑ {{ trendPercent }}%</span>
+        <span class="trend down" v-else>↓ {{ Math.abs(trendPercent) }}%</span>
         <span class="vs-label">vs last period</span>
       </div>
     </div>
@@ -34,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue"
+import { ref, computed, watch } from "vue"
 import {
   Chart as ChartJS,
   Title, Tooltip, Legend,
@@ -45,8 +46,14 @@ import { Line } from "vue-chartjs"
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
+const props = defineProps({
+  data: {
+    type: Array,
+    default: () => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  }
+})
+
 const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-const data   = [120, 150, 180, 200, 240, 300, 320, 280, 350, 400, 420, 500]
 
 const filters = [
   { key: "all", label: "All Months" },
@@ -56,16 +63,25 @@ const filters = [
   { key: "q4",  label: "Oct – Dec"  }
 ]
 
-const ranges = {
-  all: { labels: months,              data },
-  q1:  { labels: months.slice(0, 3),  data: data.slice(0, 3)  },
-  q2:  { labels: months.slice(3, 6),  data: data.slice(3, 6)  },
-  q3:  { labels: months.slice(6, 9),  data: data.slice(6, 9)  },
-  q4:  { labels: months.slice(9, 12), data: data.slice(9, 12) }
-}
-
 const selectedRange = ref("all")
 const activeFilter = computed(() => filters.find(f => f.key === selectedRange.value))
+
+const rangesData = computed(() => ({
+  all: { labels: months,              data: props.data },
+  q1:  { labels: months.slice(0, 3),  data: props.data.slice(0, 3)  },
+  q2:  { labels: months.slice(3, 6),  data: props.data.slice(3, 6)  },
+  q3:  { labels: months.slice(6, 9),  data: props.data.slice(6, 9)  },
+  q4:  { labels: months.slice(9, 12), data: props.data.slice(9, 12) }
+}))
+
+// Simple trend: compare last 6 months average to first 6 months
+const trendPercent = computed(() => {
+  const d = props.data
+  const firstHalf = d.slice(0, 6).reduce((a, b) => a + b, 0)
+  const secondHalf = d.slice(6, 12).reduce((a, b) => a + b, 0)
+  if (firstHalf === 0) return 0
+  return ((secondHalf - firstHalf) / firstHalf * 100).toFixed(1)
+})
 
 function buildDataset(r) {
   return {
@@ -95,11 +111,15 @@ function buildDataset(r) {
   }
 }
 
-const chartData = ref(buildDataset(ranges.all))
+const chartData = ref(buildDataset({ labels: months, data: props.data }))
+
+watch(() => props.data, () => {
+  chartData.value = buildDataset(rangesData.value[selectedRange.value])
+}, { deep: true })
 
 function selectRange(f) {
   selectedRange.value = f.key
-  chartData.value = buildDataset(ranges[f.key])
+  chartData.value = buildDataset(rangesData.value[f.key])
 }
 
 const chartOptions = {
