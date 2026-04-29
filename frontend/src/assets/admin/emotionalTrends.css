@@ -6,21 +6,27 @@ main {
 
 .main-container {
   padding: 40px 70px;
+  font-family: 'DM Sans', system-ui, sans-serif;
 }
 
+/* ── Header (modernized) ── */
 .header-title {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
   padding-bottom: 30px;
 }
 
 .title {
-  color: #0E6008;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: -0.3px;
 }
 
 .subtext {
-  font-size: 14px;
+  font-size: 13px;
+  color: #999;
 }
 
 /* CHARTS CONTAINER */
@@ -54,8 +60,9 @@ main {
 }
 
 .referrals-card:hover {
-    border: 2px solid var(--primary-color);
+  border: 2px solid var(--primary-color);
 }
+
 .referrals-card__title {
   font-size: 15px;
   font-weight: 500;
@@ -113,7 +120,7 @@ main {
 }
 
 .card:hover {
-    border: 2px solid var(--primary-color);
+  border: 2px solid var(--primary-color);
 }
 
 .emotion-title {

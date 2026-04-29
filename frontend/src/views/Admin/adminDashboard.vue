@@ -18,30 +18,38 @@
 
                 <!-- STATS -->
                 <div class="whole-stat-card">
+
                     <div class="high-stat-card">
                         <div class="stat-card-title-high">
-                            <h4 class="title-stat">Total Interactions</h4>
-                            <p class="stat-number">12</p>
+                        <h4 class="title-stat">Total interactions</h4>
+                        <p class="stat-number">1,284</p>
                         </div>
-                        <div class="icon-bg-high"><i class="bx bx-chat"></i></div>
+                        <div class="icon-bg-high">
+                        <i class="bx bx-chat"></i>
+                        </div>
                     </div>
 
                     <div class="severe-stat-card">
                         <div class="stat-card-title-severe">
-                            <h4 class="title-stat">Active Users</h4>
-                            <p class="stat-number">12</p>
+                        <h4 class="title-stat">Active users</h4>
+                        <p class="stat-number">348</p>
                         </div>
-                        <div class="icon-bg-severe"><i class="bx bx-user"></i></div>
+                        <div class="icon-bg-severe">
+                        <i class="bx bx-user"></i>
+                        </div>
                     </div>
 
                     <div class="stat-card">
                         <div class="stat-card-title-moderate">
-                            <h4 class="title-stat">Average Session</h4>
-                            <p class="stat-number">12</p>
+                        <h4 class="title-stat">Avg. session</h4>
+                        <p class="stat-number">4.2m</p>
                         </div>
-                        <div class="icon-bg-moderate"><i class="bx bx-time-five"></i></div>
+                        <div class="icon-bg-moderate">
+                        <i class="bx bx-time-five"></i>
+                        </div>
                     </div>
-                </div>
+
+                    </div>
 
                 <div class="graph-stats">
                     <DailyInteractionsChart />
@@ -68,3 +76,4 @@ const sidebarOpen = ref(false);
 </script>
 
 <style scoped src="@/assets/admin/adminDashboard.css"></style>
+<style src="@/assets/admin/admin-layout.css"></style>

@@ -36,6 +36,15 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- TYPING INDICATOR -->
+                    <div v-if="isTyping" class="message-row bot-row">
+                        <div class="typing-indicator">
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -48,6 +57,7 @@
         :userId="currentUserId"
         @accept="onTermsAccepted"
         @decline="onTermsDeclined"
+        @close="showTermsModal = false"
     />
 </template>
 
@@ -80,28 +90,25 @@ const router = useRouter();
 const { addConversation, updateConversation } = useChats();
 const isAutoCreating = ref(false);
 
+// ── Typing indicator
+const isTyping = ref(false);
+
 // ── Terms Modal
 const showTermsModal = ref(false);
-const termsStorageKey = computed(() => `leanon_terms_v1_${currentUserId.value}`);
-
-onMounted(() => {
-    const alreadyAccepted = localStorage.getItem(termsStorageKey.value);
-    if (!alreadyAccepted) {
-        showTermsModal.value = true;
-    } else {
-        fetchHistory(route.query.conversation_id);
-    }
-});
 
 const onTermsAccepted = () => {
-    showTermsModal.value = false;
-    fetchHistory(route.query.conversation_id);
-};
+    showTermsModal.value = false
+    fetchHistory(route.query.conversation_id)
+}
 
 const onTermsDeclined = () => {
     showTermsModal.value = false;
     router.push('/login');
 };
+
+onMounted(() => {
+    showTermsModal.value = true
+})
 
 const getTimeString = () => {
     const now = new Date();
@@ -142,6 +149,10 @@ const handleSend = async (text) => {
     messages.value.push({ text, isBot: false, time: getTimeString() });
     scrollToBottom();
 
+    // ── Show typing indicator
+    isTyping.value = true;
+    scrollToBottom();
+
     try {
         const response = await axios.post('http://localhost:8000/api/chat', {
             message: text,
@@ -175,9 +186,11 @@ const handleSend = async (text) => {
             time: getTimeString(),
         });
         console.error('API Error:', error);
+    } finally {
+        // ── Hide typing indicator
+        isTyping.value = false;
+        scrollToBottom();
     }
-
-    scrollToBottom();
 };
 
 const fetchHistory = async (conversationId) => {
@@ -207,10 +220,18 @@ const fetchHistory = async (conversationId) => {
     }
 };
 
-watch(() => route.query.conversation_id, (newId) => {
-    if (isAutoCreating.value) { isAutoCreating.value = false; return; }
-    fetchHistory(newId);
-});
+watch(currentUserId, (id) => {
+    if (!id) return
+
+    const accepted = localStorage.getItem(`leanon_terms_accepted_${id}`)
+
+    if (accepted !== 'true') {
+        showTermsModal.value = true
+    } else {
+        showTermsModal.value = false
+        fetchHistory(route.query.conversation_id)
+    }
+}, { immediate: true })
 
 const sendSuggestion = (text) => handleSend(text);
 </script>

@@ -1,9 +1,12 @@
 <template>
   <div class="layout">
-    <SidebarAdmin></SidebarAdmin>
+    <SidebarAdmin
+            :open="sidebarOpen"
+            @toggle="sidebarOpen = !sidebarOpen"
+        />
 
     <main>
-      <HeaderAdmin></HeaderAdmin>
+      <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
       <div class="main-container">
 
@@ -181,7 +184,6 @@
 
               <div class="form-grid">
 
-                <!-- Row 1: Current Password | New Password -->
                 <div class="form-group">
                   <label class="form-label">Current Password</label>
                   <div class="input-icon-wrap">
@@ -218,7 +220,6 @@
                   </div>
                 </div>
 
-                <!-- Row 2: Confirm Password (full width) -->
                 <div class="form-group">
                   <label class="form-label">Confirm New Password</label>
                   <div class="input-icon-wrap">
@@ -315,7 +316,7 @@ const preview = ref(null)
 const showOTP = ref(false)
 const otpTimer = ref(0)
 let timerInterval = null
-
+const sidebarOpen = ref(false)
 const showCurrent = ref(false)
 const showNew = ref(false)
 const showConfirm = ref(false)
@@ -369,19 +370,13 @@ async function fetchProfile() {
 async function handleUpload(event) {
   const file = event.target.files[0]
   if (!file) return
-
   preview.value = URL.createObjectURL(file)
-
   const formData = new FormData()
   formData.append('profile_image', file)
-
   try {
     const token = localStorage.getItem('token')
     const res = await axios.post('http://127.0.0.1:8000/api/admin/profile/image', formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'multipart/form-data'
-      }
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
     })
     profile.value.profile_image_url = res.data.profile_image_url
     toast.success('Profile photo updated!')
@@ -405,10 +400,7 @@ async function submitProfile() {
       phone_number: form.value.phone_number,
       unit: form.value.unit,
       role: form.value.role,
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    // Sync left info card
+    }, { headers: { Authorization: `Bearer ${token}` } })
     profile.value.first_name = form.value.first_name
     profile.value.last_name = form.value.last_name
     profile.value.email = form.value.email
@@ -427,9 +419,7 @@ async function sendOTP() {
   if (otpTimer.value > 0) return
   try {
     const token = localStorage.getItem('token')
-    await axios.post('http://127.0.0.1:8000/api/send-otp', {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    await axios.post('http://127.0.0.1:8000/api/send-otp', {}, { headers: { Authorization: `Bearer ${token}` } })
     toast.success('OTP sent to your email')
     showOTP.value = true
     startTimer()
@@ -450,9 +440,7 @@ function startTimer() {
 function handleOtpInput(event, index) {
   const val = event.target.value.replace(/\D/g, '')
   otp.value[index] = val
-  if (val && index < 5) {
-    document.getElementById(`otp-${index + 1}`).focus()
-  }
+  if (val && index < 5) document.getElementById(`otp-${index + 1}`).focus()
 }
 
 async function submitPassword() {
@@ -473,7 +461,6 @@ async function finalizePasswordChange() {
     toast.error('Please enter the full 6-digit OTP!')
     return
   }
-
   isSavingPassword.value = true
   try {
     const token = localStorage.getItem('token')
@@ -482,9 +469,7 @@ async function finalizePasswordChange() {
       new_password: passwords.value.new,
       new_password_confirmation: passwords.value.confirm,
       otp: otpValue
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    }, { headers: { Authorization: `Bearer ${token}` } })
     toast.success(res.data.message || 'Password updated!')
     passwords.value = { current: '', new: '', confirm: '' }
     otp.value = ['', '', '', '', '', '']
@@ -501,3 +486,4 @@ async function finalizePasswordChange() {
 </script>
 
 <style scoped src="@/assets/admin/AdminProfile.css"></style>
+<style src="@/assets/admin/admin-layout.css"></style>

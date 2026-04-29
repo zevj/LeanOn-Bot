@@ -1,13 +1,30 @@
 <template>
   <OtpModal
-  v-model="showOtp"
-  :email="username"
-  @verified="onOtpVerified"
-/>
+    v-model="showOtp"
+    :email="username"
+    @verified="onOtpVerified"
+  />
+
   <main ref="mainRef">
     <div class="login-container" ref="containerRef">
 
+      <!-- Blur orb decorations — CSS hides these on desktop, shows on mobile -->
+      <div class="mobile-bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+        <div class="gradient-circle"></div>
+      </div>
+
       <div class="left-container" ref="leftRef">
+
+        <!-- Mobile-only brand badge (replaces hidden right panel branding) -->
+        <div class="mobile-brand" ref="mobileBrandRef">
+          <div class="mobile-brand-dot"></div>
+          <span class="mobile-brand-label">LeanOn Bot &mdash; Mental Wellness Support</span>
+        </div>
+
         <h1 class="login-title" ref="titleRef">
           Welcome to 
           <router-link to="/" class="logo-link">
@@ -63,7 +80,7 @@
           </router-link>
 
           <div ref="loginBtnRef">
-            <LoadingButton 
+            <LoadingButton
               :loading="isLoading"
               type="submit"
               class="login-button"
@@ -85,7 +102,7 @@
         </form>
       </div>
 
-      <!-- RIGHT SIDE -->
+      <!-- RIGHT SIDE — unchanged, hidden via CSS on mobile -->
       <div class="right-container" ref="rightRef">
         <div class="overlay"></div>
 
@@ -221,22 +238,53 @@ const formGroupRefs = ref([])
 
 const loginBtnRef = ref(null)
 const googleBtnRef = ref(null)
+const mobileBrandRef = ref(null)
 
 /* =========================
    GSAP ANIMATION
 ========================= */
 onMounted(() => {
+  const isMobile = window.innerWidth <= 768
+
   const tl = gsap.timeline({
     defaults: {
       duration: 0.8,
-      ease: "power2.out"
+      ease: 'power2.out'
     }
   })
 
   gsap.set(containerRef.value, { opacity: 1 })
 
-  tl.from(leftRef.value, { x: -70, opacity: 0 }, 0)
-  tl.from(rightRef.value, { x: 70, opacity: 0 }, 0)
+  if (isMobile) {
+    // Fade in orbs on mobile
+    gsap.from('.orb', {
+      opacity: 0,
+      scale: 0.6,
+      duration: 1.4,
+      stagger: 0.25,
+      ease: 'power2.out'
+    })
+
+    // Animate the moving gradient circle
+    gsap.from('.gradient-circle', {
+      opacity: 0,
+      scale: 0.5,
+      duration: 1.8,
+      ease: 'power2.out',
+      delay: 0.3
+    })
+
+    // Animate brand badge
+    if (mobileBrandRef.value) {
+      tl.from(mobileBrandRef.value, { y: -12, opacity: 0 }, 0.1)
+    }
+
+    tl.from(leftRef.value, { y: 28, opacity: 0 }, 0)
+  } else {
+    // Original desktop animations — unchanged
+    tl.from(leftRef.value, { x: -70, opacity: 0 }, 0)
+    tl.from(rightRef.value, { x: 70, opacity: 0 }, 0)
+  }
 
   tl.from(titleRef.value, { y: 40, opacity: 0 }, 0.3)
   tl.from(subtitleRef.value, { y: 25, opacity: 0 }, 0.4)
@@ -247,14 +295,14 @@ onMounted(() => {
     stagger: 0.15
   }, 0.5)
 
-  tl.from(".forgot-password", { y: 15, opacity: 0 }, 0.7)
+  tl.from('.forgot-password', { y: 15, opacity: 0 }, 0.7)
 
   tl.from(loginBtnRef.value, {
     scale: 0.92,
     opacity: 0
   }, 0.8)
 
-  tl.from(".divider", { y: 15, opacity: 0 }, 0.9)
+  tl.from('.divider', { y: 15, opacity: 0 }, 0.9)
 
   gsap.set(googleBtnRef.value, {
     opacity: 0,
@@ -268,19 +316,21 @@ onMounted(() => {
     scale: 1
   }, 1.0)
 
-  tl.from(".new-student", { y: 15, opacity: 0 }, 1.1)
+  tl.from('.new-student', { y: 15, opacity: 0 }, 1.1)
 
-  tl.from(".overlay", { opacity: 0 }, 0.3)
-  tl.from(".title", { y: 50, opacity: 0 }, 0.4)
-  tl.from(".subtitle", { y: 25, opacity: 0 }, 0.5)
-  tl.from(".yellow-line", { width: 0, opacity: 0 }, 0.6)
-  tl.from(".subheading", { y: 25, opacity: 0 }, 0.7)
+  if (!isMobile) {
+    tl.from('.overlay', { opacity: 0 }, 0.3)
+    tl.from('.title', { y: 50, opacity: 0 }, 0.4)
+    tl.from('.subtitle', { y: 25, opacity: 0 }, 0.5)
+    tl.from('.yellow-line', { width: 0, opacity: 0 }, 0.6)
+    tl.from('.subheading', { y: 25, opacity: 0 }, 0.7)
 
-  tl.from(".features", {
-    y: 25,
-    opacity: 0,
-    stagger: 0.2
-  }, 0.9)
+    tl.from('.features', {
+      y: 25,
+      opacity: 0,
+      stagger: 0.2
+    }, 0.9)
+  }
 })
 </script>
 

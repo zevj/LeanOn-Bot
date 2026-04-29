@@ -1,9 +1,12 @@
 <template>
   <div class="layout">
-    <SidebarAdmin />
+    <SidebarAdmin
+      :open="sidebarOpen"
+      @toggle="sidebarOpen = !sidebarOpen"
+    />
 
     <main>
-      <HeaderAdmin />
+      <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
       <div class="main-container">
         <div class="header-title">
@@ -32,7 +35,6 @@
 
             <div class="card">
               <h3 class="emotion-title">Top Emotions</h3>
-
               <div
                 v-for="(item, index) in emotions"
                 :key="index"
@@ -42,7 +44,6 @@
                   <span class="name">{{ item.name }}</span>
                   <span class="percent">{{ item.value }}%</span>
                 </div>
-
                 <div class="progress-bar">
                   <div
                     class="progress-fill"
@@ -59,28 +60,28 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import SidebarAdmin from '@/components/sidebarAdmin.vue';
 import HeaderAdmin from '@/components/headerAdmin.vue';
 import TrendsChart from '@/components/TrendsChart.vue';
 
-/* TRENDS PROGRESS*/
-const emotions = [
-  { name: 'Stressed', value: 35 },
-  { name: 'Anxious', value: 25 },
-  { name: 'Sad', value: 15 },
-  { name: 'Overwhelmed', value: 12 },
-  { name: 'Lonely', value: 8 },
-  { name: 'Positive', value: 5 }
-]
+const sidebarOpen = ref(false);
 
-/* REFERRALS */
+const emotions = [
+  { name: 'Stressed',    value: 35 },
+  { name: 'Anxious',     value: 25 },
+  { name: 'Sad',         value: 15 },
+  { name: 'Overwhelmed', value: 12 },
+  { name: 'Lonely',      value: 8  },
+  { name: 'Positive',    value: 5  },
+];
+
 const stats = [
   { label: 'Total',    value: 47, modifier: 'total'    },
   { label: 'Accepted', value: 32, modifier: 'accepted' },
   { label: 'Pending',  value: 15, modifier: 'pending'  },
-]
+];
 </script>
 
-
 <style scoped src="@/assets/admin/emotionalTrends.css"></style>
+<style src="@/assets/admin/admin-layout.css"></style>

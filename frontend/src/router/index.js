@@ -11,7 +11,7 @@ import EmotionalTrends from '../views/Admin/EmotionalTrends.vue'
 import AdminCrisisAlerts from '../views/Admin/AdminCrisisAlert.vue'
 import AdminConfig from '../views/Admin/Configuration.vue'
 import AdminProfile from '../views/Admin/AdminProfile.vue'
-
+import AdminLogRecords from '../views/Admin/AdminLogRecords.vue'
 
 const routes = [
   {
@@ -94,6 +94,12 @@ const routes = [
     path: '/AdminProfile',
     name: 'AdminProfile',
     component: AdminProfile
+  },
+
+  {
+    path: '/AdminLogRecords',
+    name: 'AdminLogRecords',
+    component: AdminLogRecords
   },
 ]
 

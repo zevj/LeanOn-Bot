@@ -1,9 +1,12 @@
 <template>
   <div class="layout">
-    <SidebarAdmin></SidebarAdmin>
+    <SidebarAdmin
+            :open="sidebarOpen"
+            @toggle="sidebarOpen = !sidebarOpen"
+        />
 
     <main>
-      <HeaderAdmin></HeaderAdmin>
+      <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
       <div class="main-container">
 
@@ -134,6 +137,7 @@ import axios from 'axios'
 
 const toast = useToast()
 const isSaving = ref(false)
+const sidebarOpen = ref(false)
 
 const settings = ref({
   maxSessionLength: 30,
@@ -181,3 +185,4 @@ async function saveSettings() {
 </script>
 
 <style scoped src="@/assets/admin/Configuration.css"></style>
+<style src="@/assets/admin/admin-layout.css"></style>

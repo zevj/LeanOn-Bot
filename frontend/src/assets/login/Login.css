@@ -2,9 +2,10 @@
 .login-container {
     display: flex;
     flex-wrap: wrap;
-    /* allow stacking on small screens */
     min-height: 100vh;
     width: 100%;
+    position: relative;
+    overflow: hidden;
 }
 
 .logo-link {
@@ -22,22 +23,22 @@
 .left-container {
     flex: 1 1 50%;
     min-width: 320px;
-    /* prevents too narrow */
     padding: 10vh 5vw;
-    /* relative padding */
     display: flex;
     flex-direction: column;
     justify-content: center;
-    background: white;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
 }
 
 .login-form {
-    width: 800px;
+    width: 100%;
+    max-width: 600px;
 }
 
 .login-title {
     font-size: clamp(24px, 5vw, 25px);
-    /* responsive */
     font-weight: 700;
     margin-bottom: 0.5rem;
 }
@@ -79,9 +80,7 @@ span {
     width: 100%;
     height: 49px;
     padding-left: 45px;
-    /* space for icon on the left */
     padding-right: 50px;
-    /* space for eye icon if needed */
     border-radius: 8px;
     border: 2px solid #ccc;
     font-size: 14px;
@@ -126,7 +125,6 @@ input[type="password"]::-webkit-textfield-decoration-container {
     margin-bottom: 30px;
     display: block;
     text-align: right;
-    width: 74%;
 }
 
 .forgot-password:hover {
@@ -333,5 +331,348 @@ input[type="password"]::-webkit-textfield-decoration-container {
     100% {
         transform: scale(1);
         box-shadow: 0 0 0 0 rgba(155, 196, 76, 0);
+    }
+}
+
+
+/* ============================================================
+   MOBILE BLUR ORB DECORATIONS
+   Hidden on desktop — activated only at mobile breakpoints
+============================================================ */
+.mobile-bg-orbs {
+    display: none;
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(72px);
+}
+
+.orb-1 {
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(4, 149, 22, 0.22) 0%, rgba(14, 96, 8, 0.06) 70%, transparent 100%);
+    top: -100px;
+    right: -80px;
+    animation: orbFloat1 12s ease-in-out infinite;
+}
+
+.orb-2 {
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(155, 196, 76, 0.2) 0%, rgba(4, 149, 22, 0.05) 70%, transparent 100%);
+    bottom: 80px;
+    left: -90px;
+    animation: orbFloat2 15s ease-in-out infinite;
+}
+
+.orb-3 {
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, rgba(155, 196, 76, 0.06) 70%, transparent 100%);
+    top: 42%;
+    right: -40px;
+    animation: orbFloat3 10s ease-in-out infinite;
+}
+
+.orb-4 {
+    width: 140px;
+    height: 140px;
+    background: radial-gradient(circle, rgba(14, 96, 8, 0.11) 0%, transparent 70%);
+    bottom: 32%;
+    left: 25%;
+    animation: orbFloat1 18s ease-in-out infinite reverse;
+}
+
+/* ============================================================
+   GRADIENT CIRCLE
+   Sized to cover the entire viewport so the green wash spreads
+   edge-to-edge. Uses a slow rotation + drift so the brightest
+   green pocket visibly travels around the screen.
+============================================================ */
+.gradient-circle {
+    position: absolute;
+
+    /* 150vmax guarantees it covers every corner at any screen size */
+    width: 150vmax;
+    height: 150vmax;
+
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+    border-radius: 50%;
+
+    /*
+      One rich green core that fades outward.
+      The off-centre focal point (30% 35%) is what makes one
+      corner glow brighter — as the element rotates that bright
+      pocket sweeps across the whole screen.
+    */
+    background: radial-gradient(
+        ellipse 55% 50% at 30% 35%,
+        rgba(4, 149, 22, 0.55)  0%,
+        rgba(4, 149, 22, 0.30) 25%,
+        rgba(14, 96, 8,  0.15) 50%,
+        rgba(14, 96, 8,  0.05) 75%,
+        transparent            100%
+    );
+
+    filter: blur(60px);
+    animation: gradientSweep 16s linear infinite;
+    will-change: transform;
+}
+
+@keyframes gradientSweep {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg)   scale(1);
+    }
+    25% {
+        transform: translate(-50%, -50%) rotate(90deg)  scale(1.05);
+    }
+    50% {
+        transform: translate(-50%, -50%) rotate(180deg) scale(1);
+    }
+    75% {
+        transform: translate(-50%, -50%) rotate(270deg) scale(1.05);
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg) scale(1);
+    }
+}
+
+@keyframes orbFloat1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    40%       { transform: translate(18px, -22px) scale(1.06); }
+    70%       { transform: translate(-10px, 14px) scale(0.96); }
+}
+
+@keyframes orbFloat2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    35%       { transform: translate(-16px, -18px) scale(1.04); }
+    65%       { transform: translate(12px, 20px) scale(0.97); }
+}
+
+@keyframes orbFloat3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%       { transform: translate(-14px, -16px) scale(1.08); }
+}
+
+/* Mobile brand badge — hidden on desktop */
+.mobile-brand {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 1.6rem;
+}
+
+.mobile-brand-dot {
+    width: 7px;
+    height: 7px;
+    background: #049516;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse 1.8s infinite;
+}
+
+.mobile-brand-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #0E6008;
+    letter-spacing: 0.4px;
+}
+
+
+/* ============================================================
+   BREAKPOINT ≤ 900px — tighten desktop layout slightly
+============================================================ */
+@media (max-width: 900px) {
+    .left-container {
+        padding: 8vh 4vw;
+    }
+
+    .login-form {
+        width: 100%;
+        max-width: 480px;
+    }
+
+    .headings {
+        padding: 0 30px 0 0;
+    }
+
+    .footer {
+        right: 30px;
+        bottom: 30px;
+    }
+
+    .footer-container {
+        gap: 10px;
+    }
+}
+
+
+/* ============================================================
+   BREAKPOINT ≤ 768px — hide right panel, show blur orbs
+============================================================ */
+@media (max-width: 768px) {
+
+    /* Hide the forest right panel */
+    .right-container {
+        display: none;
+    }
+
+    /* Activate the orb layer (gradient-circle lives inside this) */
+    .mobile-bg-orbs {
+        display: block;
+    }
+
+    /* Show the compact brand badge */
+    .mobile-brand {
+        display: flex;
+    }
+
+    /* Left panel goes full-width, centered */
+    .login-form {
+        width: 100%;
+        max-width: 480px;
+        background-color: #ffffff;
+        padding: 40px 40px;
+        border-radius: 10px;
+        box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .left-container {
+        flex: 1 1 100%;
+        width: 100%;
+        min-width: unset;
+        padding: 7vh 8vw 8vh;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .login-title {
+        font-size: 26px;
+        text-align: center;
+    }
+
+    .login-subtitle {
+        text-align: center;
+        padding-bottom: 1.8rem;
+    }
+
+    .login-form {
+        width: 100%;
+        max-width: 420px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-group {
+        width: 100%;
+        margin-bottom: 0.9rem;
+    }
+
+    /* Stretch all form elements to full container width */
+    .input-wrapper,
+    .login-button,
+    .google-signin,
+    .divider {
+        max-width: 100%;
+    }
+
+    .forgot-password {
+        width: 100%;
+        text-align: right;
+    }
+
+    .new-student {
+        padding-right: 0;
+        text-align: center;
+    }
+
+    .new-student a {
+        padding-right: 0;
+    }
+}
+
+
+/* ============================================================
+   BREAKPOINT ≤ 480px — compact small phones
+============================================================ */
+@media (max-width: 480px) {
+    .left-container {
+        padding: 6vh 6vw 7vh;
+    }
+
+    .login-title {
+        font-size: 23px;
+    }
+
+    .input-wrapper input {
+        height: 46px;
+    }
+
+    .login-button {
+        height: 50px;
+    }
+
+    .google-signin {
+        height: 47px;
+        font-size: 13px;
+    }
+
+    /* Scale down orbs so they don't dominate */
+    .orb-1 {
+        width: 240px;
+        height: 240px;
+        top: -70px;
+        right: -60px;
+    }
+
+    .orb-2 {
+        width: 200px;
+        height: 200px;
+        bottom: 50px;
+        left: -70px;
+    }
+
+    .orb-3 {
+        width: 140px;
+        height: 140px;
+    }
+
+    .orb-4 {
+        width: 110px;
+        height: 110px;
+    }
+}
+
+
+/* ============================================================
+   BREAKPOINT ≤ 360px — very small devices
+============================================================ */
+@media (max-width: 360px) {
+    .left-container {
+        padding: 5vh 5vw 6vh;
+    }
+
+    .login-title {
+        font-size: 21px;
+    }
+
+    .input-wrapper input {
+        height: 44px;
+        font-size: 13px;
+    }
+
+    .login-button {
+        height: 48px;
+        font-size: 13px;
     }
 }

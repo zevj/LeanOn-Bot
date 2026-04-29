@@ -1,9 +1,12 @@
-<<template>
+<template>
     <div class="layout">
-        <SidebarAdmin />
+        <SidebarAdmin
+            :open="sidebarOpen"
+            @toggle="sidebarOpen = !sidebarOpen"
+        />
 
-        <main>
-            <HeaderAdmin />
+        <main class="main-area">
+            <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
             <div class="main-container">
                 <div class="header-title">
@@ -13,79 +16,77 @@
 
                 <!-- STATS -->
                 <div class="whole-stat-card">
-                    <div class="high-stat-card">
-                        <div class="stat-card-title-high">
-                            <h4 class="title-stat">High</h4>
-                            <p class="stat-number">12</p>
+                    <div class="stat-card-wrap s-high">
+                        <div class="stat-left">
+                            <span class="stat-label">High</span>
+                            <span class="stat-number">12</span>
                         </div>
-                        <div class="icon-bg-high"><i class="bx bx-error"></i></div>
+                        <div class="stat-icon icon-high"><i class="bx bx-error"></i></div>
                     </div>
 
-                    <div class="severe-stat-card">
-                        <div class="stat-card-title-severe">
-                            <h4 class="title-stat">Severe</h4>
-                            <p class="stat-number">12</p>
+                    <div class="stat-card-wrap s-severe">
+                        <div class="stat-left">
+                            <span class="stat-label">Severe</span>
+                            <span class="stat-number">12</span>
                         </div>
-                        <div class="icon-bg-severe"><i class="bx bxs-bell-ring"></i></div>
+                        <div class="stat-icon icon-severe"><i class="bx bxs-bell-ring"></i></div>
                     </div>
 
-                    <div class="stat-card">
-                        <div class="stat-card-title-moderate">
-                            <h4 class="title-stat">Moderate</h4>
-                            <p class="stat-number">12</p>
+                    <div class="stat-card-wrap s-moderate">
+                        <div class="stat-left">
+                            <span class="stat-label">Moderate</span>
+                            <span class="stat-number">12</span>
                         </div>
-                        <div class="icon-bg-moderate"><i class="bx bx-info-circle"></i></div>
+                        <div class="stat-icon icon-moderate"><i class="bx bx-info-circle"></i></div>
                     </div>
 
-                    <div class="low-stat-card">
-                        <div class="stat-card-title-low">
-                            <h4 class="title-stat">Low</h4>
-                            <p class="stat-number">12</p>
+                    <div class="stat-card-wrap s-low">
+                        <div class="stat-left">
+                            <span class="stat-label">Low</span>
+                            <span class="stat-number">12</span>
                         </div>
-                        <div class="icon-bg-low"><i class="bx bx-check-shield"></i></div>
+                        <div class="stat-icon icon-low"><i class="bx bx-check-shield"></i></div>
                     </div>
                 </div>
 
                 <!-- KEYWORD REFERENCE -->
-                <div class="stats-and-keywords">
-                    <div class="keyword-reference-card">
-                        <h3 class="keyword-reference-title">Keyword Reference</h3>
-                        <div class="keyword-severity-tabs">
-                            <button
-                                v-for="level in severityLevels"
-                                :key="level.label"
-                                class="severity-tab"
-                                :class="[`severity-tab--${level.key}`, { active: activeSeverity === level.key }]"
-                                @click="activeSeverity = level.key"
-                            >
-                                {{ level.label }}
-                            </button>
-                        </div>
-                        <div class="keyword-tags" :class="activeSeverity">
-                            <span
-                                v-for="kw in currentKeywords"
-                                :key="kw"
-                                class="keyword-tag"
-                            >
-                                {{ kw }}
-                            </span>
-                        </div>
+                <div class="section-card">
+                    <p class="section-label">Keyword reference</p>
+                    <div class="keyword-severity-tabs">
+                        <button
+                            v-for="level in severityLevels"
+                            :key="level.label"
+                            class="severity-tab"
+                            :class="[`severity-tab--${level.key}`, { active: activeSeverity === level.key }]"
+                            @click="activeSeverity = level.key"
+                        >
+                            {{ level.label }}
+                        </button>
+                    </div>
+                    <div class="keyword-tags" :class="activeSeverity">
+                        <span
+                            v-for="kw in currentKeywords"
+                            :key="kw"
+                            class="keyword-tag"
+                        >
+                            {{ kw }}
+                        </span>
                     </div>
                 </div>
 
                 <!-- FILTERS -->
                 <div class="alert-filters">
                     <select v-model="filterPriority" class="filter-select">
-                        <option value="">All Priorities</option>
+                        <option value="">All priorities</option>
                         <option value="high">High</option>
                         <option value="severe">Severe</option>
                         <option value="moderate">Moderate</option>
                         <option value="low">Low</option>
                     </select>
                     <select v-model="filterStatus" class="filter-select">
-                        <option value="">All Statuses</option>
+                        <option value="">All statuses</option>
                         <option value="new">New</option>
-                        <option value="review">Under Review</option>
+                        <option value="review">Under review</option>
                         <option value="resolved">Resolved</option>
                     </select>
                 </div>
@@ -96,18 +97,16 @@
                         v-for="alert in filteredAlerts"
                         :key="alert.id"
                         class="alert-card"
+                        :class="`p-${alert.priority}`"
                     >
                         <div class="alert-card-left">
                             <div class="alert-meta">
-                                <span class="alert-priority-badge" :class="`badge--${alert.priority}`">
+                                <span class="badge" :class="`b-${alert.priority}`">
                                     {{ capitalize(alert.priority) }}
                                 </span>
-                                <span 
-                                    class="alert-status-badge" 
-                                    :class="[`status--${alert.status}`, `badge--${alert.priority}`]"
-                                    >
+                                <span class="badge" :class="`b-${alert.status}`">
                                     <i v-if="alert.status === 'new'" class="bx bx-error-circle"></i>
-                                    {{ capitalize(alert.status) }}
+                                    {{ alert.status === 'review' ? 'Under review' : capitalize(alert.status) }}
                                 </span>
                                 <span class="alert-time">
                                     <i class="bx bx-time-five"></i> {{ alert.time }}
@@ -162,6 +161,7 @@ import SidebarAdmin from '@/components/sidebarAdmin.vue';
 import HeaderAdmin from '@/components/headerAdmin.vue';
 
 const toast = useToast();
+const sidebarOpen = ref(false);
 
 // ── Keyword Reference ──────────────────────────────────────────
 const severityLevels = [
@@ -229,20 +229,17 @@ const filteredAlerts = computed(() => {
 // ── Toast Actions ──────────────────────────────────────────────
 const handleReview = (alert) => {
     alert.status = 'review';
-    toast.info(`Alert from ${alert.user} is now under review.`, {
-        timeout: 3000,
-    });
+    toast.info(`Alert from ${alert.user} is now under review.`, { timeout: 3000 });
 };
 
 const handleResolve = (alert) => {
     alert.status = 'resolved';
-    toast.success(`Alert from ${alert.user} has been resolved.`, {
-        timeout: 3000,
-    });
+    toast.success(`Alert from ${alert.user} has been resolved.`, { timeout: 3000 });
 };
 
 // ── Helpers ────────────────────────────────────────────────────
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 </script>
 
-<style scoped src="@/assets/admin/AdminCrisisAlert.css"></style>>
+<style scoped src="@/assets/admin/AdminCrisisAlert.css"></style>
+<style src="@/assets/admin/admin-layout.css"></style>
