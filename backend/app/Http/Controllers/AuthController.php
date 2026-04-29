@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 // use Google\Client as GoogleClient;
 use App\Models\User;
 use App\Models\PasswordOtp;
+use App\Models\EmailOtp;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
@@ -44,10 +45,18 @@ class AuthController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
+        // 🔐 First-time login: require email OTP verification
         if (is_null($user->email_verified_at)) {
+            $token = $user->createToken('auth_token')->plainTextToken;
+            $expiresAt = $this->sendLoginOtp($user);
+
             return response()->json([
-                'message' => 'Please verify your email first'
-            ], 403);
+                'status' => 'OTP_REQUIRED',
+                'message' => 'Please verify your email',
+                'token' => $token,
+                'user' => $user,
+                'expires_at' => $expiresAt
+            ]);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -108,47 +117,57 @@ class AuthController extends Controller
 
 public function verifyOtp(Request $request)
 {
-    // ✅ Validate input
     $request->validate([
         'email' => 'required|email',
         'otp' => 'required'
     ]);
 
-    // ✅ Find user
     $user = User::where('email', $request->email)->first();
 
     if (!$user) {
         return response()->json(['message' => 'User not found'], 404);
     }
 
-    // ✅ Check OTP match (FIXED)
-    if (!Hash::check($request->otp, $user->otp)) {
-        return response()->json([
-            'message' => 'Invalid OTP'
-        ], 400);
+    // Find latest active OTP from email_otps table
+    $otpRecord = EmailOtp::where('user_id', $user->id)
+        ->whereNull('used_at')
+        ->latest()
+        ->first();
+
+    if (!$otpRecord) {
+        return response()->json(['message' => 'No active OTP found. Please request a new one.'], 400);
     }
 
-    // ✅ Check expiration
-    if (now()->gt($user->otp_expires_at)) {
-        return response()->json([
-            'message' => 'OTP expired'
-        ], 400);
+    // Check brute-force attempts
+    if ($otpRecord->hasExceededAttempts()) {
+        return response()->json(['message' => 'Too many failed attempts. Please request a new OTP.'], 429);
     }
 
-    // ✅ Mark as verified (FIXED COLUMN)
-    $user->update([
-        'email_verified_at' => now(),
-        'otp' => null,
-        'otp_expires_at' => null,
-    ]);
+    // Increment attempts
+    $otpRecord->increment('attempts');
 
+    // Check expiration
+    if ($otpRecord->isExpired()) {
+        return response()->json(['message' => 'OTP expired'], 400);
+    }
+
+    // Check OTP match (hashed)
+    if (!Hash::check($request->otp, $otpRecord->otp_code)) {
+        return response()->json(['message' => 'Invalid OTP'], 400);
+    }
+
+    // ✅ Mark OTP as used
+    $otpRecord->update(['used_at' => now()]);
+
+    // ✅ Mark email as verified
+    $user->update(['email_verified_at' => now()]);
     $user->refresh();
-    
-    // 🔥 BONUS: Auto-login user after verification
+
+    // Issue fresh token
     $token = $user->createToken('auth_token')->plainTextToken;
 
     return response()->json([
-        'message' => 'Account verified successfully',
+        'message' => 'Email verified successfully',
         'token' => $token,
         'user' => $user
     ]);
@@ -166,26 +185,24 @@ public function resendOtp(Request $request)
         return response()->json(['message' => 'User not found'], 404);
     }
 
-    // prevent resend if already verified
+    // Prevent resend if already verified
     if (!is_null($user->email_verified_at)) {
-        return response()->json([
-            'message' => 'Account already verified'
-        ], 400);
+        return response()->json(['message' => 'Account already verified'], 400);
     }
 
-    // Generate new OTP
-    $otp = rand(100000, 999999);
-    $expiresAt = Carbon::now()->addMinutes(2);
-    $user->update([
-        'otp' => Hash::make($otp),
-        'otp_expires_at' => $expiresAt,
-    ]);
+    // Rate limit: check if OTP was sent less than 60 seconds ago
+    $lastOtp = EmailOtp::where('user_id', $user->id)->latest()->first();
+    if ($lastOtp && $lastOtp->created_at->diffInSeconds(now()) < 60) {
+        return response()->json([
+            'message' => 'Please wait before requesting a new OTP'
+        ], 429);
+    }
 
-    // Send email
-    Mail::to($user->email)->send(new OtpMail($otp, 'register'));
+    $expiresAt = $this->sendLoginOtp($user);
 
     return response()->json([
-        'message' => 'OTP resent successfully' , 'expires_at' => $expiresAt
+        'message' => 'OTP resent successfully',
+        'expires_at' => $expiresAt
     ]);
 }
 
@@ -448,5 +465,34 @@ public function resetPassword(Request $request)
         }
 
         return response()->json(['message' => 'No image provided'], 400);
+    }
+
+    /**
+     * Generate and send a login verification OTP.
+     * Invalidates any previous unused OTPs for the user.
+     */
+    private function sendLoginOtp(User $user): Carbon
+    {
+        // Invalidate all previous unused OTPs
+        EmailOtp::where('user_id', $user->id)
+            ->whereNull('used_at')
+            ->update(['used_at' => now()]);
+
+        // Generate and store new OTP
+        $otp = rand(100000, 999999);
+        $expiresAt = Carbon::now()->addMinutes(5);
+
+        EmailOtp::create([
+            'user_id' => $user->id,
+            'otp_code' => Hash::make($otp),
+            'expires_at' => $expiresAt,
+        ]);
+
+        // Send email
+        Mail::to($user->email)->send(new OtpMail($otp, 'login'));
+
+        Log::info("Login OTP sent to {$user->email}");
+
+        return $expiresAt;
     }
 }

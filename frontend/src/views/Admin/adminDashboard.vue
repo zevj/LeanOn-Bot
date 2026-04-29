@@ -65,9 +65,6 @@ import MonthlyTrendChart from '@/components/MonthlyTrendChart.vue';
 /* ✅ Sidebar state (same pattern as ChatConvo.vue) */
 const sidebarOpen = ref(false);
 
-const toggleSidebar = () => {
-    sidebarOpen.value = !sidebarOpen.value;
-};
 </script>
 
 <style scoped src="@/assets/admin/adminDashboard.css"></style>

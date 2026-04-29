@@ -38,6 +38,8 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 
 Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 
+Route::post('/login-otp/resend', [AuthController::class, 'resendOtp']);
+
 Route::middleware(['auth:sanctum', 'role:guidance'])->get('/users', function () {
     return \App\Models\User::all();
 });
