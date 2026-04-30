@@ -106,10 +106,10 @@
                             </thead>
                             <tbody>
                                 <tr v-if="loading">
-                                    <td colspan="7" class="log-empty">Loading...</td>
+                                    <td colspan="6" class="log-empty">Loading...</td>
                                 </tr>
                                 <tr v-if="!loading && !logs.length">
-                                    <td colspan="7" class="log-empty">No records found.</td>
+                                    <td colspan="6" class="log-empty">No records found.</td>
                                 </tr>
                                 <tr v-for="r in logs" :key="r.id">
                                     <td><span class="log-id">LOG-{{ String(r.id).padStart(8, '0') }}</span></td>

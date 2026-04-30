@@ -270,7 +270,7 @@
 .b-low      { background: #dcfce7; color: #15803d; border: 0.5px solid #86efac; }
 
 .b-new      { background: #dcfce7; color: #15803d; border: none; }
-.b-review   { background: #fef9c3; color: #a16207; border: none; }
+.b-reviewed   { background: #fef9c3; color: #a16207; border: none; }
 .b-resolved { background: #f3f4f6; color: #6b7280;  border: none; }
 
 .alert-time {
@@ -360,4 +360,202 @@
     color: #9ca3af;
     font-size: 14px;
     padding: 2rem 0;
+}
+
+/* OPEN MODAL EMAIL */
+/* ── Email Modal ── */
+.email-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.email-modal {
+    background: #fff;
+    border-radius: 16px;
+    border: 0.5px solid #e5e7eb;
+    width: 520px;
+    max-width: 90vw;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.email-modal-header {
+    padding: 1.1rem 1.25rem;
+    border-bottom: 0.5px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.email-modal-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.email-modal-icon {
+    width: 34px;
+    height: 34px;
+    background: #f0fdf4;
+    border: 0.5px solid #86efac;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0E6008;
+    font-size: 16px;
+}
+
+.email-modal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111;
+}
+
+.email-modal-subtitle {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+.email-modal-close {
+    width: 28px;
+    height: 28px;
+    border: 0.5px solid #e5e7eb;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.email-modal-close:hover { background: #f3f4f6; }
+
+.email-modal-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.email-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.email-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.email-field-value {
+    padding: 8px 12px;
+    background: #f9fafb;
+    border: 0.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #111;
+    font-family: 'DM Sans', system-ui, sans-serif;
+}
+
+.email-field-textarea {
+    min-height: 180px;
+    resize: vertical;
+    white-space: pre-line;
+    line-height: 1.6;
+    color: #374151;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+/* ── Textarea Scrollbar ── */
+.email-field-textarea::-webkit-scrollbar {
+    width: 6px;
+}
+
+.email-field-textarea::-webkit-scrollbar-track {
+    background: #f1f5f1;
+    border-radius: 10px;
+}
+
+.email-field-textarea::-webkit-scrollbar-thumb {
+    background: #0E6008;
+    border-radius: 10px;
+}
+
+.email-field-textarea::-webkit-scrollbar-thumb:hover {
+    background: #0a4806;
+}
+
+.email-field-textarea:focus {
+    border-color: #0E6008;
+    background: #fff;
+}
+
+.email-modal-footer {
+    padding: 1rem 1.25rem;
+    border-top: 0.5px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* ── Modal Animation ── */
+.modal-fade-enter-active {
+    transition: opacity 0.22s ease;
+}
+.modal-fade-leave-active {
+    transition: opacity 0.18s ease;
+}
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+    opacity: 0;
+}
+.modal-fade-enter-active .email-modal {
+    animation: modal-pop-in 0.25s cubic-bezier(0.34, 1.45, 0.64, 1) forwards;
+}
+.modal-fade-leave-active .email-modal {
+    animation: modal-pop-out 0.18s ease forwards;
+}
+
+@keyframes modal-pop-in {
+    from {
+        opacity: 0;
+        transform: scale(0.93) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes modal-pop-out {
+    from {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.95) translateY(6px);
+    }
 }

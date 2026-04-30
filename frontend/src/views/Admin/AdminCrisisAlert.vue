@@ -127,7 +127,7 @@
                             <p class="alert-user">{{ alert.user_display }} · {{ alert.masked_email }}</p>
                         </div>
                         <div class="alert-card-actions">
-                            <button class="action-btn action-btn--email">
+                            <button class="action-btn action-btn--email" @click="openEmailModal(alert)">
                                 <i class="bx bx-send"></i> Email
                             </button>
                             <button
@@ -154,6 +154,69 @@
                 </div>
             </div>
         </main>
+
+
+        <Teleport to="body">
+    <Transition name="modal-fade">
+        <div v-if="emailModal.visible" class="email-modal-overlay" @click.self="closeEmailModal">
+            <div class="email-modal">
+
+                <!-- Header -->
+                <div class="email-modal-header">
+                    <div class="email-modal-header-left">
+                        <div class="email-modal-icon"><i class="bx bx-send"></i></div>
+                        <div>
+                            <p class="email-modal-title">Send Crisis Alert Email</p>
+                            <p class="email-modal-subtitle">Review and edit before sending</p>
+                        </div>
+                    </div>
+                    <button class="email-modal-close" @click="closeEmailModal">
+                        <i class="bx bx-x"></i>
+                    </button>
+                </div>
+
+                <!-- Body -->
+                <div class="email-modal-body">
+                    <div class="email-field-group">
+                        <span class="email-field-label">To</span>
+                        <div class="email-field-value">{{ emailModal.maskedEmail }}</div>
+                    </div>
+
+                    <div class="email-field-group">
+                        <span class="email-field-label">Subject</span>
+                        <div class="email-field-value">{{ emailModal.subject }}</div>
+                    </div>
+
+                    <div class="email-field-group">
+                        <span class="email-field-label">Severity</span>
+                        <div style="padding: 6px 0;">
+                            <span class="badge" :class="`b-${emailModal.severity}`">
+                                {{ capitalize(emailModal.severity) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="email-field-group">
+                        <span class="email-field-label">Message body</span>
+                        <textarea
+                            class="email-field-value email-field-textarea"
+                            v-model="emailModal.body"
+                        ></textarea>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="email-modal-footer">
+                    <button class="action-btn" @click="closeEmailModal">Cancel</button>
+                    <button class="action-btn action-btn--email" @click="sendEmail">
+                        <i class="bx bx-send"></i> Send Email
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </Transition>
+</Teleport>
     </div>
 </template>
 
@@ -257,6 +320,61 @@ const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 onMounted(() => {
     fetchAlerts();
 });
+
+/*OPEN EMAIL MODAL*/
+// ── Email Modal ────────────────────────────────────────────────
+const emailModal = ref({
+    visible: false,
+    maskedEmail: '',
+    subject: '',
+    severity: '',
+    body: '',
+    alertId: null,
+});
+
+const openEmailModal = (alert) => {
+    const keywords = (alert.detected_keywords || []).join('", "');
+    emailModal.value = {
+        visible: true,
+        maskedEmail: alert.masked_email,
+        subject: `Urgent: Crisis Alert — Action Required`,
+        severity: alert.severity,
+        alertId: alert.id,
+        body:
+`Dear Support Team,
+
+A crisis alert has been flagged for the following user.
+
+User: ${alert.user_display} · ${alert.masked_email}
+Severity: ${capitalize(alert.severity)}
+Detected keywords: "${keywords}"
+
+Flagged message:
+"${alert.message}"
+
+Please review and take appropriate action immediately.
+
+— Gordon College - Guidance & Counseling Unit`,
+    };
+};
+
+const closeEmailModal = () => {
+    emailModal.value.visible = false;
+};
+
+const sendEmail = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        await axios.post(`/api/admin/crisis-alerts/${emailModal.value.alertId}/send-email`, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        toast.success('Email sent successfully.', { timeout: 3000 });
+        closeEmailModal();
+    } catch (err) {
+        console.error('Failed to send email:', err);
+        toast.error('Failed to send email.');
+    }
+};
 </script>
 
 <style scoped src="@/assets/admin/AdminCrisisAlert.css"></style>
