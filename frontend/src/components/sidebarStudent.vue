@@ -1,50 +1,64 @@
 <template>
-  <aside :class="['sidebar', { collapsed: !open }]">
+  <!-- Mobile backdrop -->
+  <transition name="backdrop-fade">
+    <div
+      v-if="isMobile && mobileOpen"
+      class="mobile-backdrop"
+      @click="closeMobileSidebar"
+    ></div>
+  </transition>
 
-<!-- ── COLLAPSED RAIL ── -->
-    <div 
-  v-if="!open" 
-  class="rail-nav"
-  @click="handleRailClick"
->
-  <button
-    class="sidebar-toggle rail-toggle"
-    @click.stop="$emit('toggle')"
+  <aside
+    :class="[
+      'sidebar',
+      {
+        'collapsed': !open && !isMobile,
+        'mobile-hidden': isMobile && !mobileOpen,
+        'mobile-visible': isMobile && mobileOpen,
+        'is-mobile': isMobile
+      }
+    ]"
   >
-    <i class='bx bx-dock-left'></i>
-  </button>
 
-  <button class="rail-btn" @click.stop="createNewChat">
-    <i class='bx bx-message-square-add'></i>
-  </button>
+    <!-- ── COLLAPSED RAIL (desktop only) ── -->
+    <div
+      v-if="!isMobile && !open"
+      class="rail-nav"
+      @click="handleRailClick"
+    >
+      <button class="sidebar-toggle rail-toggle" @click.stop="$emit('toggle')">
+        <i class='bx bx-dock-left'></i>
+      </button>
 
-  <button class="rail-btn" @click.stop="openSearchModal">
-    <i class='bx bx-search'></i>
-  </button>
+      <button class="rail-btn" @click.stop="createNewChat">
+        <i class='bx bx-message-square-add'></i>
+      </button>
 
-  <button class="rail-btn" @click.stop="openSavedModal">
-    <i class='bx bx-bookmark'></i>
-  </button>
+      <button class="rail-btn" @click.stop="openSearchModal">
+        <i class='bx bx-search'></i>
+      </button>
 
-  <div class="rail-divider"></div>
+      <button class="rail-btn" @click.stop="openSavedModal">
+        <i class='bx bx-bookmark'></i>
+      </button>
 
-  <button 
-    class="rail-btn rail-avatar bottom-avatar" 
-    @click.stop="openModal"
-  >
-    <img :src="'/leanOnBot.png'" />
-  </button>
-</div>
+      <div class="rail-divider"></div>
 
-    <!-- ── EXPANDED FULL SIDEBAR ── -->
-    <div v-else class="sidebar-full">
+      <button class="rail-btn rail-avatar bottom-avatar" @click.stop="openModal">
+        <img :src="'/leanOnBot.png'" />
+      </button>
+    </div>
+
+    <!-- ── EXPANDED FULL SIDEBAR (desktop expanded + all mobile) ── -->
+    <div v-if="open || isMobile" class="sidebar-full">
       <div class="sidebar-header">
         <div class="header-left">
           <i class='bx bx-user user-icon'></i>
           <span>Student Panel</span>
         </div>
-        <button class="sidebar-toggle" @click="$emit('toggle')" title="Close Sidebar">
-          <i class='bx bx-dock-left'></i>
+        <!-- Desktop: dock icon | Mobile: X close -->
+        <button class="sidebar-toggle" @click="handleCloseBtn" title="Close Sidebar">
+          <i :class="isMobile ? 'bx bx-x' : 'bx bx-dock-left'"></i>
         </button>
       </div>
       <hr />
@@ -88,18 +102,23 @@
               </div>
             </div>
           </div>
+
+          <Teleport to="body">
+          <div
+            v-if="dropdown.visible"
+            class="dropdown-menu"
+            :style="{ top: dropdown.top + 'px', left: dropdown.left + 'px' }"
+            @click.stop
+          >
+            <div class="dropdown-item" @click="saveChat(dropdown.index)"><i class='bx bx-save'></i> Save</div>
+            <div class="dropdown-item" @click="archiveChat(dropdown.index)"><i class='bx bx-archive'></i> Archive</div>
+            <div class="dropdown-item delete" @click="deleteChat(dropdown.index)"><i class='bx bx-trash'></i> Delete</div>
+          </div>
+        </Teleport>
         </div>
 
-        <div
-          v-if="dropdown.visible"
-          class="dropdown-menu"
-          :style="{ top: dropdown.top + 'px', left: dropdown.left + 'px' }"
-          @click.stop
-        >
-          <div class="dropdown-item" @click="saveChat(dropdown.index)"><i class='bx bx-save'></i> Save</div>
-          <div class="dropdown-item" @click="archiveChat(dropdown.index)"><i class='bx bx-archive'></i> Archive</div>
-          <div class="dropdown-item delete" @click="deleteChat(dropdown.index)"><i class='bx bx-trash'></i> Delete</div>
-        </div>
+        <!-- Replace the existing dropdown div -->
+        
       </nav>
 
       <div class="logout">
@@ -112,47 +131,36 @@
             <p class="subtext">{{ userProfile.email }}</p>
           </div>
         </div>
-        <div class="footer-buttons">
-          <button class="archive-btn" @click="openArchivedModal">Archived</button>
-
-          <button class="logout-btn" @click="openModal">Logout</button>
-        </div>
       </div>
     </div>
 
     <!-- ══════════════════════════════════
-         ALL MODALS — outside v-if/v-else
-         so they always render in the DOM
+         MODALS — always in DOM
     ══════════════════════════════════ -->
 
-    <!-- LOGOUT MODAL — anchored above avatar when collapsed, above footer when expanded -->
+    <!-- LOGOUT MODAL -->
+  <Teleport to="body">
     <transition name="modal-fade">
-      <div
-        v-if="showLogoutModal"
-        class="modal-overlay"
-        @click="closeModal"
-      >
+      <div v-if="showLogoutModal" class="modal-overlay" @click="closeModal">
         <div
           class="modal-container"
-          :class="open ? 'modal-expanded' : 'modal-collapsed'"
+          :class="[
+            isMobile ? 'modal-mobile' : (open ? 'modal-expanded' : 'modal-collapsed')
+          ]"
           @click.stop
         >
           <div class="modal-item">
             <i class='bx bx-user'></i>
             <router-link to="/MyAccount" class="my-account">My Account</router-link>
           </div>
-
-          <!-- NEW BUTTON -->
-           <div class="modal-item" @click="openTermsModal">
-           <i class='bx bx-info-circle'></i>
-            <span>Terms & Privacy</span>
+          <div class="modal-item" @click="openTermsModal">
+            <i class='bx bx-info-circle'></i>
+            <span>Terms &amp; Privacy</span>
           </div>
-
           <div class="modal-item" @click="openArchivedModal">
             <i class='bx bx-archive'></i>
             <span>Archived</span>
           </div>
-
           <div class="modal-item logout-item" @click="confirmLogout">
             <i class='bx bx-log-out'></i>
             <span>Logout</span>
@@ -162,38 +170,35 @@
     </transition>
 
     <!-- ARCHIVED MODAL -->
-    <!-- ARCHIVED MODAL -->
-<transition name="archived-modal">
-  <div v-if="showArchivedModal" class="archived-overlay" @click.self="closeArchivedModal">
-    <div class="archived-container" @click.stop>
-
-      <div class="archived-header">
-        <h3 class="archived-title">Archived Chats</h3>
-        <button class="archived-close-x" @click="closeArchivedModal">
-          <i class='bx bx-x'></i>
-        </button>
-      </div>
-
-      <div class="archived-list">
-        <div v-for="(chat, index) in archivedChats" :key="chat.id" class="archived-item">
-          <div class="archived-text">
-            <h4>{{ chat.title }}</h4>
-            <p>{{ formatDate(chat.updated_at) }}</p>
+    <transition name="archived-modal">
+      <div v-if="showArchivedModal" class="archived-overlay" @click.self="closeArchivedModal">
+        <div class="archived-container" @click.stop>
+          <div class="archived-header">
+            <h3 class="archived-title">Archived Chats</h3>
+            <button class="archived-close-x" @click="closeArchivedModal">
+              <i class='bx bx-x'></i>
+            </button>
           </div>
-          <div class="archived-actions">
-            <button @click="restoreChat(index)" title="Restore"><i class='bx bx-undo'></i></button>
-            <button @click="deleteArchivedChat(index)" title="Delete"><i class='bx bx-trash'></i></button>
+          <div class="archived-list">
+            <div v-for="(chat, index) in archivedChats" :key="chat.id" class="archived-item">
+              <div class="archived-text">
+                <h4>{{ chat.title }}</h4>
+                <p>{{ formatDate(chat.updated_at) }}</p>
+              </div>
+              <div class="archived-actions">
+                <button @click="restoreChat(index)" title="Restore"><i class='bx bx-undo'></i></button>
+                <button @click="deleteArchivedChat(index)" title="Delete"><i class='bx bx-trash'></i></button>
+              </div>
+            </div>
+            <div v-if="archivedChats.length === 0" class="empty-state">
+              <div class="empty-state-icon"><i class='bx bx-archive'></i></div>
+              <p class="empty-state-title">Nothing archived yet</p>
+              <p class="empty-state-sub">Archived chats will appear here</p>
+            </div>
           </div>
         </div>
-        <div v-if="archivedChats.length === 0" class="empty-state">
-          <div class="empty-state-icon"><i class='bx bx-archive'></i></div>
-          <p class="empty-state-title">Nothing archived yet</p>
-          <p class="empty-state-sub">Archived chats will appear here</p>
-        </div>
       </div>
-    </div>
-  </div>
-</transition>
+    </transition>
 
     <!-- SAVED MODAL -->
     <transition name="saved-modal">
@@ -267,49 +272,76 @@
     />
 
     <TermsModal
-  :visible="showTermsModal"
-  :userId="userProfile.email || 'guest'"
-  @accept="closeTermsModal"
-  @close="closeTermsModal"
-/>
-
+      :visible="showTermsModal"
+      :userId="userProfile.email || 'guest'"
+      @accept="closeTermsModal"
+      @close="closeTermsModal"
+    />
+</Teleport>
   </aside>
+  
 </template>
 
 <script setup>
-// script is 100% unchanged from your working version
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useChats } from '@/composables/useChats'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
-import TermsModal from '@/components/TermsModal.vue';
+import TermsModal from '@/components/TermsModal.vue'
+import { useSidebarToggle } from '@/composables/useSidebarToggle'
 import axios from 'axios'
 
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
 
-const showTermsModal = ref(false)
+const { mobileToggleCount } = useSidebarToggle() 
 
-const openTermsModal = () => {
-  showTermsModal.value = true
+// ── MOBILE DETECTION ──
+const MOBILE_BREAKPOINT = 768
+const isMobile = ref(window.innerWidth <= MOBILE_BREAKPOINT)
+const mobileOpen = ref(false)
+
+const handleResize = () => {
+  isMobile.value = window.innerWidth <= MOBILE_BREAKPOINT
+  if (!isMobile.value) mobileOpen.value = false
 }
 
-const closeTermsModal = () => {
-  showTermsModal.value = false
+// Expose mobileOpen so parent can toggle it via the hamburger
+const emit = defineEmits(['toggle', 'select-chat', 'update:mobileOpen'])
+
+const props = defineProps({
+  open: Boolean,
+  mobileToggle: { type: Number, default: 0 }
+})
+
+// Watch parent hamburger clicks
+watch(mobileToggleCount, () => {
+  if (isMobile.value) mobileOpen.value = !mobileOpen.value
+})
+
+const closeMobileSidebar = () => { mobileOpen.value = false }
+
+const handleCloseBtn = () => {
+  if (isMobile.value) {
+    mobileOpen.value = false
+  } else {
+    emit('toggle')
+  }
 }
 
 const handleRailClick = (e) => {
-  // ignore buttons and their children (icons, img, etc.)
   if (e.target.closest('button')) return
-
   emit('toggle')
 }
 
-const emit = defineEmits(['toggle', 'select-chat'])
-defineProps({ open: Boolean })
+// ── TERMS ──
+const showTermsModal = ref(false)
+const openTermsModal = () => { showTermsModal.value = true }
+const closeTermsModal = () => { showTermsModal.value = false }
 
+// ── USER ──
 const userProfile = ref({ first_name: 'Loading...', last_name: '', email: '' })
 
 const fetchUserProfile = async () => {
@@ -317,22 +349,32 @@ const fetchUserProfile = async () => {
     const token = localStorage.getItem('token')
     const res = await axios.get('/api/user', { headers: { Authorization: `Bearer ${token}` } })
     userProfile.value = res.data
-    // Auto show TermsModal for first time / newly verified logins
-    if (!res.data.terms_accepted_at) {
-      showTermsModal.value = true
-    }
+    if (!res.data.terms_accepted_at) showTermsModal.value = true
   } catch { console.error('Failed to fetch user profile') }
 }
 
+// ── CHATS ──
 const { chats, fetchConversations, addConversation, removeConversation, updateConversation } = useChats()
 
-onMounted(() => { fetchConversations(); fetchUserProfile() })
+onMounted(() => {
+  fetchConversations()
+  fetchUserProfile()
+  window.addEventListener('resize', handleResize)
+  window.addEventListener('click', closeDropdown)
+})
 
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+  window.removeEventListener('click', closeDropdown)
+})
+
+// ── SAVED ──
 const savedChats = computed(() => chats.value.filter(c => c.is_saved))
 const showSavedModal = ref(false)
 const openSavedModal = () => { showSavedModal.value = true }
 const closeSavedModal = () => { showSavedModal.value = false }
 
+// ── SEARCH ──
 const showSearchModal = ref(false)
 const searchQuery = ref('')
 const openSearchModal = () => { showSearchModal.value = true; searchQuery.value = '' }
@@ -347,6 +389,7 @@ const filteredSearchResults = computed(() => {
   )
 })
 
+// ── LOGOUT MODAL ──
 const showLogoutModal = ref(false)
 const openModal = () => { showLogoutModal.value = true }
 const closeModal = () => { showLogoutModal.value = false }
@@ -361,15 +404,14 @@ const confirmLogout = () => {
       try {
         const token = localStorage.getItem('token')
         await axios.post('/api/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
-      } catch (e) {
-        console.error('Logout API error:', e)
-      }
+      } catch (e) { console.error('Logout API error:', e) }
       localStorage.removeItem('token')
       window.location.href = '/login'
     }
   })
 }
 
+// ── ARCHIVED ──
 const showArchivedModal = ref(false)
 const archivedChats = ref([])
 const openArchivedModal = async () => {
@@ -414,6 +456,7 @@ const deleteArchivedChat = (index) => {
   })
 }
 
+// ── DROPDOWN ──
 const dropdown = ref({ visible: false, top: 0, left: 0, index: null })
 const openDropdown = (event, index) => {
   event.stopPropagation()
@@ -421,14 +464,14 @@ const openDropdown = (event, index) => {
   dropdown.value = { visible: true, top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, index }
 }
 const closeDropdown = () => { dropdown.value.visible = false }
-onMounted(() => window.addEventListener('click', closeDropdown))
-onBeforeUnmount(() => window.removeEventListener('click', closeDropdown))
 
+// ── CHAT ACTIONS ──
 const createNewChat = async () => {
   try {
     const res = await axios.post('/api/conversations')
     addConversation(res.data)
     emit('select-chat', res.data.id)
+    if (isMobile.value) mobileOpen.value = false
     router.currentRoute.value.path !== '/ChatConvo'
       ? router.push({ path: '/ChatConvo', query: { conversation_id: res.data.id } })
       : router.push({ query: { conversation_id: res.data.id } })
@@ -437,6 +480,7 @@ const createNewChat = async () => {
 
 const selectChat = (id) => {
   emit('select-chat', id)
+  if (isMobile.value) mobileOpen.value = false
   router.currentRoute.value.path !== '/ChatConvo'
     ? router.push({ path: '/ChatConvo', query: { conversation_id: id } })
     : router.push({ query: { conversation_id: id } })
@@ -444,6 +488,7 @@ const selectChat = (id) => {
 
 const isSelected = (id) => route.query.conversation_id == id
 
+// ── CONFIRM MODAL ──
 const confirmModal = ref({ visible: false, title: '', message: '', confirmText: '', cancelText: 'Cancel', type: 'primary', actionCallback: null })
 const openConfirmModal = (options) => { confirmModal.value = { ...confirmModal.value, ...options, visible: true } }
 const cancelConfirm = () => { confirmModal.value.visible = false }

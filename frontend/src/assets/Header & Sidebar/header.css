@@ -1,3 +1,7 @@
+/* ══════════════════════════════════════════
+   HEADER — responsive
+   ══════════════════════════════════════════ */
+
 .header {
   height: 70px;
   background: #ffffff;
@@ -9,57 +13,81 @@
   border-bottom: 1px solid #dcdcdc;
   position: sticky;
   top: 0;
-  height: 90px;
-  z-index: 100;
+  z-index: 500;
+  box-sizing: border-box;
 }
 
-/* LEFT */
-
-i {
-  font-size: 24px;
-  color: #333;
-  cursor: pointer;
-}
+/* ── LEFT ── */
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 12px;
 }
 
 .logo-separation {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .logo-icon {
-  width: 50px;
-  margin-right: 5px;
-  margin-left: 5px;
-  filter: drop-shadow(0px 0px 8px rgba(0,0,0, 0.180));
+  width: 44px;
+  flex-shrink: 0;
+  filter: drop-shadow(0px 0px 8px rgba(0, 0, 0, 0.18));
 }
 
 .logo-text {
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 700;
-  color: #0E6008;
+  color: #0e6008;
   letter-spacing: 1px;
+  line-height: 1.1;
 }
 
 .subtext {
-    font-size: 14px;
+  font-size: 12px;
+  color: #888;
+  margin: 0;
 }
 
-/* RIGHT */
-
+/* ── RIGHT ── */
 .right-section {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
+/* ── HAMBURGER — hidden on desktop ── */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
 
+.hamburger-btn:hover {
+  background: rgba(14, 96, 8, 0.08);
+}
 
-/* Divider */
+.ham-line {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #333;
+  border-radius: 2px;
+  transition: all 0.25s ease;
+}
 
+/* ── DIVIDER ── */
 .divider {
   width: 1px;
   height: 40px;
@@ -67,8 +95,7 @@ i {
   margin: 0 18px;
 }
 
-/* User */
-
+/* ── USER SECTION ── */
 .user-section {
   display: flex;
   align-items: center;
@@ -83,9 +110,7 @@ i {
   border-radius: 50%;
 }
 
-.user-info {
-  line-height: 1.2;
-}
+.user-info { line-height: 1.2; }
 
 .name {
   font-size: 14px;
@@ -99,9 +124,75 @@ i {
   padding-top: 5px;
 }
 
-.arrow {
-  width: 18px;
-  stroke: #666;
-  stroke-width: 2;
-  fill: none;
+i {
+  font-size: 22px;
+  color: #333;
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════
+   BREAKPOINTS
+   ══════════════════════════════════════════ */
+
+/* Tablet & below — show hamburger, shrink subtext */
+@media (max-width: 768px) {
+  .header {
+    padding: 0 16px;
+    height: 64px;
+  }
+
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .logo-icon {
+    width: 38px;
+  }
+
+  .logo-text {
+    font-size: 16px;
+  }
+
+  .subtext {
+    display: none;
+  }
+
+  .logo-section {
+    gap: 8px; /* was 12px */
+  }
+
+  .logo-separation {
+    gap: 2px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .header {
+    padding: 0 12px;
+    height: 58px;
+  }
+
+  .logo-text {
+    font-size: 15px;
+  }
+
+  .logo-icon {
+    width: 34px;
+  }
+
+   .logo-section {
+    gap: 6px;
+  }
+
+  .logo-separation {
+    gap: 1px;
+  }
+}
+
+/* Very small */
+@media (max-width: 360px) {
+  .logo-separation {
+    display: none;
+  }
 }
