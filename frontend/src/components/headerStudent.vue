@@ -1,8 +1,15 @@
 <template>
   <header class="header">
 
-    <!-- Left Logo + Sidebar Toggle -->
+    <!-- Left: Hamburger (mobile only) + Logo -->
     <div class="logo-section">
+
+      <!-- Mobile hamburger toggle -->
+      <button button class="hamburger-btn" @click="triggerMobileToggle" aria-label="Toggle Sidebar">
+        <span class="ham-line"></span>
+        <span class="ham-line"></span>
+        <span class="ham-line"></span>
+      </button>
 
       <img src="/leanOnBot.png" class="logo-icon" />
 
@@ -10,33 +17,29 @@
         <span class="logo-text">LeanOnBot</span>
         <p class="subtext">Your wellness companion</p>
       </div>
-      
+
     </div>
 
     <!-- Right Section -->
     <div class="right-section">
-      <!-- Notification Component -->
       <NotificationPanel @view-all="handleViewAll" />
     </div>
-  </header>
 
+  </header>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import Sidebar from './sidebarStudent.vue'
 import NotificationPanel from '../components/NotificationPanel.vue'
+import { useSidebarToggle } from '@/composables/useSidebarToggle'  // ← add
 
+const { triggerMobileToggle } = useSidebarToggle()  // ← add
 
+defineEmits(['toggle-sidebar'])
 
-// Sidebar state lifted to header
-const openSidebar = ref(false)
-
-// Toggle functions
-function toggleSidebar() {
-  openSidebar.value = !openSidebar.value
+function handleViewAll() {
+  // handle view all notifications
 }
 </script>
 
 <style scoped src="../assets/Header & Sidebar/header.css"></style>
-

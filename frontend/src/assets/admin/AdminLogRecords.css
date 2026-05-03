@@ -150,13 +150,12 @@ main {
 }
 
 /* Column widths */
-.log-table th:nth-child(1) { width: 120px; }
-.log-table th:nth-child(2) { width: 175px; }
-.log-table th:nth-child(3) { width: 140px; }
-.log-table th:nth-child(4) { width: 70px;  }
+.log-table th:nth-child(1) { width: 130px; }
+.log-table th:nth-child(2) { width: 180px; }
+.log-table th:nth-child(3) { width: 130px; }
+.log-table th:nth-child(4) { width: 160px; }
 .log-table th:nth-child(5) { width: 160px; }
-.log-table th:nth-child(6) { width: 135px; }
-.log-table th:nth-child(7) { width: 135px; }
+.log-table th:nth-child(6) { width: 160px; }
 
 .log-table th {
   padding: 10px 14px;
