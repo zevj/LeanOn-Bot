@@ -135,24 +135,6 @@ Process: Emotion detection, response generation
 
 Output: Chatbot replies, coping strategies, referrals
 
-👥 **Project Team**
-
-Team Name: DualDev
-
-Team Leader: Allysa Lingad
-
-Member: Ira Jacob Javier
-
-Advisers:
-
-Research Adviser: Ms. Denise Lou Punzalan
-
-Technical Adviser: Mr. Kenneth Jones B. Basa
-
-Client / Beneficiary:
-
-Ms. Mechel A. Bautista (Guidance Office)
-
 🔍 **Competitive Advantage**
 
 Unlike general mental health chatbots, LeanOn Bot is:
