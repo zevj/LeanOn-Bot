@@ -478,16 +478,41 @@
 }
 
 .email-field-textarea {
-    min-height: 180px;
-    resize: vertical;
+    height: 200px;
+    resize: none;
     white-space: pre-line;
     line-height: 1.6;
     color: #374151;
+    background-color: #fff;
+
+    /* Clean solid border */
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+
+    /* Remove ALL inner “gitli” effects */
     outline: none;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    appearance: none;
+    -webkit-appearance: none;
+
+    /* Important fix for inner edge rendering */
+    background-clip: padding-box;
+
     transition: border-color 0.15s;
+
+    /* Scroll */
+    overflow-y: auto;
 }
 
-/* ── Textarea Scrollbar ── */
+/* Optional: remove focus glow completely */
+.email-field-textarea:focus {
+    outline: none;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+}
+
+/* ── Scrollbar stays the same ── */
 .email-field-textarea::-webkit-scrollbar {
     width: 6px;
 }
@@ -498,13 +523,10 @@
 }
 
 .email-field-textarea::-webkit-scrollbar-thumb {
-    background: #0E6008;
+    background: #0c4708;
     border-radius: 10px;
 }
 
-.email-field-textarea::-webkit-scrollbar-thumb:hover {
-    background: #0a4806;
-}
 
 .email-field-textarea:focus {
     border-color: #0E6008;

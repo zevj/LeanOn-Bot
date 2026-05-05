@@ -1,10 +1,10 @@
-<template>
+<<template>
   <Teleport to="body">
     <Transition name="modal-fade">
       <div v-if="visible" class="terms-overlay">
         <div class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-title">
-          <!-- Header -->
 
+          <!-- Header -->
           <div class="terms-header">
             <div class="terms-logo">
               <img src="/leanOnBot.png" class="logo-icon" alt="LeanOn Bot Logo" />
@@ -14,6 +14,9 @@
             <p class="terms-subtitle">
               Please read the following carefully before using LeanOn Bot. By accepting, you acknowledge and agree to these terms.
             </p>
+
+            <!-- Close button: only shown in view mode -->
+            <button v-if="mode === 'view'" class="modal-close-btn" @click="$emit('close')">✕</button>
           </div>
 
           <!-- Scrollable Content -->
@@ -74,22 +77,19 @@
             <div class="body-spacer"></div>
           </div>
 
-          <!-- Scroll hint -->
-          <div class="scroll-hint-bar" :class="{ hidden: hasScrolled }">
+          <!-- Scroll hint: only shown in accept mode -->
+          <div v-if="mode !== 'view'" class="scroll-hint-bar" :class="{ hidden: hasScrolled }">
             <span class="scroll-hint-text">↓ Scroll to read all terms</span>
           </div>
 
-          <!-- Footer -->
-          <div class="terms-footer">
+          <!-- Footer: only shown in accept mode -->
+          <div v-if="mode !== 'view'" class="terms-footer">
             <div class="checkboxes">
-
-              <label 
-  class="checkbox-label"
-  :class="{ 
-    checked: check2
-  }"
-  @click="toggleCheck"
->
+              <label
+                class="checkbox-label"
+                :class="{ checked: check2 }"
+                @click="toggleCheck"
+              >
                 <span class="custom-check">
                   <svg v-if="check2" viewBox="0 0 12 10" fill="none">
                     <path d="M1 5l3.5 3.5L11 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -120,21 +120,21 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
-defineProps({
-  visible: Boolean
+const props = defineProps({
+  visible: Boolean,
+  mode: {
+    type: String,
+    default: 'accept', // 'accept' | 'view'
+    validator: (v) => ['accept', 'view'].includes(v)
+  }
 })
 
 const emit = defineEmits(['accept', 'decline', 'close'])
 const router = useRouter()
-
-/* ─────────────────────────────
-   STORAGE KEYS (per user)
-───────────────────────────── */
-// Removed local storage keys
 
 /* ─────────────────────────────
    STATES
@@ -143,16 +143,19 @@ const check2 = ref(false)
 const hasScrolled = ref(false)
 
 /* ─────────────────────────────
-   INIT STATE
+   RESET STATE WHEN MODAL OPENS
 ───────────────────────────── */
-// Removed mounted local storage sync
+watch(() => props.visible, (val) => {
+  if (val) {
+    check2.value = false
+    hasScrolled.value = false
+  }
+})
 
 /* ─────────────────────────────
    COMPUTED LOGIC
 ───────────────────────────── */
-const canAccept = computed(() => {
-  return check2.value
-})
+const canAccept = computed(() => check2.value)
 
 /* ─────────────────────────────
    CHECKBOX TOGGLE
@@ -179,7 +182,7 @@ const handleAccept = async () => {
   try {
     const token = localStorage.getItem('token')
     await axios.post('/api/terms/accept', {}, { headers: { Authorization: `Bearer ${token}` } })
-    emit('accept') 
+    emit('accept')
   } catch (e) {
     console.error('Failed to accept terms:', e)
   }
@@ -199,7 +202,6 @@ const handleDecline = async () => {
   localStorage.removeItem('token')
   router.push('/login')
 }
-
 </script>
 
 <style scoped>
@@ -239,6 +241,7 @@ const handleDecline = async () => {
   border-bottom: 1px solid #e4ede3;
   background: #f7fbf6;
   flex-shrink: 0;
+  position: relative;
 }
 
 .terms-logo {
@@ -302,7 +305,7 @@ const handleDecline = async () => {
 .terms-section {
   padding: 20px 20px;
   border-bottom: 1px solid #edf3ec;
-  margin: 0; /* remove uneven spacing */
+  margin: 0;
 }
 
 .terms-section:last-of-type {
@@ -313,7 +316,7 @@ const handleDecline = async () => {
   font-size: 11px;
   font-weight: 700;
   color: #0E6008;
-  margin: 0 0 8px; /* tighter + consistent */
+  margin: 0 0 8px;
   text-transform: uppercase;
   letter-spacing: 0.9px;
   display: flex;
@@ -523,6 +526,32 @@ const handleDecline = async () => {
   transform: translateX(3px);
 }
 
+/* ── Close button (view mode) ────────────────────── */
+.modal-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  color: #0E6008;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  z-index: 9999;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.modal-close-btn:hover {
+  background: #f2f7f1;
+  transform: scale(1.05);
+}
+
 /* ── Transition ──────────────────────────────────── */
 .modal-fade-enter-active {
   transition: opacity 0.25s ease;
@@ -548,42 +577,4 @@ const handleDecline = async () => {
   transform: translateY(10px) scale(0.98);
   opacity: 0;
 }
-
-.modal-close-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 34px;
-  height: 34px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border: none;
-  background: white;
-  border-radius: 50%;
-
-  cursor: pointer;
-  font-size: 18px;
-
-  color: #0E6008;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-
-  z-index: 9999;
-}
-
-.modal-close-btn:hover {
-  background: #f2f7f1;
-  transform: scale(1.05);
-}
-.checkbox-label.disabled {
-  opacity: 0.6;
-  pointer-events: none;
-}
-
-.btn-accept:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>
+</style>>
