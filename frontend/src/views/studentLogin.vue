@@ -185,7 +185,7 @@ const handleLogin = async () => {
   isLoading.value = true
 
   try {
-    const res = await axios.post('http://127.0.0.1:8000/api/login', {
+    const res = await axios.post('/api/login', {
       email: username.value,
       password: password.value
     })
@@ -229,7 +229,8 @@ const onOtpVerified = (data) => {
 ========================= */
 const loginWithGoogle = () => {
   // Redirect to backend's Google auth endpoint
-  window.location.href = 'http://127.0.0.1:8000/api/auth/google/redirect'
+  const baseURL = axios.defaults.baseURL || 'http://127.0.0.1:8000'
+  window.location.href = `${baseURL}/api/auth/google/redirect`
 }
 
 /* =========================

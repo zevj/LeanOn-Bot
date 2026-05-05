@@ -319,7 +319,7 @@ async function fetchUser() {
     isLoading.value = true
     try {
         const token = localStorage.getItem('token')
-        const response = await axios.get('http://127.0.0.1:8000/api/user', {
+        const response = await axios.get('/api/user', {
             headers: { Authorization: `Bearer ${token}` }
         })
         profile.value = {
@@ -348,7 +348,7 @@ async function handleUpload(event) {
 
     try {
         const token = localStorage.getItem('token')
-        const response = await axios.post('http://127.0.0.1:8000/api/user/image', formData, {
+        const response = await axios.post('/api/user/image', formData, {
             headers: { 
                 Authorization: `Bearer ${token}`,
                 'Content-Type': 'multipart/form-data'
@@ -379,7 +379,7 @@ async function submitProfile() {
     isSaving.value = true
     try {
         const token = localStorage.getItem('token')
-        await axios.put('http://127.0.0.1:8000/api/user', {
+        await axios.put('/api/user', {
             phone_number: form.value.phone_number
         }, {
             headers: { Authorization: `Bearer ${token}` }
@@ -400,7 +400,7 @@ async function sendOTP() {
   
   try {
     const token = localStorage.getItem('token')
-    await axios.post('http://127.0.0.1:8000/api/send-otp', {
+    await axios.post('/api/send-otp', {
         current_password: passwords.value.current
     }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -447,7 +447,7 @@ async function finalizePasswordChange() {
     isSavingPassword.value = true
     try {
         const token = localStorage.getItem('token')
-        const response = await axios.post('http://127.0.0.1:8000/api/change-password', {
+        const response = await axios.post('/api/change-password', {
             current_password: passwords.value.current,
             new_password: passwords.value.new,
             new_password_confirmation: passwords.value.confirm,
