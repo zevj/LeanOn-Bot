@@ -590,4 +590,4 @@ const formatDate = (dateString) => {
 }
 </script>
 
-<style scoped src="../assets/Header & Sidebar/sidebar.css"></style>
+<style scoped src="../assets/header-sidebar/sidebar.css"></style>

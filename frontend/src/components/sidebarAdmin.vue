@@ -144,4 +144,4 @@ const handleRailClick = (e) => {
 }
 </script>
 
-<style scoped src="../assets/Header & Sidebar/sidebarAdmin.css"></style>
+<style scoped src="../assets/header-sidebar/sidebarAdmin.css"></style>

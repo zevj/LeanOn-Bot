@@ -27,5 +27,5 @@ const sendMessage = () => {
 }
 </script>
 
-<style scoped src="../assets/Header & Sidebar/SendChat.css"></style>
+<style scoped src="../assets/header-sidebar/SendChat.css"></style>
 

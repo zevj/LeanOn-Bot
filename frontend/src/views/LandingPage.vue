@@ -287,4 +287,4 @@ const handleSubmit = () => {
 }
 </script>
 
-<style src="../assets/Header & Sidebar/LandingPage.css"></style>
+<style src="../assets/header-sidebar/landingPage.css"></style>
