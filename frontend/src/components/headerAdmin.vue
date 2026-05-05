@@ -18,4 +18,4 @@ import NotificationPanel from '../components/NotificationPanel.vue'
 function handleViewAll() {}
 </script>
 
-<style scoped src="../assets/Header & Sidebar/headerAdmin.css"></style>
+<style scoped src="../assets/header-sidebar/headerAdmin.css"></style>

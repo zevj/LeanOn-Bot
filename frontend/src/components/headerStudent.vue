@@ -42,4 +42,4 @@ function handleViewAll() {
 }
 </script>
 
-<style scoped src="../assets/Header & Sidebar/header.css"></style>
+<style scoped src="../assets/header-sidebar/header.css"></style>
