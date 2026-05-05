@@ -341,20 +341,7 @@ const openEmailModal = (alert) => {
         severity: alert.severity,
         alertId: alert.id,
         body:
-`Dear Support Team,
-
-A crisis alert has been flagged for the following user.
-
-User: ${alert.user_display} · ${alert.masked_email}
-Severity: ${capitalize(alert.severity)}
-Detected keywords: "${keywords}"
-
-Flagged message:
-"${alert.message}"
-
-Please review and take appropriate action immediately.
-
-— Gordon College - Guidance & Counseling Unit`,
+`Dear Student,`,
     };
 };
 

@@ -104,21 +104,18 @@
           </div>
 
           <Teleport to="body">
-          <div
-            v-if="dropdown.visible"
-            class="dropdown-menu"
-            :style="{ top: dropdown.top + 'px', left: dropdown.left + 'px' }"
-            @click.stop
-          >
-            <div class="dropdown-item" @click="saveChat(dropdown.index)"><i class='bx bx-save'></i> Save</div>
-            <div class="dropdown-item" @click="archiveChat(dropdown.index)"><i class='bx bx-archive'></i> Archive</div>
-            <div class="dropdown-item delete" @click="deleteChat(dropdown.index)"><i class='bx bx-trash'></i> Delete</div>
-          </div>
-        </Teleport>
+            <div
+              v-if="dropdown.visible"
+              class="dropdown-menu"
+              :style="{ top: dropdown.top + 'px', left: dropdown.left + 'px' }"
+              @click.stop
+            >
+              <div class="dropdown-item" @click="saveChat(dropdown.index)"><i class='bx bx-save'></i> Save</div>
+              <div class="dropdown-item" @click="archiveChat(dropdown.index)"><i class='bx bx-archive'></i> Archive</div>
+              <div class="dropdown-item delete" @click="deleteChat(dropdown.index)"><i class='bx bx-trash'></i> Delete</div>
+            </div>
+          </Teleport>
         </div>
-
-        <!-- Replace the existing dropdown div -->
-        
       </nav>
 
       <div class="logout">
@@ -138,148 +135,149 @@
          MODALS — always in DOM
     ══════════════════════════════════ -->
 
-    <!-- LOGOUT MODAL -->
-  <Teleport to="body">
-    <transition name="modal-fade">
-      <div v-if="showLogoutModal" class="modal-overlay" @click="closeModal">
-        <div
-          class="modal-container"
-          :class="[
-            isMobile ? 'modal-mobile' : (open ? 'modal-expanded' : 'modal-collapsed')
-          ]"
-          @click.stop
-        >
-          <div class="modal-item">
-            <i class='bx bx-user'></i>
-            <router-link to="/MyAccount" class="my-account">My Account</router-link>
-          </div>
-          <div class="modal-item" @click="openTermsModal">
-            <i class='bx bx-info-circle'></i>
-            <span>Terms &amp; Privacy</span>
-          </div>
-          <div class="modal-item" @click="openArchivedModal">
-            <i class='bx bx-archive'></i>
-            <span>Archived</span>
-          </div>
-          <div class="modal-item logout-item" @click="confirmLogout">
-            <i class='bx bx-log-out'></i>
-            <span>Logout</span>
+    <Teleport to="body">
+      <!-- LOGOUT MODAL -->
+      <transition name="modal-fade">
+        <div v-if="showLogoutModal" class="modal-overlay" @click="closeModal">
+          <div
+            class="modal-container"
+            :class="[
+              isMobile ? 'modal-mobile' : (open ? 'modal-expanded' : 'modal-collapsed')
+            ]"
+            @click.stop
+          >
+            <div class="modal-item">
+              <i class='bx bx-user'></i>
+              <router-link to="/MyAccount" class="my-account">My Account</router-link>
+            </div>
+            <div class="modal-item" @click="openTermsModal">
+              <i class='bx bx-info-circle'></i>
+              <span>Terms &amp; Privacy</span>
+            </div>
+            <div class="modal-item" @click="openArchivedModal">
+              <i class='bx bx-archive'></i>
+              <span>Archived</span>
+            </div>
+            <div class="modal-item logout-item" @click="confirmLogout">
+              <i class='bx bx-log-out'></i>
+              <span>Logout</span>
+            </div>
           </div>
         </div>
-      </div>
-    </transition>
+      </transition>
 
-    <!-- ARCHIVED MODAL -->
-    <transition name="archived-modal">
-      <div v-if="showArchivedModal" class="archived-overlay" @click.self="closeArchivedModal">
-        <div class="archived-container" @click.stop>
-          <div class="archived-header">
-            <h3 class="archived-title">Archived Chats</h3>
-            <button class="archived-close-x" @click="closeArchivedModal">
-              <i class='bx bx-x'></i>
-            </button>
+      <!-- ARCHIVED MODAL -->
+      <transition name="archived-modal">
+        <div v-if="showArchivedModal" class="archived-overlay" @click.self="closeArchivedModal">
+          <div class="archived-container" @click.stop>
+            <div class="archived-header">
+              <h3 class="archived-title">Archived Chats</h3>
+              <button class="archived-close-x" @click="closeArchivedModal">
+                <i class='bx bx-x'></i>
+              </button>
+            </div>
+            <div class="archived-list">
+              <div v-for="(chat, index) in archivedChats" :key="chat.id" class="archived-item">
+                <div class="archived-text">
+                  <h4>{{ chat.title }}</h4>
+                  <p>{{ formatDate(chat.updated_at) }}</p>
+                </div>
+                <div class="archived-actions">
+                  <button @click="restoreChat(index)" title="Restore"><i class='bx bx-undo'></i></button>
+                  <button @click="deleteArchivedChat(index)" title="Delete"><i class='bx bx-trash'></i></button>
+                </div>
+              </div>
+              <div v-if="archivedChats.length === 0" class="empty-state">
+                <div class="empty-state-icon"><i class='bx bx-archive'></i></div>
+                <p class="empty-state-title">Nothing archived yet</p>
+                <p class="empty-state-sub">Archived chats will appear here</p>
+              </div>
+            </div>
           </div>
-          <div class="archived-list">
-            <div v-for="(chat, index) in archivedChats" :key="chat.id" class="archived-item">
-              <div class="archived-text">
+        </div>
+      </transition>
+
+      <!-- SAVED MODAL -->
+      <transition name="saved-modal">
+        <div v-if="showSavedModal" class="saved-overlay" @click.self="closeSavedModal">
+          <div class="saved-container" @click.stop>
+            <h3 class="saved-title">Saved Chats</h3>
+            <div class="saved-list">
+              <div v-for="(chat, index) in savedChats" :key="index" class="saved-item">
+                <div class="saved-text">
+                  <h4>{{ chat.title }}</h4>
+                  <p>{{ formatDate(chat.updated_at) }}</p>
+                </div>
+                <div class="saved-actions">
+                  <button @click="viewChat(chat)"><i class='bx bx-show'></i></button>
+                  <button @click="deleteSavedChat(index)"><i class='bx bx-trash'></i></button>
+                </div>
+              </div>
+              <div v-if="savedChats.length === 0" class="empty-state">
+                <div class="empty-state-icon"><i class='bx bx-bookmark'></i></div>
+                <p class="empty-state-title">No saved chats</p>
+                <p class="empty-state-sub">Bookmark a chat to see it here</p>
+              </div>
+            </div>
+            <button class="close-saved-btn" @click="closeSavedModal">Close</button>
+          </div>
+        </div>
+      </transition>
+
+      <!-- SEARCH MODAL -->
+      <transition name="search-modal">
+        <div v-if="showSearchModal" class="search-modal-overlay" @click.self="closeSearchModal">
+          <div class="search-modal-container" @click.stop>
+            <h3 class="search-modal-title">Search Chats</h3>
+            <input
+              type="text"
+              v-model="searchQuery"
+              class="search-modal-input"
+              placeholder="Search your chats..."
+              autofocus
+            />
+            <div class="search-results">
+              <div
+                v-for="(chat, index) in filteredSearchResults"
+                :key="index"
+                class="search-result-item"
+                @click="selectChat(chat.id); closeSearchModal()"
+              >
                 <h4>{{ chat.title }}</h4>
                 <p>{{ formatDate(chat.updated_at) }}</p>
               </div>
-              <div class="archived-actions">
-                <button @click="restoreChat(index)" title="Restore"><i class='bx bx-undo'></i></button>
-                <button @click="deleteArchivedChat(index)" title="Delete"><i class='bx bx-trash'></i></button>
+              <div v-if="filteredSearchResults.length === 0" class="empty-state">
+                <div class="empty-state-icon"><i class='bx bx-search-alt'></i></div>
+                <p class="empty-state-title">No results found</p>
+                <p class="empty-state-sub">Try a different keyword</p>
               </div>
             </div>
-            <div v-if="archivedChats.length === 0" class="empty-state">
-              <div class="empty-state-icon"><i class='bx bx-archive'></i></div>
-              <p class="empty-state-title">Nothing archived yet</p>
-              <p class="empty-state-sub">Archived chats will appear here</p>
-            </div>
+            <button class="search-modal-close-btn" @click="closeSearchModal">Close</button>
           </div>
         </div>
-      </div>
-    </transition>
+      </transition>
 
-    <!-- SAVED MODAL -->
-    <transition name="saved-modal">
-      <div v-if="showSavedModal" class="saved-overlay" @click.self="closeSavedModal">
-        <div class="saved-container" @click.stop>
-          <h3 class="saved-title">Saved Chats</h3>
-          <div class="saved-list">
-            <div v-for="(chat, index) in savedChats" :key="index" class="saved-item">
-              <div class="saved-text">
-                <h4>{{ chat.title }}</h4>
-                <p>{{ formatDate(chat.updated_at) }}</p>
-              </div>
-              <div class="saved-actions">
-                <button @click="viewChat(chat)"><i class='bx bx-show'></i></button>
-                <button @click="deleteSavedChat(index)"><i class='bx bx-trash'></i></button>
-              </div>
-            </div>
-            <div v-if="savedChats.length === 0" class="empty-state">
-              <div class="empty-state-icon"><i class='bx bx-bookmark'></i></div>
-              <p class="empty-state-title">No saved chats</p>
-              <p class="empty-state-sub">Bookmark a chat to see it here</p>
-            </div>
-          </div>
-          <button class="close-saved-btn" @click="closeSavedModal">Close</button>
-        </div>
-      </div>
-    </transition>
+      <ConfirmationModal
+        :visible="confirmModal.visible"
+        :title="confirmModal.title"
+        :message="confirmModal.message"
+        :confirmText="confirmModal.confirmText"
+        :cancelText="confirmModal.cancelText"
+        :type="confirmModal.type"
+        @confirm="executeConfirm"
+        @cancel="cancelConfirm"
+      />
 
-    <!-- SEARCH MODAL -->
-    <transition name="search-modal">
-      <div v-if="showSearchModal" class="search-modal-overlay" @click.self="closeSearchModal">
-        <div class="search-modal-container" @click.stop>
-          <h3 class="search-modal-title">Search Chats</h3>
-          <input
-            type="text"
-            v-model="searchQuery"
-            class="search-modal-input"
-            placeholder="Search your chats..."
-            autofocus
-          />
-          <div class="search-results">
-            <div
-              v-for="(chat, index) in filteredSearchResults"
-              :key="index"
-              class="search-result-item"
-              @click="selectChat(chat.id); closeSearchModal()"
-            >
-              <h4>{{ chat.title }}</h4>
-              <p>{{ formatDate(chat.updated_at) }}</p>
-            </div>
-            <div v-if="filteredSearchResults.length === 0" class="empty-state">
-              <div class="empty-state-icon"><i class='bx bx-search-alt'></i></div>
-              <p class="empty-state-title">No results found</p>
-              <p class="empty-state-sub">Try a different keyword</p>
-            </div>
-          </div>
-          <button class="search-modal-close-btn" @click="closeSearchModal">Close</button>
-        </div>
-      </div>
-    </transition>
+      <TermsModal
+        :visible="showTermsModal"
+        :userId="userProfile.email || 'guest'"
+        :mode="termsModalMode"
+        @accept="closeTermsModal"
+        @close="closeTermsModal"
+      />
+    </Teleport>
 
-    <ConfirmationModal
-      :visible="confirmModal.visible"
-      :title="confirmModal.title"
-      :message="confirmModal.message"
-      :confirmText="confirmModal.confirmText"
-      :cancelText="confirmModal.cancelText"
-      :type="confirmModal.type"
-      @confirm="executeConfirm"
-      @cancel="cancelConfirm"
-    />
-
-    <TermsModal
-      :visible="showTermsModal"
-      :userId="userProfile.email || 'guest'"
-      @accept="closeTermsModal"
-      @close="closeTermsModal"
-    />
-</Teleport>
   </aside>
-  
 </template>
 
 <script setup>
@@ -296,7 +294,7 @@ const router = useRouter()
 const route = useRoute()
 const toast = useToast()
 
-const { mobileToggleCount } = useSidebarToggle() 
+const { mobileToggleCount } = useSidebarToggle()
 
 // ── MOBILE DETECTION ──
 const MOBILE_BREAKPOINT = 768
@@ -308,7 +306,6 @@ const handleResize = () => {
   if (!isMobile.value) mobileOpen.value = false
 }
 
-// Expose mobileOpen so parent can toggle it via the hamburger
 const emit = defineEmits(['toggle', 'select-chat', 'update:mobileOpen'])
 
 defineProps({
@@ -316,7 +313,6 @@ defineProps({
   mobileToggle: { type: Number, default: 0 }
 })
 
-// Watch parent hamburger clicks
 watch(mobileToggleCount, () => {
   if (isMobile.value) mobileOpen.value = !mobileOpen.value
 })
@@ -337,9 +333,20 @@ const handleRailClick = (e) => {
 }
 
 // ── TERMS ──
+// MUST be declared before fetchUserProfile so the function can reference it
+const termsModalMode = ref('accept')
 const showTermsModal = ref(false)
-const openTermsModal = () => { showTermsModal.value = true }
-const closeTermsModal = () => { showTermsModal.value = false }
+
+// Called from sidebar menu → always view-only
+const openTermsModal = () => {
+  closeModal() // close the logout popup first
+  termsModalMode.value = 'view'
+  showTermsModal.value = true
+}
+
+const closeTermsModal = () => {
+  showTermsModal.value = false
+}
 
 // ── USER ──
 const userProfile = ref({ first_name: 'Loading...', last_name: '', email: '' })
@@ -349,9 +356,14 @@ const fetchUserProfile = async () => {
     const token = localStorage.getItem('token')
     const res = await axios.get('/api/user', { headers: { Authorization: `Bearer ${token}` } })
     userProfile.value = res.data
-    // Optional: remove or comment out the next line in Sidebar to prevent stacked modals
-    // if (!res.data.terms_accepted_at) showTermsModal.value = true
-  } catch { console.error('Failed to fetch user profile') }
+    // Post-login: show in accept mode if terms not yet accepted
+    if (!res.data.terms_accepted_at) {
+      termsModalMode.value = 'accept'
+      showTermsModal.value = true
+    }
+  } catch {
+    console.error('Failed to fetch user profile')
+  }
 }
 
 // ── CHATS ──
