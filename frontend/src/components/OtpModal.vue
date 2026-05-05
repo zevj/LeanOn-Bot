@@ -123,7 +123,7 @@ const handleVerify = async () => {
 
   isVerifying.value = true
   try {
-    const res = await axios.post('http://127.0.0.1:8000/api/verify-otp', {
+    const res = await axios.post('/api/verify-otp', {
       email: props.email,
       otp: code
     })
@@ -143,7 +143,7 @@ const handleVerify = async () => {
 const handleResend = async () => {
   if (timer.value > 0) return
   try {
-    await axios.post('http://127.0.0.1:8000/api/resend-otp', { email: props.email })
+    await axios.post('/api/resend-otp', { email: props.email })
     toast.success('Code resent!')
     startTimer()
   } catch (err) {

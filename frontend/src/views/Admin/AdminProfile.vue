@@ -350,7 +350,7 @@ async function fetchProfile() {
   isLoading.value = true
   try {
     const token = localStorage.getItem('token')
-    const res = await axios.get('http://127.0.0.1:8000/api/admin/profile', {
+    const res = await axios.get('/api/admin/profile', {
       headers: { Authorization: `Bearer ${token}` }
     })
     profile.value = {
@@ -375,7 +375,7 @@ async function handleUpload(event) {
   formData.append('profile_image', file)
   try {
     const token = localStorage.getItem('token')
-    const res = await axios.post('http://127.0.0.1:8000/api/admin/profile/image', formData, {
+    const res = await axios.post('/api/admin/profile/image', formData, {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
     })
     profile.value.profile_image_url = res.data.profile_image_url
@@ -393,7 +393,7 @@ async function submitProfile() {
   isSaving.value = true
   try {
     const token = localStorage.getItem('token')
-    await axios.put('http://127.0.0.1:8000/api/admin/profile', {
+    await axios.put('/api/admin/profile', {
       first_name: form.value.first_name,
       last_name: form.value.last_name,
       email: form.value.email,
@@ -419,7 +419,7 @@ async function sendOTP() {
   if (otpTimer.value > 0) return
   try {
     const token = localStorage.getItem('token')
-    await axios.post('http://127.0.0.1:8000/api/send-otp', {}, { headers: { Authorization: `Bearer ${token}` } })
+    await axios.post('/api/send-otp', {}, { headers: { Authorization: `Bearer ${token}` } })
     toast.success('OTP sent to your email')
     showOTP.value = true
     startTimer()
@@ -464,7 +464,7 @@ async function finalizePasswordChange() {
   isSavingPassword.value = true
   try {
     const token = localStorage.getItem('token')
-    const res = await axios.post('http://127.0.0.1:8000/api/change-password', {
+    const res = await axios.post('/api/change-password', {
       current_password: passwords.value.current,
       new_password: passwords.value.new,
       new_password_confirmation: passwords.value.confirm,

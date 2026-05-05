@@ -159,7 +159,7 @@ onMounted(() => {
 async function fetchSettings() {
   try {
     const token = localStorage.getItem('token')
-    const res = await axios.get('http://127.0.0.1:8000/api/admin/configuration', {
+    const res = await axios.get('/api/admin/configuration', {
       headers: { Authorization: `Bearer ${token}` }
     })
     settings.value = { ...settings.value, ...res.data }
@@ -172,7 +172,7 @@ async function saveSettings() {
   isSaving.value = true
   try {
     const token = localStorage.getItem('token')
-    await axios.put('http://127.0.0.1:8000/api/admin/configuration', settings.value, {
+    await axios.put('/api/admin/configuration', settings.value, {
       headers: { Authorization: `Bearer ${token}` }
     })
     toast.success('Configuration saved successfully!')

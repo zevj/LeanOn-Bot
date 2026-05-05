@@ -165,7 +165,7 @@ const handleSend = async (text) => {
     scrollToBottom();
 
     try {
-        const response = await axios.post('http://localhost:8000/api/chat', {
+        const response = await axios.post('/api/chat', {
             message: text,
             conversation_id: conversationId
         }, {
@@ -209,7 +209,7 @@ const handleSend = async (text) => {
 const fetchHistory = async (conversationId) => {
     if (!conversationId) { messages.value = []; return; }
     try {
-        const response = await axios.get(`http://localhost:8000/api/chat/history?conversation_id=${conversationId}`);
+        const response = await axios.get(`/api/chat/history?conversation_id=${conversationId}`);
         messages.value = response.data.map((msg, index) => [
             {
                 text: msg.message,

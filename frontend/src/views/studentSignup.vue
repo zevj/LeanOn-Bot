@@ -301,7 +301,7 @@ const handleSignup = async () => {
   isLoading.value = true // 🔥 START LOADING
 
   try {
-    const response = await axios.post('http://127.0.0.1:8000/api/register', {
+    const response = await axios.post('/api/register', {
       first_name: firstName.value,
       last_name: lastName.value,
       email: email.value,
