@@ -100,6 +100,7 @@
                                     <th>Email</th>
                                     <th>Dept</th>
                                     <th>Program</th>
+                                    <th>Date</th>
                                     <th>Session in</th>
                                     <th>Session out</th>
                                 </tr>
@@ -121,11 +122,13 @@
                                     </td>
                                     <td>{{ r.program }}</td>
                                     <td>
+                                        <span class="log-date">{{ fmt(r.session_start).date }}</span>
+                                    </td>
+                                    <td>
                                         <span class="sess-pill sess-in">
                                             <span class="sess-dot dot-in"></span>In
                                         </span>
                                         <span class="sess-time">{{ fmt(r.session_start).time }}</span>
-                                        <span class="sess-date">{{ fmt(r.session_start).date }}</span>
                                     </td>
                                     <td>
                                         <template v-if="r.session_end">
@@ -133,7 +136,6 @@
                                                 <span class="sess-dot dot-out"></span>Out
                                             </span>
                                             <span class="sess-time">{{ fmt(r.session_end).time }}</span>
-                                            <span class="sess-date">{{ fmt(r.session_end).date }}</span>
                                         </template>
                                         <span v-else class="sess-active-label">— Active</span>
                                     </td>
@@ -225,7 +227,7 @@ function fmt(dt) {
     const d = new Date(dt);
     return {
         date: d.toLocaleDateString('en-PH', { month: 'short', day: '2-digit', year: 'numeric' }),
-        time: d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        time: d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
     };
 }
 

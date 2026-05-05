@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\MoodController;
 use App\Http\Controllers\ConversationController;
@@ -70,4 +71,6 @@ Route::middleware(['auth:sanctum', 'role:guidance'])->prefix('admin')->group(fun
     Route::get('/logs', [LogController::class, 'index']);
 });
 
-// Route::post('/google-login', [AuthController::class, 'googleLogin']);
+// Google Auth Routes
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback']);

@@ -1,4 +1,4 @@
-<<template>
+<template>
   <Teleport to="body">
     <Transition name="modal-fade">
       <div v-if="visible" class="terms-overlay">

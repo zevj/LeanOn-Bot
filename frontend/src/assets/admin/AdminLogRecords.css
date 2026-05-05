@@ -150,12 +150,13 @@ main {
 }
 
 /* Column widths */
-.log-table th:nth-child(1) { width: 130px; }
-.log-table th:nth-child(2) { width: 180px; }
-.log-table th:nth-child(3) { width: 130px; }
-.log-table th:nth-child(4) { width: 160px; }
-.log-table th:nth-child(5) { width: 160px; }
-.log-table th:nth-child(6) { width: 160px; }
+.log-table th:nth-child(1) { width: 120px; } /* Log ID */
+.log-table th:nth-child(2) { width: 170px; } /* Email */
+.log-table th:nth-child(3) { width: 100px; } /* Dept */
+.log-table th:nth-child(4) { width: 120px; } /* Program */
+.log-table th:nth-child(5) { width: 130px; } /* Date */
+.log-table th:nth-child(6) { width: 130px; } /* Session in */
+.log-table th:nth-child(7) { width: 140px; } /* Session out */
 
 .log-table th {
   padding: 10px 14px;

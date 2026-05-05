@@ -133,6 +133,14 @@ class ChatController extends Controller {
     - Avoid overwhelming the user with too many suggestions at once.
     - If the user is answering a question you previously asked, continue the conversation naturally and build on their answer. Do not restart or switch topics.
 
+    STRICT OUTPUT FORMAT:
+    - Use standard Markdown syntax for all formatting.
+    - If explaining or listing items, use bullet points (*) or numbered lists.
+    - IMPORTANT: Ensure there is a blank line (double newline) before and after every list to ensure correct rendering.
+    - Never return a wall of text longer than 3 sentences without breaking into a list or using proper paragraph breaks.
+    - Use **bold** for emphasis on key terms.
+    - Use proper spacing between paragraphs.
+
     SPECIAL FOR STUDENTS:
     - Understand common student struggles:
     (academic pressure, deadlines, burnout, social anxiety, family expectations)
@@ -217,88 +225,146 @@ class ChatController extends Controller {
             ]);
         }
 
-        // Call Google Gemini API
-        $apiKey = env('GEMINI_API_KEY');
-        
-        if (empty($apiKey)) {
-            return response()->json([
-                'reply' => 'Error: Google Gemini API key is missing. Please add GEMINI_API_KEY to your .env file.',
-                'error' => true
-            ], 500);
-        }
+        // Call AI Service (Gemini -> Groq Fallback)
+        $geminiApiKey = env('GEMINI_API_KEY');
+        $groqApiKey = env('GROQ_API_KEY');
+
+        // Fetch conversation history (last 10 messages)
+        $history = ChatMessage::where('conversation_id', $conversationId)
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->reverse();
+
+        $aiReply = '';
 
         try {
-            // Fetch conversation history (last 10 messages)
-            $history = ChatMessage::where('conversation_id', $conversationId)
-                ->orderBy('created_at', 'desc')
-                ->limit(10)
-                ->get()
-                ->reverse();
-
-            $contents = [];
-            
-            // Add history to contents
-            foreach ($history as $msg) {
-                $contents[] = [
-                    'role' => 'user',
-                    'parts' => [['text' => $msg->message]]
-                ];
-                $contents[] = [
-                    'role' => 'model',
-                    'parts' => [['text' => $msg->reply]]
-                ];
+            $aiReply = $this->callGemini($userMessage, $history, $geminiApiKey);
+            \Illuminate\Support\Facades\Log::info('AI Provider: Gemini');
+        } catch (\Exception $e) {
+            // retry once
+            try {
+                $aiReply = $this->callGemini($userMessage, $history, $geminiApiKey);
+                \Illuminate\Support\Facades\Log::info('AI Provider: Gemini');
+            } catch (\Exception $e) {
+                // fallback to Groq
+                try {
+                    $aiReply = $this->callGroq($userMessage, $history, $groqApiKey);
+                    \Illuminate\Support\Facades\Log::info('AI Provider: Groq (fallback)');
+                } catch (\Exception $e) {
+                    $aiReply = "The system is currently experiencing high load. Please try again shortly.";
+                    \Illuminate\Support\Facades\Log::error('All AI providers failed: ' . $e->getMessage());
+                }
             }
+        }
 
-            // Add current message
+        // Save to DB
+        ChatMessage::create([
+            'user_id' => $userId,
+            'conversation_id' => $conversationId,
+            'message' => $userMessage,
+            'reply' => $aiReply,
+            'is_crisis' => false,
+        ]);
+
+        // Classify emotion per conversation via Gemini
+        if ($userId && $geminiApiKey) {
+            $this->classifyConversationEmotion($conversationId, $userId, $geminiApiKey);
+        }
+
+        return response()->json([
+            'reply' => $aiReply
+        ]);
+    }
+
+    private function callGemini(string $userMessage, $history, ?string $apiKey)
+    {
+        if (empty($apiKey)) {
+            throw new \Exception('Gemini API key is missing.');
+        }
+
+        $contents = [];
+        
+        // Add history to contents
+        foreach ($history as $msg) {
             $contents[] = [
                 'role' => 'user',
-                'parts' => [['text' => $userMessage]]
+                'parts' => [['text' => $msg->message]]
             ];
-
-            $response = \Illuminate\Support\Facades\Http::withoutVerifying()
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                ])->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey, [
-                    'system_instruction' => [
-                        'parts' => [
-                            ['text' => $this->systemPrompt]
-                        ]
-                    ],
-                    'contents' => $contents
-                ]);
-
-            if ($response->successful()) {
-                // Extract response exactly how Gemini format structures it
-                $aiReply = $response->json('candidates.0.content.parts.0.text') ?? 'Sorry, I am unable to process that right now.';
-            } else {
-                $errorMessage = $response->json('error.message') ?? $response->status();
-                $aiReply = 'Sorry, there was an error communicating with the AI. (' . $errorMessage . ')';
-            }
-
-            // Save to DB
-            ChatMessage::create([
-                'user_id' => $userId,
-                'conversation_id' => $conversationId,
-                'message' => $userMessage,
-                'reply' => $aiReply,
-                'is_crisis' => false,
-            ]);
-
-            // Classify emotion per conversation via Gemini
-            if ($userId) {
-                $this->classifyConversationEmotion($conversationId, $userId, $apiKey);
-            }
-
-            return response()->json([
-                'reply' => $aiReply
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'reply' => 'Sorry, I am having trouble connecting to my brain right now.',
-                'error' => $e->getMessage()
-            ], 500);
+            $contents[] = [
+                'role' => 'model',
+                'parts' => [['text' => $msg->reply]]
+            ];
         }
+
+        // Add current message
+        $contents[] = [
+            'role' => 'user',
+            'parts' => [['text' => $userMessage]]
+        ];
+
+        $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+            ->timeout(8)
+            ->withHeaders([
+                'Content-Type' => 'application/json',
+            ])->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $apiKey, [
+                'system_instruction' => [
+                    'parts' => [
+                        ['text' => $this->systemPrompt]
+                    ]
+                ],
+                'contents' => $contents
+            ]);
+
+        if ($response->successful()) {
+            $reply = $response->json('candidates.0.content.parts.0.text');
+            if (!$reply) {
+                throw new \Exception('Gemini returned an empty or invalid response structure.');
+            }
+            return trim($reply);
+        }
+
+        $errorMessage = $response->json('error.message') ?? $response->status();
+        throw new \Exception('Gemini API Error: ' . $errorMessage);
+    }
+
+    private function callGroq(string $userMessage, $history, ?string $apiKey)
+    {
+        if (empty($apiKey)) {
+            throw new \Exception('Groq API key is missing.');
+        }
+
+        $messages = [
+            ['role' => 'system', 'content' => $this->systemPrompt]
+        ];
+
+        foreach ($history as $msg) {
+            $messages[] = ['role' => 'user', 'content' => $msg->message];
+            $messages[] = ['role' => 'assistant', 'content' => $msg->reply];
+        }
+
+        $messages[] = ['role' => 'user', 'content' => $userMessage];
+
+        $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+            ->timeout(8)
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+            ])->post('https://api.groq.com/openai/v1/chat/completions', [
+                'model' => 'llama-3.3-70b-versatile',
+                'messages' => $messages
+            ]);
+
+        if ($response->successful()) {
+            $reply = $response->json('choices.0.message.content');
+            if (!$reply) {
+                throw new \Exception('Groq returned an empty or invalid response structure.');
+            }
+            return trim($reply);
+        }
+
+        $errorMessage = $response->json('error.message') ?? $response->status();
+        throw new \Exception('Groq API Error: ' . $errorMessage);
     }
 
     public function history(Request $request)

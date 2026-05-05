@@ -62,7 +62,12 @@ class AuthController extends Controller
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Create session log entry
+        // Close any existing open sessions for this user before starting a new one
+        SessionLog::where('user_id', $user->id)
+            ->whereNull('session_end')
+            ->update(['session_end' => Carbon::now()]);
+
+        // Create new session log entry
         $sessionLog = SessionLog::create([
             'user_id'       => $user->id,
             'session_start' => Carbon::now(),
@@ -171,13 +176,25 @@ public function verifyOtp(Request $request)
     $user->update(['email_verified_at' => now()]);
     $user->refresh();
 
+    // Close any existing open sessions for this user before starting a new one (e.g. from the login attempt)
+    SessionLog::where('user_id', $user->id)
+        ->whereNull('session_end')
+        ->update(['session_end' => Carbon::now()]);
+
     // Issue fresh token
     $token = $user->createToken('auth_token')->plainTextToken;
+
+    // Create a new session log for the verified session
+    $sessionLog = SessionLog::create([
+        'user_id'       => $user->id,
+        'session_start' => Carbon::now(),
+    ]);
 
     return response()->json([
         'message' => 'Email verified successfully',
         'token' => $token,
-        'user' => $user
+        'user' => $user,
+        'session_log_id' => $sessionLog->id,
     ]);
 }
 

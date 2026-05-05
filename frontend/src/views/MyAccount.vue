@@ -108,24 +108,11 @@
                                 <div class="input-row">
                                     <div class="name-input">
                                         <label class="input-title">Department</label>
-                                        <select class="input-info" v-model="form.department" @change="onDepartmentChange">
-                                            <option value="" disabled>Select Department</option>
-                                            <option value="CAHS">College of Allied Health Studies (CAHS)</option>
-                                            <option value="CBA">College of Business and Accountancy (CBA)</option>
-                                            <option value="CCS">College of Computer Studies (CCS)</option>
-                                            <option value="CEAS">College of Education, Arts, and Sciences (CEAS)</option>
-                                            <option value="CHTM">College of Hospitality and Tourism Management (CHTM)</option>
-                                        </select>
+                                        <input type="text" class="input-info" v-model="form.department" readonly>
                                     </div>
                                     <div class="name-input">
                                         <label class="input-title">Year Level</label>
-                                        <select class="input-info" v-model="form.year_level">
-                                            <option value="" disabled>Select Year Level</option>
-                                            <option value="1st Year">1st Year</option>
-                                            <option value="2nd Year">2nd Year</option>
-                                            <option value="3rd Year">3rd Year</option>
-                                            <option value="4th Year">4th Year</option>
-                                        </select>
+                                        <input type="text" class="input-info" v-model="form.year_level" readonly>
                                     </div>
                                 </div>
 
@@ -133,24 +120,14 @@
                                 <div class="input-row">
                                     <div class="name-input">
                                         <label class="input-title">Program</label>
-                                        <select 
-                                            class="input-info" 
-                                            v-model="form.program" 
-                                            :disabled="!form.department"
-                                            :class="{ 'input-disabled': !form.department }"
-                                        >
-                                            <option value="" disabled>
-                                                {{ form.department ? 'Select Program' : 'Select a department first' }}
-                                            </option>
-                                            <option v-for="p in availablePrograms" :key="p" :value="p">{{ p }}</option>
-                                        </select>
+                                        <input type="text" class="input-info" v-model="form.program" readonly>
                                     </div>
                                 </div>
 
                             </div>
                             
                             <div class="action-btn">
-                                <button class="save-btn" @click="submitProfile" :disabled="isSaving">
+                                <button class="save-btn" @click="submitProfile">
                                     {{ isSaving ? 'Saving...' : 'Save Changes' }}
                                 </button>
                             </div>
@@ -285,7 +262,7 @@
 <script setup>
 import SidebarStudent from '@/components/sidebarStudent.vue';
 import HeaderStudent from '@/components/headerStudent.vue';
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
 
@@ -307,55 +284,7 @@ const showNew = ref(false)
 const preview = ref(null)
 const showOTP = ref(false)
 
-// Programs map (same as signup)
-const programsMap = {
-    CAHS: [
-        'Bachelor of Science in Nursing',
-        'Bachelor of Science in Midwifery'
-    ],
-    CBA: [
-        'Bachelor of Science in Accountancy',
-        'BSBA Major in Financial Management',
-        'BSBA Major in Human Resource Management',
-        'BSBA Major in Marketing Management',
-        'Bachelor of Science in Customs Administration'
-    ],
-    CCS: [
-        'Bachelor of Science in Computer Science',
-        'Bachelor of Science in Entertainment and Multimedia Computing',
-        'Bachelor of Science in Information Technology'
-    ],
-    CEAS: [
-        'Bachelor of Arts in Communication',
-        'Bachelor of Early Childhood Education',
-        'Bachelor of Culture and Arts Education',
-        'Bachelor of Physical Education',
-        'Bachelor of Elementary Education (General Education)',
-        'BSEd Major in English',
-        'BSEd Major in Filipino',
-        'BSEd Major in Mathematics',
-        'BSEd Major in Social Studies',
-        'BSEd Major in Sciences',
-        'Teacher Certificate Program (TCP)'
-    ],
-    CHTM: [
-        'Bachelor of Science in Hospitality Management',
-        'Bachelor of Science in Tourism Management'
-    ]
-}
 
-// Computed: available programs based on selected department
-const availablePrograms = computed(() => {
-    return form.value.department ? (programsMap[form.value.department] || []) : []
-})
-
-// When department changes, reset program if it doesn't belong to new department
-function onDepartmentChange() {
-    const programs = programsMap[form.value.department] || []
-    if (!programs.includes(form.value.program)) {
-        form.value.program = ''
-    }
-}
 
 // Profile display
 const profile = ref({
@@ -451,18 +380,12 @@ async function submitProfile() {
     try {
         const token = localStorage.getItem('token')
         await axios.put('http://127.0.0.1:8000/api/user', {
-            phone_number: form.value.phone_number,
-            department: form.value.department,
-            year_level: form.value.year_level,
-            program: form.value.program,
+            phone_number: form.value.phone_number
         }, {
             headers: { Authorization: `Bearer ${token}` }
         })
         // Sync profile sidebar display
         profile.value.phone_number = form.value.phone_number
-        profile.value.department = form.value.department
-        profile.value.year_level = form.value.year_level
-        profile.value.program = form.value.program
         toast.success("Profile updated successfully!")
     } catch {
         toast.error("Failed to update profile")
