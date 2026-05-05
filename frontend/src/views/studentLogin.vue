@@ -95,7 +95,7 @@
             <span></span>
           </div>
 
-          <button type="button" class="google-signin" ref="googleBtnRef">
+          <button type="button" class="google-signin" @click="loginWithGoogle" ref="googleBtnRef">
             Sign in with Google Account
           </button>
 
@@ -225,6 +225,14 @@ const onOtpVerified = (data) => {
 }
 
 /* =========================
+   GOOGLE LOGIN
+========================= */
+const loginWithGoogle = () => {
+  // Redirect to backend's Google auth endpoint
+  window.location.href = 'http://127.0.0.1:8000/api/auth/google/redirect'
+}
+
+/* =========================
    REFS
 ========================= */
 const containerRef = ref(null)
@@ -330,6 +338,19 @@ onMounted(() => {
       opacity: 0,
       stagger: 0.2
     }, 0.9)
+  }
+
+  // Handle Google Auth errors from URL
+  const urlParams = new URLSearchParams(window.location.search)
+  const error = urlParams.get('error')
+  if (error) {
+    if (error === 'invalid_domain') {
+      toast.error('Only Gordon College email accounts are allowed.')
+    } else if (error === 'user_not_found') {
+      toast.error('Account not found. Please register first.')
+    } else {
+      toast.error('Google authentication failed.')
+    }
   }
 })
 </script>

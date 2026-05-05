@@ -157,6 +157,28 @@
     transform-origin: bottom right;
 }
 
+/* ── MARKDOWN CONTENT STYLING ── */
+:deep(.message-bubble :first-child) { margin-top: 0 !important; }
+:deep(.message-bubble :last-child) { margin-bottom: 0 !important; }
+
+:deep(.message-bubble p) {
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+:deep(.message-bubble ul), 
+:deep(.message-bubble ol) {
+    margin: 12px 0;
+    padding-left: 24px !important;
+    list-style-position: outside !important;
+}
+
+:deep(.message-bubble li) {
+    margin-bottom: 8px;
+    padding-left: 6px;
+    display: list-item !important; /* Ensure it stays a list item */
+}
+
 .bot-row .message-bubble {
     transform-origin: bottom left;
 }

@@ -12,6 +12,7 @@ import AdminCrisisAlerts from '../views/Admin/AdminCrisisAlert.vue'
 import AdminConfig from '../views/Admin/Configuration.vue'
 import AdminProfile from '../views/Admin/AdminProfile.vue'
 import AdminLogRecords from '../views/Admin/AdminLogRecords.vue'
+import GoogleCallback from '../views/GoogleCallback.vue'
 
 const routes = [
   {
@@ -100,6 +101,13 @@ const routes = [
     path: '/AdminLogRecords',
     name: 'AdminLogRecords',
     component: AdminLogRecords
+  },
+
+  /* GOOGLE AUTH CALLBACK */
+  {
+    path: '/auth/google/callback',
+    name: 'GoogleCallback',
+    component: GoogleCallback
   },
 ]
 

@@ -134,11 +134,12 @@ class ChatController extends Controller {
     - If the user is answering a question you previously asked, continue the conversation naturally and build on their answer. Do not restart or switch topics.
 
     STRICT OUTPUT FORMAT:
-
-    - If explaining, use bullet points.
-    - If giving steps, use numbered lists.
-    - Never return a wall of text longer than 3 sentences without breaking into a list.
-    - Prefer structured formatting over paragraphs at all times.
+    - Use standard Markdown syntax for all formatting.
+    - If explaining or listing items, use bullet points (*) or numbered lists.
+    - IMPORTANT: Ensure there is a blank line (double newline) before and after every list to ensure correct rendering.
+    - Never return a wall of text longer than 3 sentences without breaking into a list or using proper paragraph breaks.
+    - Use **bold** for emphasis on key terms.
+    - Use proper spacing between paragraphs.
 
     SPECIAL FOR STUDENTS:
     - Understand common student struggles:

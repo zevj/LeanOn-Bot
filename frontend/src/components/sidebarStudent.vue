@@ -311,7 +311,7 @@ const handleResize = () => {
 // Expose mobileOpen so parent can toggle it via the hamburger
 const emit = defineEmits(['toggle', 'select-chat', 'update:mobileOpen'])
 
-const props = defineProps({
+defineProps({
   open: Boolean,
   mobileToggle: { type: Number, default: 0 }
 })
@@ -349,7 +349,8 @@ const fetchUserProfile = async () => {
     const token = localStorage.getItem('token')
     const res = await axios.get('/api/user', { headers: { Authorization: `Bearer ${token}` } })
     userProfile.value = res.data
-    if (!res.data.terms_accepted_at) showTermsModal.value = true
+    // Optional: remove or comment out the next line in Sidebar to prevent stacked modals
+    // if (!res.data.terms_accepted_at) showTermsModal.value = true
   } catch { console.error('Failed to fetch user profile') }
 }
 
@@ -450,6 +451,9 @@ const deleteArchivedChat = (index) => {
         await axios.delete(`/api/conversations/${chat.id}`, { headers: { Authorization: `Bearer ${token}` } })
         archivedChats.value.splice(index, 1)
         removeConversation(chat.id)
+        if (route.query.conversation_id == chat.id) {
+          router.push('/ChatConvo')
+        }
         toast.success('Archived chat deleted!')
       } catch { toast.error('Failed to delete archived chat') }
     }
@@ -520,7 +524,12 @@ const deleteChat = (index) => {
     actionCallback: async () => {
       try {
         await axios.delete(`/api/conversations/${id}`)
-        removeConversation(id); closeDropdown(); toast.success('Chat deleted successfully!')
+        removeConversation(id); 
+        closeDropdown();
+        if (route.query.conversation_id == id) {
+          router.push('/ChatConvo')
+        }
+        toast.success('Chat deleted successfully!')
       } catch { toast.error('Failed to delete chat') }
     }
   })

@@ -26,7 +26,8 @@
                 <div v-else class="chat-history-container" ref="chatContainer">
                     <div v-for="(msg, index) in messages" :key="index" class="message-row" :class="msg.isBot ? 'bot-row' : 'user-row'">
                         <div class="message-bubble" :class="msg.isBot ? 'bot-message' : 'user-message'">
-                            <p>{{ msg.text }}</p>
+                            <p v-if="!msg.isBot">{{ msg.text }}</p>
+                            <div v-else v-html="renderMarkdown(msg.text)"></div>
                         </div>
                         <span class="message-time">{{ msg.time }}</span>
 
@@ -62,8 +63,9 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted, watch } from 'vue';
+import { ref, nextTick, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { marked } from 'marked';
 import axios from 'axios';
 import SidebarStudent from '@/components/sidebarStudent.vue';
 import HeaderStudent from '@/components/headerStudent.vue';
@@ -74,14 +76,7 @@ import { useChats } from '@/composables/useChats';
 // ── Sidebar state
 const sidebarOpen = ref(false)
 
-const currentUserId = computed(() => {
-    try {
-        const user = JSON.parse(localStorage.getItem('user') || 'null');
-        return user?.id ?? 'guest';
-    } catch {
-        return 'guest';
-    }
-});
+const userDetails = ref(null);
 
 const messages = ref([]);
 const chatContainer = ref(null);
@@ -97,8 +92,8 @@ const isTyping = ref(false);
 const showTermsModal = ref(false);
 
 const onTermsAccepted = () => {
-    showTermsModal.value = false
-    fetchHistory(route.query.conversation_id)
+    showTermsModal.value = false;
+    fetchHistory(route.query.conversation_id);
 }
 
 const onTermsDeclined = () => {
@@ -106,9 +101,24 @@ const onTermsDeclined = () => {
     router.push('/login');
 };
 
-onMounted(() => {
-    showTermsModal.value = true
-})
+onMounted(async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const res = await axios.get('/api/user', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        userDetails.value = res.data;
+
+        if (!userDetails.value.terms_accepted_at) {
+            showTermsModal.value = true;
+        } else {
+            showTermsModal.value = false;
+            fetchHistory(route.query.conversation_id);
+        }
+    } catch (error) {
+        console.error("Failed to load user state", error);
+    }
+});
 
 const getTimeString = () => {
     const now = new Date();
@@ -138,6 +148,7 @@ const handleSend = async (text) => {
             conversationId = res.data.id;
             addConversation(res.data);
             await router.replace({ query: { conversation_id: conversationId } });
+            isAutoCreating.value = false; // Reset after URL update
         } catch (error) {
             console.error("Failed to auto-create conversation", error);
             alert("Failed to start chat.");
@@ -169,11 +180,13 @@ const handleSend = async (text) => {
             updated_at: new Date().toISOString()
         });
 
+        const hasBotResponded = messages.value.some(m => m.isBot);
+
         messages.value.push({
             text: replyData.reply,
             isBot: true,
             time: getTimeString(),
-            quickReplies: replyData.is_crisis ? [] : [
+            quickReplies: (replyData.is_crisis || hasBotResponded) ? [] : [
                 "I'm feeling stressed",
                 "I'm anxious about exams",
                 "I just need someone to talk to"
@@ -197,7 +210,7 @@ const fetchHistory = async (conversationId) => {
     if (!conversationId) { messages.value = []; return; }
     try {
         const response = await axios.get(`http://localhost:8000/api/chat/history?conversation_id=${conversationId}`);
-        messages.value = response.data.map(msg => [
+        messages.value = response.data.map((msg, index) => [
             {
                 text: msg.message,
                 isBot: false,
@@ -207,7 +220,7 @@ const fetchHistory = async (conversationId) => {
                 text: msg.reply,
                 isBot: true,
                 time: new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                quickReplies: msg.is_crisis ? [] : [
+                quickReplies: (msg.is_crisis || index > 0) ? [] : [
                     "I'm feeling stressed",
                     "I'm anxious about exams",
                     "I just need someone to talk to"
@@ -220,18 +233,22 @@ const fetchHistory = async (conversationId) => {
     }
 };
 
-watch(currentUserId, (id) => {
-    if (!id) return
+watch(() => route.query.conversation_id, (newId) => {
+    // ── If we are auto-creating, the handleSend already has the messages.
+    // ── We skip fetchHistory to prevent "flickering" or accidental clearing.
+    if (isAutoCreating.value) return;
 
-    const accepted = localStorage.getItem(`leanon_terms_accepted_${id}`)
-
-    if (accepted !== 'true') {
-        showTermsModal.value = true
+    if (newId) {
+        fetchHistory(newId);
     } else {
-        showTermsModal.value = false
-        fetchHistory(route.query.conversation_id)
+        messages.value = [];
     }
-}, { immediate: true })
+});
+
+const renderMarkdown = (text) => {
+    if (!text) return '';
+    return marked(text);
+};
 
 const sendSuggestion = (text) => handleSend(text);
 </script>
