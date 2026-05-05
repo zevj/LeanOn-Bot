@@ -25,7 +25,13 @@
                         <td style="padding-top:20px; text-align:center;">
                             
                             <h3 style="color:#333;">
-                                {{ $type === 'register' ? 'Verify Your Account' : 'Reset Your Password' }}
+                                @if($type === 'register')
+                                    Verify Your Account
+                                @elseif($type === 'login')
+                                    Login Verification
+                                @else
+                                    Reset Your Password
+                                @endif
                             </h3>
 
                             <p style="color:#555;">
@@ -47,7 +53,7 @@
                             </div>
 
                             <p style="color:#999; font-size:13px;">
-                                This code will expire soon. Do not share it with anyone.
+                                This code is valid for <strong>5 minutes</strong>. Do not share it with anyone.
                             </p>
 
                         </td>

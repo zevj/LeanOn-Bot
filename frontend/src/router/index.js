@@ -1,18 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/studentLogin.vue'
-import Signup from '../views/studentSignup.vue'
-import forgotPass from '../views/forgotPass.vue'
-import OTPVerification from '../views/OTP.vue'
+import forgotPass from '../views/forgotpass.vue'
 import NewPass from '../views/NewPass.vue'
 import OTPFPass from '../views/OTPFPass.vue'
 import ChatConvo from '../views/ChatConvo.vue'
 import MyAccount from '../views/MyAccount.vue'
 import LandingPage from '../views/LandingPage.vue'
-import CrisisAlert from '../views/CrisisAlert.vue'
 import AdminDashboard from '../views/Admin/adminDashboard.vue'
 import EmotionalTrends from '../views/Admin/EmotionalTrends.vue'
 import AdminCrisisAlerts from '../views/Admin/AdminCrisisAlert.vue'
-
+import AdminConfig from '../views/Admin/Configuration.vue'
+import AdminProfile from '../views/Admin/AdminProfile.vue'
+import AdminLogRecords from '../views/Admin/AdminLogRecords.vue'
+import GoogleCallback from '../views/GoogleCallback.vue'
 
 const routes = [
   {
@@ -33,12 +33,6 @@ const routes = [
   },
 
   {
-    path: '/signup',
-    name: 'signup',
-    component: Signup
-  },
-
-  {
     path: '/forgotPass',
     name: 'forgotPass',
     component: forgotPass
@@ -48,12 +42,6 @@ const routes = [
     path: '/NewPass',
     name: 'NewPass',
     component: NewPass
-  },
-
-  {
-    path: '/OTPVerification',
-    name: 'OTPVerification',
-    component: OTPVerification
   },
 
   {
@@ -77,12 +65,6 @@ const routes = [
     component: MyAccount
   },
 
-  {
-    path: '/CrisisAlert',
-    name: 'CrisisAlert',
-    component: CrisisAlert
-  },
-
   /* ADMIN */
   {
     path: '/adminDashboard',
@@ -97,10 +79,35 @@ const routes = [
     component: EmotionalTrends
   },
 
-   {
+  {
     path: '/AdminCrisisAlerts',
     name: 'AdminCrisisAlerts',
     component: AdminCrisisAlerts
+  },
+
+  {
+    path: '/AdminConfig',
+    name: 'AdminConfig',
+    component: AdminConfig
+  },
+
+  {
+    path: '/AdminProfile',
+    name: 'AdminProfile',
+    component: AdminProfile
+  },
+
+  {
+    path: '/AdminLogRecords',
+    name: 'AdminLogRecords',
+    component: AdminLogRecords
+  },
+
+  /* GOOGLE AUTH CALLBACK */
+  {
+    path: '/auth/google/callback',
+    name: 'GoogleCallback',
+    component: GoogleCallback
   },
 ]
 

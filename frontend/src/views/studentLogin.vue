@@ -1,8 +1,30 @@
 <template>
+  <OtpModal
+    v-model="showOtp"
+    :email="username"
+    @verified="onOtpVerified"
+  />
+
   <main ref="mainRef">
     <div class="login-container" ref="containerRef">
 
+      <!-- Blur orb decorations — CSS hides these on desktop, shows on mobile -->
+      <div class="mobile-bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+        <div class="gradient-circle"></div>
+      </div>
+
       <div class="left-container" ref="leftRef">
+
+        <!-- Mobile-only brand badge (replaces hidden right panel branding) -->
+        <div class="mobile-brand" ref="mobileBrandRef">
+          <div class="mobile-brand-dot"></div>
+          <span class="mobile-brand-label">LeanOn Bot &mdash; Mental Wellness Support</span>
+        </div>
+
         <h1 class="login-title" ref="titleRef">
           Welcome to 
           <router-link to="/" class="logo-link">
@@ -58,7 +80,7 @@
           </router-link>
 
           <div ref="loginBtnRef">
-            <LoadingButton 
+            <LoadingButton
               :loading="isLoading"
               type="submit"
               class="login-button"
@@ -73,19 +95,14 @@
             <span></span>
           </div>
 
-          <button type="button" class="google-signin" ref="googleBtnRef">
+          <button type="button" class="google-signin" @click="loginWithGoogle" ref="googleBtnRef">
             Sign in with Google Account
           </button>
-
-          <p class="new-student">
-            New Student?
-            <router-link to="/signup">Learn more about LeanOn Bot</router-link>
-          </p>
 
         </form>
       </div>
 
-      <!-- RIGHT SIDE -->
+      <!-- RIGHT SIDE — unchanged, hidden via CSS on mobile -->
       <div class="right-container" ref="rightRef">
         <div class="overlay"></div>
 
@@ -101,7 +118,7 @@
           <div class="yellow-line"></div>
 
           <p class="subheading">
-            An AI-Assisted Mental Health Wellness Support System for Students
+            An AI-Assisted Mental Health Wellness Support System for Gordon College Students
           </p>
         </div>
 
@@ -138,6 +155,9 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { gsap } from 'gsap'
 import LoadingButton from '@/views/loadingButton.vue'
+import OtpModal from '@/components/OtpModal.vue'
+
+const showOtp = ref(false)
 
 const username = ref('')
 const password = ref('')
@@ -170,17 +190,18 @@ const handleLogin = async () => {
       password: password.value
     })
 
-    localStorage.setItem('token', res.data.token)
-    localStorage.setItem('user', JSON.stringify(res.data.user))
-    
-    toast.success('Login successful!')
-
-    const role = res.data.user.role || 'student'
-    
-    if (role === 'guidance') {
-      router.push('/adminDashboard')
+    if (res.data.status === 'OTP_REQUIRED') {
+      // First-time login: store temp token, show OTP modal
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      showOtp.value = true
+      toast.success('OTP sent to your email!')
     } else {
-      router.push('/ChatConvo')
+      // Already verified: normal login
+      localStorage.setItem('token', res.data.token)
+      localStorage.setItem('user', JSON.stringify(res.data.user))
+      const role = res.data.user?.role || 'student'
+      role === 'guidance' ? router.push('/adminDashboard') : router.push('/ChatConvo')
     }
 
   } catch (err) {
@@ -188,6 +209,27 @@ const handleLogin = async () => {
   } finally {
     isLoading.value = false
   }
+}
+
+const onOtpVerified = (data) => {
+  // Update token/user from verify response if provided
+  if (data?.token) {
+    localStorage.setItem('token', data.token)
+  }
+  if (data?.user) {
+    localStorage.setItem('user', JSON.stringify(data.user))
+  }
+  const user = data?.user || JSON.parse(localStorage.getItem('user'))
+  const role = user?.role || 'student'
+  role === 'guidance' ? router.push('/adminDashboard') : router.push('/ChatConvo')
+}
+
+/* =========================
+   GOOGLE LOGIN
+========================= */
+const loginWithGoogle = () => {
+  // Redirect to backend's Google auth endpoint
+  window.location.href = 'http://127.0.0.1:8000/api/auth/google/redirect'
 }
 
 /* =========================
@@ -204,22 +246,53 @@ const formGroupRefs = ref([])
 
 const loginBtnRef = ref(null)
 const googleBtnRef = ref(null)
+const mobileBrandRef = ref(null)
 
 /* =========================
    GSAP ANIMATION
 ========================= */
 onMounted(() => {
+  const isMobile = window.innerWidth <= 768
+
   const tl = gsap.timeline({
     defaults: {
       duration: 0.8,
-      ease: "power2.out"
+      ease: 'power2.out'
     }
   })
 
   gsap.set(containerRef.value, { opacity: 1 })
 
-  tl.from(leftRef.value, { x: -70, opacity: 0 }, 0)
-  tl.from(rightRef.value, { x: 70, opacity: 0 }, 0)
+  if (isMobile) {
+    // Fade in orbs on mobile
+    gsap.from('.orb', {
+      opacity: 0,
+      scale: 0.6,
+      duration: 1.4,
+      stagger: 0.25,
+      ease: 'power2.out'
+    })
+
+    // Animate the moving gradient circle
+    gsap.from('.gradient-circle', {
+      opacity: 0,
+      scale: 0.5,
+      duration: 1.8,
+      ease: 'power2.out',
+      delay: 0.3
+    })
+
+    // Animate brand badge
+    if (mobileBrandRef.value) {
+      tl.from(mobileBrandRef.value, { y: -12, opacity: 0 }, 0.1)
+    }
+
+    tl.from(leftRef.value, { y: 28, opacity: 0 }, 0)
+  } else {
+    // Original desktop animations — unchanged
+    tl.from(leftRef.value, { x: -70, opacity: 0 }, 0)
+    tl.from(rightRef.value, { x: 70, opacity: 0 }, 0)
+  }
 
   tl.from(titleRef.value, { y: 40, opacity: 0 }, 0.3)
   tl.from(subtitleRef.value, { y: 25, opacity: 0 }, 0.4)
@@ -230,14 +303,14 @@ onMounted(() => {
     stagger: 0.15
   }, 0.5)
 
-  tl.from(".forgot-password", { y: 15, opacity: 0 }, 0.7)
+  tl.from('.forgot-password', { y: 15, opacity: 0 }, 0.7)
 
   tl.from(loginBtnRef.value, {
     scale: 0.92,
     opacity: 0
   }, 0.8)
 
-  tl.from(".divider", { y: 15, opacity: 0 }, 0.9)
+  tl.from('.divider', { y: 15, opacity: 0 }, 0.9)
 
   gsap.set(googleBtnRef.value, {
     opacity: 0,
@@ -251,19 +324,34 @@ onMounted(() => {
     scale: 1
   }, 1.0)
 
-  tl.from(".new-student", { y: 15, opacity: 0 }, 1.1)
+  tl.from('.new-student', { y: 15, opacity: 0 }, 1.1)
 
-  tl.from(".overlay", { opacity: 0 }, 0.3)
-  tl.from(".title", { y: 50, opacity: 0 }, 0.4)
-  tl.from(".subtitle", { y: 25, opacity: 0 }, 0.5)
-  tl.from(".yellow-line", { width: 0, opacity: 0 }, 0.6)
-  tl.from(".subheading", { y: 25, opacity: 0 }, 0.7)
+  if (!isMobile) {
+    tl.from('.overlay', { opacity: 0 }, 0.3)
+    tl.from('.title', { y: 50, opacity: 0 }, 0.4)
+    tl.from('.subtitle', { y: 25, opacity: 0 }, 0.5)
+    tl.from('.yellow-line', { width: 0, opacity: 0 }, 0.6)
+    tl.from('.subheading', { y: 25, opacity: 0 }, 0.7)
 
-  tl.from(".features", {
-    y: 25,
-    opacity: 0,
-    stagger: 0.2
-  }, 0.9)
+    tl.from('.features', {
+      y: 25,
+      opacity: 0,
+      stagger: 0.2
+    }, 0.9)
+  }
+
+  // Handle Google Auth errors from URL
+  const urlParams = new URLSearchParams(window.location.search)
+  const error = urlParams.get('error')
+  if (error) {
+    if (error === 'invalid_domain') {
+      toast.error('Only Gordon College email accounts are allowed.')
+    } else if (error === 'user_not_found') {
+      toast.error('Account not found. Please register first.')
+    } else {
+      toast.error('Google authentication failed.')
+    }
+  }
 })
 </script>
 

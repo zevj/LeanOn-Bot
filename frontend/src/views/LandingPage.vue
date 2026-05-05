@@ -3,7 +3,9 @@
     <!-- NAV -->
     <nav :class="['navbar', { scrolled: isScrolled }]">
       <div class="nav-logo">
-        <div class="logo-icon"><i class='bx bxs-leaf'></i></div>
+        <div class="logo-icon">
+        <img src="/leanOnBot.png" alt="Logo" class="logo-img">
+        </div>
         <span>LeanOn Bot</span>
       </div>
       <ul class="nav-links">
@@ -42,14 +44,16 @@
         <h1>Your Safe Space to<br><em>Lean On</em> Someone</h1>
         <p>LeanOn Bot is an AI-assisted mental health wellness support system — a confidential, judgment-free chatbot that listens, responds, and guides you toward well-being.</p>
         <div class="hero-btns">
-          <a href="#login" class="btn-primary"><i class='bx bx-chat'></i> Start Chatting</a>
-          <a href="#how" class="btn-outline" @click.prevent="scrollTo('how')"><i class='bx bx-play-circle'></i> Learn How It Works</a>
+          <a href="/login" class="btn-primary"><i class='bx bx-chat'></i> Start Chatting</a>
+          <a href="/how" class="btn-outline" @click.prevent="scrollTo('how')"><i class='bx bx-play-circle'></i> Learn How It Works</a>
         </div>
       </div>
       <div class="hero-visual">
         <div class="chat-card">
           <div class="chat-header">
-            <div class="chat-avatar"><i class='bx bxs-leaf'></i></div>
+            <div class="chat-avatar">
+            <img src="/leanOnBot.png" alt="Bot" class="avatar-img">
+            </div>
             <div class="chat-header-text">
               <h4>LeanOn Bot</h4>
               <span><i class='bx bxs-circle online-dot'></i> Online – Always here</span>
