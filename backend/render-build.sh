@@ -7,6 +7,8 @@ composer install --no-dev --optimize-autoloader
 
 echo "Running migrations..."
 php artisan migrate --force
+echo "Seeding data..."
+php artisan db:seed --force
 
 echo "Clearing cache..."
 php artisan config:cache

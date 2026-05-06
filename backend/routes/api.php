@@ -16,10 +16,7 @@ use App\Http\Controllers\LogController;
 Route::post('/chat', [ChatController::class, 'chat']);
 Route::get('/chat/history', [ChatController::class, 'history']);
 Route::post('/mood', [MoodController::class, 'store']);
-
 Route::post('/login', [AuthController::class, 'login']);
-
-
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
