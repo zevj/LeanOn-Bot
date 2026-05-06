@@ -16,7 +16,7 @@ class UsersTableSeeder extends Seeder
     {
         $users = [
             [
-                'email' => 'guidance@gordoncollege.edu.ph',
+                'email' => '123456789@gordoncollege.edu.ph',
                 'first_name' => 'Guidance',
                 'last_name' => 'Officer',
                 'email_verified_at' => Carbon::now(),
