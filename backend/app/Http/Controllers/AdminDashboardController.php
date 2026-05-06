@@ -12,6 +12,8 @@ class AdminDashboardController extends Controller
 {
     public function index()
     {
+        $driver = DB::connection()->getDriverName();
+
         // Total interactions (all chat messages)
         $totalInteractions = ChatMessage::count();
 
@@ -21,18 +23,44 @@ class AdminDashboardController extends Controller
             ->count('user_id');
 
         // Average session duration in minutes (only closed sessions)
-        $avgSession = SessionLog::whereNotNull('session_end')
-            ->selectRaw('AVG(ABS(TIMESTAMPDIFF(MINUTE, session_start, session_end))) as avg_minutes')
-            ->value('avg_minutes');
+        $avgSessionQuery = SessionLog::whereNotNull('session_end');
+        
+        switch ($driver) {
+            case 'pgsql':
+                $avgSessionQuery->selectRaw('AVG(ABS(EXTRACT(EPOCH FROM (session_end - session_start)) / 60)) as avg_minutes');
+                break;
+            case 'sqlite':
+                $avgSessionQuery->selectRaw('AVG(ABS((julianday(session_end) - julianday(session_start)) * 1440)) as avg_minutes');
+                break;
+            case 'mysql':
+            default:
+                $avgSessionQuery->selectRaw('AVG(ABS(TIMESTAMPDIFF(MINUTE, session_start, session_end))) as avg_minutes');
+                break;
+        }
+        
+        $avgSession = $avgSessionQuery->value('avg_minutes');
         $avgSessionMinutes = round($avgSession ?? 0, 1);
 
         // Daily interactions for current week (Mon-Sun)
-        $startOfWeek = Carbon::now()->startOfWeek(\Carbon\CarbonInterface::MONDAY);
-        $endOfWeek = Carbon::now()->endOfWeek(\Carbon\CarbonInterface::SUNDAY);
+        $startOfWeek = Carbon::now()->startOfWeek(1); // Monday
+        $endOfWeek = Carbon::now()->endOfWeek(7);    // Sunday
 
-        $dailyRaw = ChatMessage::whereBetween('created_at', [$startOfWeek, $endOfWeek])
-            ->selectRaw('DAYOFWEEK(created_at) as dow, COUNT(*) as total')
-            ->groupByRaw('DAYOFWEEK(created_at)')
+        $dailyQuery = ChatMessage::whereBetween('created_at', [$startOfWeek, $endOfWeek]);
+
+        switch ($driver) {
+            case 'pgsql':
+                $dailyQuery->selectRaw('EXTRACT(DOW FROM created_at) + 1 as dow, COUNT(*) as total');
+                break;
+            case 'sqlite':
+                $dailyQuery->selectRaw('CAST(strftime(\'%w\', created_at) AS INTEGER) + 1 as dow, COUNT(*) as total');
+                break;
+            case 'mysql':
+            default:
+                $dailyQuery->selectRaw('DAYOFWEEK(created_at) as dow, COUNT(*) as total');
+                break;
+        }
+
+        $dailyRaw = $dailyQuery->groupByRaw('dow')
             ->pluck('total', 'dow')
             ->toArray();
 
@@ -44,9 +72,22 @@ class AdminDashboardController extends Controller
         }
 
         // Monthly interactions for current year
-        $monthlyRaw = ChatMessage::whereYear('created_at', Carbon::now()->year)
-            ->selectRaw('MONTH(created_at) as month, COUNT(*) as total')
-            ->groupByRaw('MONTH(created_at)')
+        $monthlyQuery = ChatMessage::whereYear('created_at', Carbon::now()->year);
+        
+        switch ($driver) {
+            case 'pgsql':
+                $monthlyQuery->selectRaw('EXTRACT(MONTH FROM created_at) as month, COUNT(*) as total');
+                break;
+            case 'sqlite':
+                $monthlyQuery->selectRaw('CAST(strftime(\'%m\', created_at) AS INTEGER) as month, COUNT(*) as total');
+                break;
+            case 'mysql':
+            default:
+                $monthlyQuery->selectRaw('MONTH(created_at) as month, COUNT(*) as total');
+                break;
+        }
+
+        $monthlyRaw = $monthlyQuery->groupByRaw('month')
             ->pluck('total', 'month')
             ->toArray();
 
