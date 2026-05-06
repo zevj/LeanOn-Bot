@@ -14,11 +14,11 @@ class UsersTableSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('users')->insert([
+        $users = [
             [
+                'email' => 'guidance@gordoncollege.edu.ph',
                 'first_name' => 'Guidance',
                 'last_name' => 'Officer',
-                'email' => 'guidance@gordoncollege.edu.ph',
                 'email_verified_at' => Carbon::now(),
                 'password' => Hash::make('123456'),
                 'role' => 'guidance',
@@ -31,9 +31,9 @@ class UsersTableSeeder extends Seeder
                 'updated_at' => Carbon::now(),
             ],
             [
+                'email' => '202311473@gordoncollege.edu.ph',
                 'first_name' => 'Ira Jacob',
                 'last_name' => 'Javier',
-                'email' => '202311473@gordoncollege.edu.ph',
                 'email_verified_at' => Carbon::now(),
                 'password' => Hash::make('123456'),
                 'role' => 'student',
@@ -46,9 +46,9 @@ class UsersTableSeeder extends Seeder
                 'updated_at' => Carbon::now(),
             ],
             [
+                'email' => '202310636@gordoncollege.edu.ph',
                 'first_name' => 'Allysa',
                 'last_name' => 'Lingad',
-                'email' => '202310636@gordoncollege.edu.ph',
                 'email_verified_at' => Carbon::now(),
                 'password' => Hash::make('123456'),
                 'role' => 'student',
@@ -60,6 +60,13 @@ class UsersTableSeeder extends Seeder
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now(),
             ],
-        ]);
+        ];
+
+        foreach ($users as $user) {
+            DB::table('users')->updateOrInsert(
+                ['email' => $user['email']],
+                $user
+            );
+        }
     }
 }
