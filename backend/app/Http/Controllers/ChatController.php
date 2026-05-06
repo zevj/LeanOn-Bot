@@ -225,9 +225,10 @@ class ChatController extends Controller {
             ]);
         }
 
-        // Call AI Service (Gemini -> Groq Fallback)
+        // Call AI Service (Gemini -> Groq -> OpenRouter Fallback)
         $geminiApiKey = env('GEMINI_API_KEY');
         $groqApiKey = env('GROQ_API_KEY');
+        $openRouterApiKey = env('OPENROUTER_API_KEY');
 
         // Fetch conversation history (last 10 messages)
         $history = ChatMessage::where('conversation_id', $conversationId)
@@ -252,8 +253,14 @@ class ChatController extends Controller {
                     $aiReply = $this->callGroq($userMessage, $history, $groqApiKey);
                     \Illuminate\Support\Facades\Log::info('AI Provider: Groq (fallback)');
                 } catch (\Exception $e) {
-                    $aiReply = "The system is currently experiencing high load. Please try again shortly.";
-                    \Illuminate\Support\Facades\Log::error('All AI providers failed: ' . $e->getMessage());
+                    // fallback to OpenRouter (DeepSeek)
+                    try {
+                        $aiReply = $this->callOpenRouter($userMessage, $history, $openRouterApiKey);
+                        \Illuminate\Support\Facades\Log::info('AI Provider: OpenRouter DeepSeek (fallback)');
+                    } catch (\Exception $e) {
+                        $aiReply = "The system is currently experiencing high load. Please try again shortly.";
+                        \Illuminate\Support\Facades\Log::error('All AI providers failed: ' . $e->getMessage());
+                    }
                 }
             }
         }
@@ -277,7 +284,7 @@ class ChatController extends Controller {
         ]);
     }
 
-    private function callGemini(string $userMessage, $history, ?string $apiKey)
+    private function callGemini(string $userMessage, iterable $history, ?string $apiKey)
     {
         if (empty($apiKey)) {
             throw new \Exception('Gemini API key is missing.');
@@ -328,7 +335,7 @@ class ChatController extends Controller {
         throw new \Exception('Gemini API Error: ' . $errorMessage);
     }
 
-    private function callGroq(string $userMessage, $history, ?string $apiKey)
+    private function callGroq(string $userMessage, iterable $history, ?string $apiKey)
     {
         if (empty($apiKey)) {
             throw new \Exception('Groq API key is missing.');
@@ -365,6 +372,47 @@ class ChatController extends Controller {
 
         $errorMessage = $response->json('error.message') ?? $response->status();
         throw new \Exception('Groq API Error: ' . $errorMessage);
+    }
+
+    private function callOpenRouter(string $userMessage, iterable $history, ?string $apiKey)
+    {
+        if (empty($apiKey)) {
+            throw new \Exception('OpenRouter API key is missing.');
+        }
+
+        $messages = [
+            ['role' => 'system', 'content' => $this->systemPrompt]
+        ];
+
+        foreach ($history as $msg) {
+            $messages[] = ['role' => 'user', 'content' => $msg->message];
+            $messages[] = ['role' => 'assistant', 'content' => $msg->reply];
+        }
+
+        $messages[] = ['role' => 'user', 'content' => $userMessage];
+
+        $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+            ->timeout(15)
+            ->withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+                'HTTP-Referer' => env('APP_URL', 'http://localhost'),
+                'X-Title' => 'LeanOn Bot',
+            ])->post('https://openrouter.ai/api/v1/chat/completions', [
+                'model' => 'deepseek/deepseek-chat',
+                'messages' => $messages
+            ]);
+
+        if ($response->successful()) {
+            $reply = $response->json('choices.0.message.content');
+            if (!$reply) {
+                throw new \Exception('OpenRouter returned an empty or invalid response structure.');
+            }
+            return trim($reply);
+        }
+
+        $errorMessage = $response->json('error.message') ?? $response->status();
+        throw new \Exception('OpenRouter API Error: ' . $errorMessage);
     }
 
     public function history(Request $request)
