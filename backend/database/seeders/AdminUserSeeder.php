@@ -14,13 +14,15 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        \App\Models\User::create([
-            'first_name' => 'Test',
-            'last_name' => 'User',
-            'email' => '123456789@gordoncollege.edu.ph',
-            'password' => Hash::make('password123'),
-            'role' => 'guidance',
-            'email_verified_at' => now(),
-        ]);
+        User::updateOrCreate(
+            ['email' => '123456789@gordoncollege.edu.ph'],
+            [
+                'first_name' => 'Test',
+                'last_name' => 'User',
+                'password' => Hash::make('password123'),
+                'role' => 'guidance',
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }
