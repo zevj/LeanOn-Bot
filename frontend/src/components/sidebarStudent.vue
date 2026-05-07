@@ -45,7 +45,7 @@
       <div class="rail-divider"></div>
 
       <button class="rail-btn rail-avatar bottom-avatar" @click.stop="openModal">
-        <img :src="'/leanOnBot.png'" />
+        <img :src="userProfile.profile_image_url || '/leanOnBot.png'" class="profile-avatar" style="width: 100%; height: 100%; object-fit: cover;" />
       </button>
     </div>
 
@@ -121,7 +121,7 @@
       <div class="logout">
         <div class="picture-info-separation" @click="openModal">
           <div class="picture">
-            <img :src="'/leanOnBot.png'" class="logo-icon" />
+            <img :src="userProfile.profile_image_url || '/leanOnBot.png'" class="logo-icon" style="object-fit: cover; width: 100%; height: 100%; border-radius: 50%;" />
           </div>
           <div class="title-footer">
             <span class="logo-text">{{ userProfile.first_name }} {{ userProfile.last_name }}</span>

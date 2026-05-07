@@ -53,13 +53,6 @@
         </main>
     </div>
 
-    <TermsModal
-        :visible="showTermsModal"
-        :userId="currentUserId"
-        @accept="onTermsAccepted"
-        @decline="onTermsDeclined"
-        @close="showTermsModal = false"
-    />
 </template>
 
 <script setup>
@@ -70,7 +63,6 @@ import axios from 'axios';
 import SidebarStudent from '@/components/sidebarStudent.vue';
 import HeaderStudent from '@/components/headerStudent.vue';
 import SendChat from '@/components/SendChat.vue';
-import TermsModal from '@/components/TermsModal.vue';
 import { useChats } from '@/composables/useChats';
 
 // ── Sidebar state
@@ -88,19 +80,6 @@ const isAutoCreating = ref(false);
 // ── Typing indicator
 const isTyping = ref(false);
 
-// ── Terms Modal
-const showTermsModal = ref(false);
-
-const onTermsAccepted = () => {
-    showTermsModal.value = false;
-    fetchHistory(route.query.conversation_id);
-}
-
-const onTermsDeclined = () => {
-    showTermsModal.value = false;
-    router.push('/login');
-};
-
 onMounted(async () => {
     try {
         const token = localStorage.getItem('token');
@@ -109,12 +88,7 @@ onMounted(async () => {
         });
         userDetails.value = res.data;
 
-        if (!userDetails.value.terms_accepted_at) {
-            showTermsModal.value = true;
-        } else {
-            showTermsModal.value = false;
-            fetchHistory(route.query.conversation_id);
-        }
+        fetchHistory(route.query.conversation_id);
     } catch (error) {
         console.error("Failed to load user state", error);
     }
