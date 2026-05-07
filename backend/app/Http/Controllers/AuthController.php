@@ -110,7 +110,7 @@ class AuthController extends Controller
     
         $otp = rand(100000, 999999);
     
-        $expiresAt = Carbon::now()->addMinutes(2); 
+        $expiresAt = Carbon::now()->addMinutes(5); 
     
         $user = User::create([
             'first_name' => $request->first_name,

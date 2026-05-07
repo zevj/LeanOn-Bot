@@ -16,7 +16,7 @@
                                     <!-- Clickable Image -->
                                         <label for="upload-photo">
                                         <img 
-                                            :src="preview || (profile.profile_image_url || 'https://via.placeholder.com/100')" 
+                                            :src="profileImage" 
                                             class="photo-preview" 
                                             alt="Upload Photo"
                                             style="object-fit: cover; border-radius: 50%;"
@@ -262,7 +262,7 @@
 <script setup>
 import SidebarStudent from '@/components/sidebarStudent.vue';
 import HeaderStudent from '@/components/headerStudent.vue';
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
 
@@ -300,6 +300,20 @@ const profile = ref({
 
 // Editable form
 const form = ref({ ...profile.value })
+
+// Computed for profile image
+const profileImage = computed(() => {
+    if (preview.value) return preview.value
+    if (profile.value.profile_image_url) {
+        // If it's already an absolute URL, return it. Otherwise, prefix with base URL
+        if (profile.value.profile_image_url.startsWith('http')) {
+            return profile.value.profile_image_url
+        }
+        const baseURL = axios.defaults.baseURL || 'http://127.0.0.1:8000'
+        return `${baseURL}/storage/${profile.value.profile_image_url}`
+    }
+    return 'https://via.placeholder.com/100'
+})
 
 // OTP
 const otp = ref(['', '', '', '', '', ''])

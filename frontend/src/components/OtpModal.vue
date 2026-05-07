@@ -69,7 +69,7 @@ const toast = useToast()
 const digits = ref(Array(6).fill(''))
 const inputRefs = ref([])
 const isVerifying = ref(false)
-const timer = ref(45)
+const timer = ref(60)
 let timerInterval = null
 
 const maskedEmail = computed(() => {
@@ -79,7 +79,7 @@ const maskedEmail = computed(() => {
 })
 
 const startTimer = () => {
-  timer.value = 45
+  timer.value = 60
   clearInterval(timerInterval)
   timerInterval = setInterval(() => {
     if (timer.value <= 0) return clearInterval(timerInterval)
