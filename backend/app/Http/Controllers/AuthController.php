@@ -11,14 +11,20 @@ use App\Models\EmailOtp;
 use App\Models\SessionLog;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\OtpMail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Services\MailService;
 
 class AuthController extends Controller
 {
+    protected MailService $mailService;
+
+    public function __construct(MailService $mailService)
+    {
+        $this->mailService = $mailService;
+    }
+
     public function login(Request $request)
     {
         // ✅ Validate input
@@ -119,7 +125,7 @@ class AuthController extends Controller
             'year_level' => $request->year_level,
         ]);
 
-        Mail::to($user->email)->send(new OtpMail($otp, 'register'));
+        $this->mailService->sendOtp($user->email, $otp, 'register');
     
         return response()->json([
             'message' => 'User registered successfully',
@@ -248,8 +254,8 @@ public function sendOtp(Request $request)
         ]
     );
 
-    // ✅ SEND EMAIL
-    Mail::to($request->email)->send(new OtpMail($otp, 'forgot'));
+    // ✅ SEND EMAIL VIA API
+    $this->mailService->sendOtp($request->email, $otp, 'forgot');
 
     return response()->json([
         'message' => 'OTP sent',
@@ -389,7 +395,7 @@ public function resetPassword(Request $request)
             ]
         );
 
-        Mail::to($user->email)->send(new OtpMail($otp, 'forgot'));
+        $this->mailService->sendOtp($user->email, $otp, 'forgot');
 
         return response()->json([
             'message' => 'OTP sent to your email',
@@ -513,8 +519,8 @@ public function resetPassword(Request $request)
             'expires_at' => $expiresAt,
         ]);
 
-        // Send email
-        Mail::to($user->email)->send(new OtpMail($otp, 'login'));
+        // Send email via API
+        $this->mailService->sendOtp($user->email, $otp, 'login');
 
         Log::info("Login OTP sent to {$user->email}");
 
