@@ -29,6 +29,8 @@
                                     Verify Your Account
                                 @elseif($type === 'login')
                                     Login Verification
+                                @elseif($type === 'change')
+                                    Change Password Verification
                                 @else
                                     Reset Your Password
                                 @endif

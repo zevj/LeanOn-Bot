@@ -45,7 +45,7 @@
       <div class="rail-divider"></div>
 
       <button class="rail-btn rail-avatar bottom-avatar" @click.stop="openModal">
-        <img :src="'/leanOnBot.png'"/>
+        <img src="/leanOnBot.png"/>
       </button>
     </div>
 
@@ -121,7 +121,7 @@
       <div class="logout">
         <div class="picture-info-separation" @click="openModal">
           <div class="picture">
-            <img :src="'/leanOnBot.png'"/>
+            <img src="/leanOnBot.png" class="logo-icon"/>
           </div>
           <div class="title-footer">
             <span class="logo-text">{{ userProfile.first_name }} {{ userProfile.last_name }}</span>

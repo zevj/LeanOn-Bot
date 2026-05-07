@@ -244,7 +244,7 @@ public function sendOtp(Request $request)
     ]);
 
     $otp = rand(100000, 999999);
-    $expiresAt = now()->addMinutes(2);
+    $expiresAt = now()->addMinutes(5);
 
     PasswordOtp::updateOrCreate(
         ['email' => $request->email],
@@ -292,8 +292,24 @@ public function resetPassword(Request $request)
 {
     $request->validate([
         'email' => 'required|email',
+        'otp' => 'required',
         'password' => 'required|min:6|confirmed'
     ]);
+
+    // Re-verify OTP before allowing password reset
+    $record = PasswordOtp::where('email', $request->email)->first();
+
+    if (!$record) {
+        return response()->json(['message' => 'No OTP found. Please request a new one.'], 400);
+    }
+
+    if (now()->gt($record->expires_at)) {
+        return response()->json(['message' => 'OTP expired. Please request a new one.'], 400);
+    }
+
+    if (!Hash::check($request->otp, $record->otp)) {
+        return response()->json(['message' => 'Invalid OTP'], 400);
+    }
 
     $user = User::where('email', $request->email)->first();
     if (!$user) {
@@ -302,7 +318,7 @@ public function resetPassword(Request $request)
     $user->password = Hash::make($request->password);
     $user->save();
 
-    // delete OTP after use
+    // Delete OTP after successful reset
     PasswordOtp::where('email', $request->email)->delete();
 
     return response()->json(['message' => 'Password reset successful']);
@@ -385,7 +401,7 @@ public function resetPassword(Request $request)
         }
 
         $otp = rand(100000, 999999);
-        $expiresAt = now()->addMinutes(2);
+        $expiresAt = now()->addMinutes(5);
 
         PasswordOtp::updateOrCreate(
             ['email' => $user->email],
@@ -395,7 +411,7 @@ public function resetPassword(Request $request)
             ]
         );
 
-        $this->mailService->sendOtp($user->email, $otp, 'forgot');
+        $this->mailService->sendOtp($user->email, $otp, 'change');
 
         return response()->json([
             'message' => 'OTP sent to your email',
@@ -436,7 +452,7 @@ public function resetPassword(Request $request)
         /** @var \App\Models\User $user */
         $user = Auth::user(); 
 
-        // 3. Verify current password (redundant but safe)
+        // 3. Verify current password
         if (!Hash::check($request->current_password, $user->password)) {
             return response()->json([
                 'message' => 'Incorrect current password'
@@ -446,27 +462,35 @@ public function resetPassword(Request $request)
         // 4. Find OTP record in PasswordOtp table
         $record = PasswordOtp::where('email', $user->email)->first();
 
-        // 5. Verify OTP
-        if (!$record || !Hash::check($request->otp, $record->otp)) {
-            return response()->json(['message' => 'Invalid or missing OTP'], 400);
+        if (!$record) {
+            Log::warning("Change password: No OTP record found for {$user->email}");
+            return response()->json(['message' => 'No OTP found. Please request a new one.'], 400);
         }
 
+        // 5. Check expiration first
         if (now()->gt($record->expires_at)) {
-            return response()->json(['message' => 'OTP expired'], 400);
+            Log::info("Change password: OTP expired for {$user->email}");
+            return response()->json(['message' => 'OTP expired. Please request a new one.'], 400);
         }
 
-        // 6. Update Password
-        // Use Hash::make as requested by user
+        // 6. Verify OTP hash
+        if (!Hash::check($request->otp, $record->otp)) {
+            Log::warning("Change password: OTP hash mismatch for {$user->email}");
+            return response()->json(['message' => 'Invalid OTP code.'], 400);
+        }
+
+        // 7. Update Password
         $user->password = Hash::make($request->new_password);
         $saved = $user->save();
 
-        // 7. Invalidate OTP
+        // 8. Invalidate OTP
         $record->delete();
 
         if (!$saved) {
             return response()->json(['message' => 'Failed to save password to database'], 500);
         }
 
+        Log::info("Password changed successfully for {$user->email}");
         return response()->json(['message' => 'Password updated successfully']);
     }
 

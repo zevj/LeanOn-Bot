@@ -31,6 +31,8 @@ onMounted(() => {
     toast.success(`Welcome back, ${userData.first_name || 'Student'}!`)
 
     // Redirect to appropriate dashboard
+    // Terms check is handled by sidebarStudent.vue (shows TermsModal if terms_accepted_at is null)
+    // Backend EnsureTermsAccepted middleware also blocks API calls until accepted
     if (userData.role === 'guidance') {
       router.push('/adminDashboard')
     } else {
@@ -38,7 +40,7 @@ onMounted(() => {
     }
   } else {
     toast.error('Authentication failed. Missing token.')
-    router.push('/studentLogin')
+    router.push('/login')
   }
 })
 </script>

@@ -211,6 +211,7 @@ const handleVerify = async () => {
 
     toast.success("OTP verified!")
     localStorage.setItem('reset_email', route.query.email)
+    localStorage.setItem('reset_otp', otp)
     router.push('/NewPass')
 
   } catch (error) {
