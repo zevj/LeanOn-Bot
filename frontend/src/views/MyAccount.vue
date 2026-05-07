@@ -16,7 +16,7 @@
                                     <!-- Clickable Image -->
                                         <label for="upload-photo">
                                         <img 
-                                            :src="preview || (profile.profile_image_url || 'https://via.placeholder.com/100')" 
+                                            :src="profileImage" 
                                             class="photo-preview" 
                                             alt="Upload Photo"
                                             style="object-fit: cover; border-radius: 50%;"
@@ -231,7 +231,7 @@
                                                 </div>
 
                                                 <div v-if="otpTimer > 0" class="otp-countdown" style="margin-bottom: 20px; color: #666; font-size: 14px;">
-                                                    Resend code in <strong>{{ otpTimer }}s</strong>
+                                                    Resend code in <strong>{{ Math.floor(otpTimer / 60) }}:{{ String(otpTimer % 60).padStart(2, '0') }}</strong>
                                                 </div>
                                                 <div v-else class="resend-link" @click="sendOTP" style="cursor: pointer; color: #0E6008; margin-bottom: 20px; font-weight: 600; font-size: 14px;">
                                                     Resend OTP
@@ -262,7 +262,7 @@
 <script setup>
 import SidebarStudent from '@/components/sidebarStudent.vue';
 import HeaderStudent from '@/components/headerStudent.vue';
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
 
@@ -300,6 +300,20 @@ const profile = ref({
 
 // Editable form
 const form = ref({ ...profile.value })
+
+// Computed for profile image
+const profileImage = computed(() => {
+    if (preview.value) return preview.value
+    if (profile.value.profile_image_url) {
+        // If it's already an absolute URL, return it. Otherwise, prefix with base URL
+        if (profile.value.profile_image_url.startsWith('http')) {
+            return profile.value.profile_image_url
+        }
+        const baseURL = axios.defaults.baseURL || 'http://127.0.0.1:8000'
+        return `${baseURL}/storage/${profile.value.profile_image_url}`
+    }
+    return 'https://via.placeholder.com/100'
+})
 
 // OTP
 const otp = ref(['', '', '', '', '', ''])
@@ -400,7 +414,7 @@ async function sendOTP() {
   
   try {
     const token = localStorage.getItem('token')
-    await axios.post('/api/send-otp', {
+    const response = await axios.post('/api/send-otp', {
         current_password: passwords.value.current
     }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -408,15 +422,23 @@ async function sendOTP() {
     toast.success("OTP sent to your email");
     showOTP.value = true;
     isOTPVerified.value = false
-    startTimer()
+    // Use backend expiration to calculate timer
+    if (response.data.expires_at) {
+      const expiresAt = new Date(response.data.expires_at).getTime()
+      const now = Date.now()
+      const secondsLeft = Math.max(0, Math.floor((expiresAt - now) / 1000))
+      startTimer(secondsLeft)
+    } else {
+      startTimer(300) // fallback: 5 minutes
+    }
   } catch (error) {
     const msg = error.response?.data?.message || "Failed to send OTP";
     toast.error(msg)
   }
 }
 
-function startTimer() {
-    otpTimer.value = 60
+function startTimer(seconds = 300) {
+    otpTimer.value = seconds
     if (timerInterval) clearInterval(timerInterval)
     timerInterval = setInterval(() => {
         if (otpTimer.value > 0) otpTimer.value--
