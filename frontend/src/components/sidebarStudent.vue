@@ -45,7 +45,7 @@
       <div class="rail-divider"></div>
 
       <button class="rail-btn rail-avatar bottom-avatar" @click.stop="openModal">
-        <img :src="userProfile.profile_image_url || '/leanOnBot.png'" class="profile-avatar" style="width: 100%; height: 100%; object-fit: cover;" />
+        <img :src="'/leanOnBot.png'"/>
       </button>
     </div>
 
