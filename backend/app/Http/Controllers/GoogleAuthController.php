@@ -93,6 +93,7 @@ class GoogleAuthController extends Controller
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
             'role' => $user->role,
+            'terms_accepted_at' => $user->terms_accepted_at,
         ]));
 
         return redirect("{$frontendUrl}/auth/google/callback?token={$token}&user={$userData}&session_log_id={$sessionLog->id}");

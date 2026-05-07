@@ -150,8 +150,9 @@ const handleResetPassword = async () => {
   if (isLoading.value) return
 
   const email = localStorage.getItem('reset_email')
+  const otp = localStorage.getItem('reset_otp')
 
-  if (!email) {
+  if (!email || !otp) {
     toast.error('Session expired. Please try again.')
     router.push('/forgotPass')
     return
@@ -177,6 +178,7 @@ const handleResetPassword = async () => {
   try {
     await axios.post('/api/forgot-password/reset', {
       email: email,
+      otp: otp,
       password: password.value,
       password_confirmation: confirmPassword.value
     })
@@ -185,6 +187,7 @@ const handleResetPassword = async () => {
 
     localStorage.removeItem('otp_expiry')
     localStorage.removeItem('reset_email')
+    localStorage.removeItem('reset_otp')
 
     router.push('/login')
 
