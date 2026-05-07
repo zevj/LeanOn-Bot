@@ -17,7 +17,7 @@ class MailService
 
         if (!$apiKey) {
             Log::error('Brevo API Key is missing in environment variables.');
-            return false;
+            throw new \Exception('Email service is not configured properly. Please add BREVO_API_KEY.');
         }
 
         $fromEmail = env('MAIL_FROM_ADDRESS', 'leanonbot3@gmail.com');
@@ -53,6 +53,6 @@ class MailService
         }
 
         Log::error("Failed to send email via Brevo API: " . $response->body());
-        return false;
+        throw new \Exception('Failed to send OTP email.');
     }
 }
