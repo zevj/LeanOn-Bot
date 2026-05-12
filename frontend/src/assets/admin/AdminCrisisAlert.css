@@ -39,7 +39,8 @@
 /* ── Stat Cards ── */
 .whole-stat-card {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    /* 3 columns matching the remaining severities */
+    grid-template-columns: repeat(3, 1fr);
     gap: 14px;
     margin-bottom: 1.75rem;
 }
@@ -99,11 +100,6 @@
     font-size: 1.3rem;
 }
 
-/* High */
-.s-high { border-left-color: #DC2625; }
-.s-high:hover { border-color: #DC2625; }
-.icon-high { background: #FEF2F1; border-color: #DC2625; color: #DC2625; }
-
 /* Severe */
 .s-severe { border-left-color: #FC9149; }
 .s-severe:hover { border-color: #FC9149; }
@@ -159,10 +155,9 @@
     background: #f3f4f6;
 }
 
-.severity-tab--high.active     { background: #DC2625; border-color: #DC2625; color: #fff; }
-.severity-tab--severe.active   { background: #FC9149; border-color: #FC9149; color: #fff; }
-.severity-tab--moderate.active { background: #9F7A00; border-color: #9F7A00; color: #fff; }
-.severity-tab--low.active      { background: #0A9569; border-color: #0A9569; color: #fff; }
+.severity-tab--severe.active    { background: #FC9149; border-color: #FC9149; color: #fff; }
+.severity-tab--moderate.active  { background: #9F7A00; border-color: #9F7A00; color: #fff; }
+.severity-tab--low.active       { background: #0A9569; border-color: #0A9569; color: #fff; }
 
 /* ── Keyword Tags ── */
 .keyword-tags {
@@ -178,7 +173,6 @@
     font-weight: 500;
 }
 
-.keyword-tags.high .keyword-tag     { background: #fee2e2; border: 0.5px solid #fca5a5; color: #DC2625; }
 .keyword-tags.severe .keyword-tag   { background: #fff3e0; border: 0.5px solid #fdba74; color: #c2620a; }
 .keyword-tags.moderate .keyword-tag { background: #fffbe6; border: 0.5px solid #fde68a; color: #9F7A00; }
 .keyword-tags.low .keyword-tag      { background: #dcfce7; border: 0.5px solid #86efac; color: #15803d; }
@@ -228,16 +222,13 @@
     transform: translateY(-1px);
 }
 
-.alert-card.p-high     { border-left-color: #DC2625; }
-.alert-card.p-high:hover { border-color: #DC2625; }
-
-.alert-card.p-severe   { border-left-color: #FC9149; }
+.alert-card.p-severe    { border-left-color: #FC9149; }
 .alert-card.p-severe:hover { border-color: #FC9149; }
 
-.alert-card.p-moderate { border-left-color: #9F7A00; }
+.alert-card.p-moderate  { border-left-color: #9F7A00; }
 .alert-card.p-moderate:hover { border-color: #9F7A00; }
 
-.alert-card.p-low      { border-left-color: #0A9569; }
+.alert-card.p-low       { border-left-color: #0A9569; }
 .alert-card.p-low:hover { border-color: #0A9569; }
 
 .alert-card-left {
@@ -264,14 +255,13 @@
     gap: 4px;
 }
 
-.b-high     { background: #fee2e2; color: #dc2626; border: 0.5px solid #fca5a5; }
 .b-severe   { background: #fff3e0; color: #c2620a; border: 0.5px solid #fdba74; }
 .b-moderate { background: #fef9c3; color: #9F7A00; border: 0.5px solid #fde047; }
 .b-low      { background: #dcfce7; color: #15803d; border: 0.5px solid #86efac; }
 
 .b-new      { background: #dcfce7; color: #15803d; border: none; }
-.b-reviewed   { background: #fef9c3; color: #a16207; border: none; }
-.b-resolved { background: #f3f4f6; color: #6b7280;  border: none; }
+.b-reviewed { background: #fef9c3; color: #a16207; border: none; }
+.b-resolved { background: #f3f4f6; color: #6b7280; border: none; }
 
 .alert-time {
     font-size: 12px;
@@ -309,10 +299,9 @@
     font-weight: 500;
 }
 
-.keyword--high     { background: #fee2e2; color: #dc2626; border: 0.5px solid #fca5a5; }
-.keyword--severe   { background: #fff3e0; color: #c2620a; border: 0.5px solid #fdba74; }
-.keyword--moderate { background: #fef9c3; color: #a16207; border: 0.5px solid #fde047; }
-.keyword--low      { background: #dcfce7; color: #15803d; border: 0.5px solid #86efac; }
+.keyword--severe    { background: #fff3e0; color: #c2620a; border: 0.5px solid #fdba74; }
+.keyword--moderate  { background: #fef9c3; color: #a16207; border: 0.5px solid #fde047; }
+.keyword--low       { background: #dcfce7; color: #15803d; border: 0.5px solid #86efac; }
 
 .alert-user {
     font-size: 12px;
@@ -337,7 +326,7 @@
     border: 0.5px solid #d1d5db;
     background: #fff;
     color: #374151;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -362,8 +351,7 @@
     padding: 2rem 0;
 }
 
-/* OPEN MODAL EMAIL */
-/* ── Email Modal ── */
+/* ── Modals ── */
 .email-modal-overlay {
     position: fixed;
     inset: 0;
@@ -385,6 +373,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .email-modal-header {
@@ -440,6 +429,7 @@
     color: #6b7280;
     font-size: 18px;
     flex-shrink: 0;
+    transition: background 0.15s;
 }
 
 .email-modal-close:hover { background: #f3f4f6; }
@@ -484,54 +474,27 @@
     line-height: 1.6;
     color: #374151;
     background-color: #fff;
-
-    /* Clean solid border */
     border: 1px solid #d1d5db;
     border-radius: 6px;
-
-    /* Remove ALL inner “gitli” effects */
     outline: none;
     box-shadow: none !important;
     -webkit-box-shadow: none !important;
     appearance: none;
     -webkit-appearance: none;
-
-    /* Important fix for inner edge rendering */
     background-clip: padding-box;
-
     transition: border-color 0.15s;
-
-    /* Scroll */
     overflow-y: auto;
 }
-
-/* Optional: remove focus glow completely */
-.email-field-textarea:focus {
-    outline: none;
-    box-shadow: none !important;
-    -webkit-box-shadow: none !important;
-}
-
-/* ── Scrollbar stays the same ── */
-.email-field-textarea::-webkit-scrollbar {
-    width: 6px;
-}
-
-.email-field-textarea::-webkit-scrollbar-track {
-    background: #f1f5f1;
-    border-radius: 10px;
-}
-
-.email-field-textarea::-webkit-scrollbar-thumb {
-    background: #0c4708;
-    border-radius: 10px;
-}
-
 
 .email-field-textarea:focus {
     border-color: #0E6008;
     background: #fff;
+    outline: none;
 }
+
+.email-field-textarea::-webkit-scrollbar { width: 6px; }
+.email-field-textarea::-webkit-scrollbar-track { background: #f1f5f1; border-radius: 10px; }
+.email-field-textarea::-webkit-scrollbar-thumb { background: #0c4708; border-radius: 10px; }
 
 .email-modal-footer {
     padding: 1rem 1.25rem;
@@ -540,6 +503,56 @@
     justify-content: flex-end;
     gap: 8px;
     flex-shrink: 0;
+}
+
+/* ── Resolve Confirmation Modal Enhancements ── */
+.resolve-modal {
+    width: 420px;
+}
+
+.icon-resolve {
+    background: #ECFDF5;
+    border-color: #86efac;
+    color: #0A9569;
+}
+
+.resolve-body {
+    align-items: center;
+    text-align: center;
+    padding: 2rem 1.5rem;
+}
+
+.resolve-icon-large {
+    font-size: 3rem;
+    color: #0A9569;
+    margin-bottom: 0.75rem;
+}
+
+.resolve-text {
+    font-size: 15px;
+    color: #111;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.resolve-user {
+    color: #0A9569;
+}
+
+.resolve-subtext {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+.action-btn--confirm-resolve {
+    background: #0A9569;
+    color: #fff;
+    border-color: #0A9569;
+}
+
+.action-btn--confirm-resolve:hover {
+    background: #077954;
 }
 
 /* ── Modal Animation ── */

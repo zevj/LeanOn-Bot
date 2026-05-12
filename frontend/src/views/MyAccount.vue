@@ -42,6 +42,18 @@
                                     <i class='bx bx-phone'></i>
                                     <span>Phone:</span> <p>{{ profile.phone_number || 'N/A' }}</p>
                                 </div>
+                                
+                                <!-- Age Info -->
+                                <div class="info-item">
+                                    <i class='bx bx-cake'></i>
+                                    <span>Age:</span> <p>{{ profile.age || 'N/A' }}</p>
+                                </div>
+
+                                <!-- Gender Info -->
+                                <div class="info-item">
+                                    <i class='bx bx-user-pin'></i>
+                                    <span>Gender:</span> <p>{{ profile.gender || 'N/A' }}</p>
+                                </div>
 
                                 <div class="info-item">
                                     <i class='bx bx-calendar'></i>
@@ -85,7 +97,34 @@
                                     </div>
                                 </div>
 
-                                <!-- Row 2: Email | Phone -->
+                                <!-- Row 2: Age | Gender -->
+                                <div class="input-row">
+                                    <div class="name-input">
+                                        <label class="input-title">Age</label>
+                                        <!-- Changed to strict number filtering inline -->
+                                        <input 
+                                            type="text" 
+                                            inputmode="numeric"
+                                            class="input-info" 
+                                            v-model="form.age" 
+                                            @input="form.age = $event.target.value.replace(/[^0-9]/g, '')"
+                                            placeholder="e.g. 21"
+                                            maxlength="3"
+                                        >
+                                    </div>
+                                    <div class="name-input">
+                                        <label class="input-title">Gender</label>
+                                        <select class="input-info" v-model="form.gender">
+                                            <option value="" disabled selected>Select your gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Non-binary">Non-binary</option>
+                                            <option value="Prefer not to say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: Email | Phone -->
                                 <div class="input-row">
                                     <div class="name-input">
                                         <label class="input-title">Email</label>
@@ -104,7 +143,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Row 3: Department | Year Level -->
+                                <!-- Row 4: Department | Year Level -->
                                 <div class="input-row">
                                     <div class="name-input">
                                         <label class="input-title">Department</label>
@@ -116,9 +155,9 @@
                                     </div>
                                 </div>
 
-                                <!-- Row 4: Program (full width) -->
+                                <!-- Row 5: Program (full width) -->
                                 <div class="input-row">
-                                    <div class="name-input">
+                                    <div class="name-input full-width-input">
                                         <label class="input-title">Program</label>
                                         <input type="text" class="input-info" v-model="form.program" readonly>
                                     </div>

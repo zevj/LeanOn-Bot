@@ -16,14 +16,6 @@
 
                 <!-- STATS -->
                 <div class="whole-stat-card">
-                    <div class="stat-card-wrap s-high">
-                        <div class="stat-left">
-                            <span class="stat-label">High</span>
-                            <span class="stat-number">{{ statsData.high_count ?? 0 }}</span>
-                        </div>
-                        <div class="stat-icon icon-high"><i class="bx bx-error"></i></div>
-                    </div>
-
                     <div class="stat-card-wrap s-severe">
                         <div class="stat-left">
                             <span class="stat-label">Severe</span>
@@ -78,7 +70,6 @@
                 <div class="alert-filters">
                     <select v-model="filterPriority" class="filter-select" @change="fetchAlerts">
                         <option value="">All priorities</option>
-                        <option value="high">High</option>
                         <option value="severe">Severe</option>
                         <option value="moderate">Moderate</option>
                         <option value="low">Low</option>
@@ -139,7 +130,7 @@
                             </button>
                             <button
                                 class="action-btn action-btn--resolve"
-                                @click="updateStatus(alert, 'resolved')"
+                                @click="openResolveModal(alert)"
                                 :disabled="alert.status === 'resolved'"
                             >
                                 <i class="bx bx-check"></i> Resolve
@@ -156,12 +147,11 @@
         </main>
 
 
-        <Teleport to="body">
+<Teleport to="body">
+    <!-- EMAIL MODAL -->
     <Transition name="modal-fade">
         <div v-if="emailModal.visible" class="email-modal-overlay" @click.self="closeEmailModal">
             <div class="email-modal">
-
-                <!-- Header -->
                 <div class="email-modal-header">
                     <div class="email-modal-header-left">
                         <div class="email-modal-icon"><i class="bx bx-send"></i></div>
@@ -175,18 +165,15 @@
                     </button>
                 </div>
 
-                <!-- Body -->
                 <div class="email-modal-body">
                     <div class="email-field-group">
                         <span class="email-field-label">To</span>
                         <div class="email-field-value">{{ emailModal.maskedEmail }}</div>
                     </div>
-
                     <div class="email-field-group">
                         <span class="email-field-label">Subject</span>
                         <div class="email-field-value">{{ emailModal.subject }}</div>
                     </div>
-
                     <div class="email-field-group">
                         <span class="email-field-label">Severity</span>
                         <div style="padding: 6px 0;">
@@ -195,7 +182,6 @@
                             </span>
                         </div>
                     </div>
-
                     <div class="email-field-group">
                         <span class="email-field-label">Message body</span>
                         <textarea
@@ -205,14 +191,47 @@
                     </div>
                 </div>
 
-                <!-- Footer -->
                 <div class="email-modal-footer">
                     <button class="action-btn" @click="closeEmailModal">Cancel</button>
                     <button class="action-btn action-btn--email" @click="sendEmail">
                         <i class="bx bx-send"></i> Send Email
                     </button>
                 </div>
+            </div>
+        </div>
+    </Transition>
 
+    <!-- RESOLVE CONFIRMATION MODAL -->
+    <Transition name="modal-fade">
+        <div v-if="resolveModal.visible" class="email-modal-overlay" @click.self="closeResolveModal">
+            <div class="email-modal resolve-modal">
+                <div class="email-modal-header">
+                    <div class="email-modal-header-left">
+                        <div class="email-modal-icon icon-resolve"><i class="bx bx-check-shield"></i></div>
+                        <div>
+                            <p class="email-modal-title">Resolve Alert</p>
+                            <p class="email-modal-subtitle">Confirm resolution status</p>
+                        </div>
+                    </div>
+                    <button class="email-modal-close" @click="closeResolveModal">
+                        <i class="bx bx-x"></i>
+                    </button>
+                </div>
+
+                <div class="email-modal-body resolve-body">
+                    <div class="resolve-icon-large"><i class="bx bx-check-circle"></i></div>
+                    <p class="resolve-text">
+                        Are you sure you want to mark the alert for <strong class="resolve-user">{{ resolveModal.alert?.user_display }}</strong> as resolved?
+                    </p>
+                    <p class="resolve-subtext">This action indicates that the crisis has been properly addressed and handled.</p>
+                </div>
+
+                <div class="email-modal-footer">
+                    <button class="action-btn" @click="closeResolveModal">Cancel</button>
+                    <button class="action-btn action-btn--confirm-resolve" @click="confirmResolve">
+                        <i class="bx bx-check"></i> Confirm Resolution
+                    </button>
+                </div>
             </div>
         </div>
     </Transition>
@@ -233,15 +252,13 @@ const loading = ref(false);
 
 // ── Keyword Reference ──────────────────────────────────────────
 const severityLevels = [
-    { label: 'High',     key: 'high'     },
     { label: 'Severe',   key: 'severe'   },
     { label: 'Moderate', key: 'moderate' },
     { label: 'Low',      key: 'low'      },
 ];
-const activeSeverity = ref('high');
+const activeSeverity = ref('severe'); 
 
 const keywordMap = {
-    high:     ['want to die', 'end it all', 'suicide', 'kill myself'],
     severe:   ['hopeless', 'worthless', 'no one understands', 'breaking down', "can't cope"],
     moderate: ['stressed', 'anxious', 'overwhelmed', 'struggling', 'alone'],
     low:      ['sad', 'tired', 'unmotivated', 'worried', 'frustrated'],
@@ -255,7 +272,6 @@ const filterStatus   = ref('');
 // ── Alert Data ─────────────────────────────────────────────────
 const alerts = ref([]);
 const statsData = ref({
-    high_count: 0,
     severe_count: 0,
     moderate_count: 0,
     low_count: 0,
@@ -321,7 +337,34 @@ onMounted(() => {
     fetchAlerts();
 });
 
-/*OPEN EMAIL MODAL*/
+// ── Resolve Modal ──────────────────────────────────────────────
+const resolveModal = ref({
+    visible: false,
+    alert: null,
+});
+
+const openResolveModal = (alert) => {
+    resolveModal.value = {
+        visible: true,
+        alert: alert,
+    };
+};
+
+const closeResolveModal = () => {
+    resolveModal.value.visible = false;
+    // Delay clearing alert to avoid layout jump during fade out
+    setTimeout(() => {
+        if (!resolveModal.value.visible) resolveModal.value.alert = null;
+    }, 200);
+};
+
+const confirmResolve = async () => {
+    if (resolveModal.value.alert) {
+        await updateStatus(resolveModal.value.alert, 'resolved');
+        closeResolveModal();
+    }
+};
+
 // ── Email Modal ────────────────────────────────────────────────
 const emailModal = ref({
     visible: false,
@@ -340,8 +383,7 @@ const openEmailModal = (alert) => {
         subject: `Urgent: Crisis Alert — Action Required`,
         severity: alert.severity,
         alertId: alert.id,
-        body:
-`Dear Student,`,
+        body: `Dear Student,`,
     };
 };
 

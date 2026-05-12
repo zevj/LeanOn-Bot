@@ -57,7 +57,7 @@
           <span>Student Panel</span>
         </div>
         <!-- Desktop: dock icon | Mobile: X close -->
-        <button class="sidebar-toggle" @click="handleCloseBtn" title="Close Sidebar">
+        <button class="sidebar-toggle header-toggle" @click.stop="handleCloseBtn" title="Close Sidebar">
           <i :class="isMobile ? 'bx bx-x' : 'bx bx-dock-left'"></i>
         </button>
       </div>
@@ -82,40 +82,56 @@
           </div>
         </div>
 
-        <h4 class="chat-history-title">Chat History</h4>
+        <!-- ── INTERACTIVE CHAT HISTORY HEADER ── -->
+        <div class="chat-history-header" @click.stop="toggleChatHistory">
+          <div class="chat-history-label">
+            <i class='bx bx-history chat-history-icon'></i>
+            <h4 class="chat-history-title">Chat History</h4>
+          </div>
+          <i class='bx bx-chevron-down chat-history-toggle' :class="{ 'is-collapsed': !isChatHistoryExpanded }"></i>
+        </div>
 
-        <div class="chat-convo-module">
-          <div
-            v-for="(chat, index) in chats"
-            :key="chat.id"
-            class="chat-convo-container"
-            :class="{ 'active-chat': isSelected(chat.id) }"
-            @click="selectChat(chat.id)"
-          >
-            <div class="title-3dots-separation">
-              <div class="chat-text">
-                <h4 class="chat-title">{{ chat.title }}</h4>
-                <p class="chat-time">{{ formatDate(chat.updated_at) }}</p>
+        <!-- ── ANIMATED CHAT HISTORY CONTAINER ── -->
+        <transition name="history-collapse">
+          <div v-if="isChatHistoryExpanded" class="chat-convo-module">
+            <div
+              v-for="(chat, index) in chats"
+              :key="chat.id"
+              class="chat-convo-container"
+              :class="{ 'active-chat': isSelected(chat.id) }"
+              @click="selectChat(chat.id)"
+            >
+              <div class="title-3dots-separation">
+                <div class="chat-text">
+                  <h4 class="chat-title">{{ chat.title }}</h4>
+                  <p class="chat-time">{{ formatDate(chat.updated_at) }}</p>
+                </div>
+                <div class="menu-wrapper">
+                  <i class="bx bx-dots-horizontal dots" @click.stop="openDropdown($event, index)"></i>
+                </div>
               </div>
-              <div class="menu-wrapper">
-                <i class="bx bx-dots-horizontal dots" @click.stop="openDropdown($event, index)"></i>
-              </div>
+            </div>
+            
+            <!-- Empty state fallback when no chats exist -->
+            <div v-if="chats.length === 0" class="no-history-msg">
+              <i class='bx bx-message-rounded-dots'></i>
+              <span>No past conversations</span>
             </div>
           </div>
+        </transition>
 
-          <Teleport to="body">
-            <div
-              v-if="dropdown.visible"
-              class="dropdown-menu"
-              :style="{ top: dropdown.top + 'px', left: dropdown.left + 'px' }"
-              @click.stop
-            >
-              <div class="dropdown-item" @click="saveChat(dropdown.index)"><i class='bx bx-save'></i> Save</div>
-              <div class="dropdown-item" @click="archiveChat(dropdown.index)"><i class='bx bx-archive'></i> Archive</div>
-              <div class="dropdown-item delete" @click="deleteChat(dropdown.index)"><i class='bx bx-trash'></i> Delete</div>
-            </div>
-          </Teleport>
-        </div>
+        <Teleport to="body">
+          <div
+            v-if="dropdown.visible"
+            class="dropdown-menu"
+            :style="{ top: dropdown.top + 'px', left: dropdown.left + 'px' }"
+            @click.stop
+          >
+            <div class="dropdown-item" @click="saveChat(dropdown.index)"><i class='bx bx-save'></i> Save</div>
+            <div class="dropdown-item" @click="archiveChat(dropdown.index)"><i class='bx bx-archive'></i> Archive</div>
+            <div class="dropdown-item delete" @click="deleteChat(dropdown.index)"><i class='bx bx-trash'></i> Delete</div>
+          </div>
+        </Teleport>
       </nav>
 
       <div class="logout">
@@ -296,6 +312,11 @@ const toast = useToast()
 
 const { mobileToggleCount } = useSidebarToggle()
 
+const props = defineProps({
+  open: Boolean,
+  mobileToggle: { type: Number, default: 0 }
+})
+
 // ── MOBILE DETECTION ──
 const MOBILE_BREAKPOINT = 768
 const isMobile = ref(window.innerWidth <= MOBILE_BREAKPOINT)
@@ -308,9 +329,9 @@ const handleResize = () => {
 
 const emit = defineEmits(['toggle', 'select-chat', 'update:mobileOpen'])
 
-defineProps({
-  open: Boolean,
-  mobileToggle: { type: Number, default: 0 }
+// Watch both the prop and the composable to ensure maximum compatibility
+watch(() => props.mobileToggle, () => {
+  if (isMobile.value) mobileOpen.value = !mobileOpen.value
 })
 
 watch(mobileToggleCount, () => {
@@ -366,8 +387,13 @@ const fetchUserProfile = async () => {
   }
 }
 
-// ── CHATS ──
+// ── CHATS & HISTORY TOGGLE ──
 const { chats, fetchConversations, addConversation, removeConversation, updateConversation } = useChats()
+const isChatHistoryExpanded = ref(true)
+
+const toggleChatHistory = () => {
+  isChatHistoryExpanded.value = !isChatHistoryExpanded.value
+}
 
 onMounted(() => {
   fetchConversations()

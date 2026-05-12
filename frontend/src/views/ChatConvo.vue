@@ -58,7 +58,7 @@
 <script setup>
 import { ref, nextTick, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { marked } from 'marked';
+// import { marked } from 'marked';
 import axios from 'axios';
 import SidebarStudent from '@/components/sidebarStudent.vue';
 import HeaderStudent from '@/components/headerStudent.vue';
