@@ -5,12 +5,14 @@
     <div class="chart-header">
       <div class="header-left">
         <p class="label">Interaction Analytics</p>
-        <h3>{{ activeFilter.label }}</h3>
+        <h3>{{ activeFilter.label }} Overview</h3>
       </div>
       <div class="header-right">
-        <span class="trend up" v-if="trendPercent >= 0">↑ {{ trendPercent }}%</span>
-        <span class="trend down" v-else>↓ {{ Math.abs(trendPercent) }}%</span>
-        <span class="vs-label">vs last period</span>
+        <div :class="['trend-badge', trendPercent >= 0 ? 'up' : 'down']">
+          <i :class="trendPercent >= 0 ? 'bx bx-trending-up' : 'bx bx-trending-down'"></i>
+          <span>{{ Math.abs(trendPercent) }}%</span>
+        </div>
+        <span class="vs-label">vs previous period</span>
       </div>
     </div>
 
@@ -95,8 +97,8 @@ function buildDataset(r) {
         const { ctx: c, chartArea } = chart
         if (!chartArea) return "rgba(14,96,8,0.06)"
         const gradient = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
-        gradient.addColorStop(0, "rgba(14,96,8,0.12)")
-        gradient.addColorStop(1, "rgba(14,96,8,0.01)")
+        gradient.addColorStop(0, "rgba(14,96,8,0.25)") // Slightly stronger green at the top
+        gradient.addColorStop(1, "rgba(14,96,8,0.00)") // Fades out completely at the bottom
         return gradient
       },
       fill: true,
@@ -106,7 +108,7 @@ function buildDataset(r) {
       pointBackgroundColor: "#fff",
       pointBorderColor: "#0E6008",
       pointBorderWidth: 2.5,
-      borderWidth: 2.5
+      borderWidth: 3
     }]
   }
 }
@@ -125,18 +127,20 @@ function selectRange(f) {
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  animation: { duration: 400, easing: "easeOutQuart" },
+  animation: { duration: 800, easing: "easeOutExpo" },
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: "#0f1a0e",
-      titleColor: "#d1fae5",
-      bodyColor: "#fff",
+      backgroundColor: "rgba(17, 24, 39, 0.95)",
+      titleColor: "#f3f4f6",
+      titleFont: { size: 13, weight: 'bold', family: "'DM Sans', sans-serif" },
+      bodyColor: "#a3e6a0",
+      bodyFont: { size: 12, family: "'DM Sans', sans-serif" },
       padding: 12,
-      cornerRadius: 10,
+      cornerRadius: 8,
       displayColors: false,
-      titleFont: { size: 11, weight: "500" },
-      bodyFont: { size: 13, weight: "600" },
+      borderColor: "rgba(255,255,255,0.1)",
+      borderWidth: 1,
       callbacks: {
         title: (items) => items[0].label,
         label: (item) => `${item.raw} interactions`
@@ -148,19 +152,24 @@ const chartOptions = {
       grid: { display: false },
       border: { display: false },
       ticks: {
-        color: "#aaa",
-        font: { size: 11, weight: "500" },
+        color: "#6b7280",
+        font: { size: 12, family: "'DM Sans', sans-serif" },
         padding: 6
       }
     },
     y: {
-      grid: { color: "rgba(0,0,0,0.04)", drawTicks: false },
-      border: { display: false, dash: [4, 4] },
+      beginAtZero: true,
+      grid: { 
+        color: "rgba(0,0,0,0.04)", 
+        drawBorder: false,
+        borderDash: [5, 5]
+      },
+      border: { display: false },
       ticks: {
-        color: "#aaa",
-        font: { size: 11 },
+        color: "#9ca3af",
+        font: { size: 11, family: "'DM Sans', sans-serif" },
         padding: 10,
-        maxTicksLimit: 5
+        maxTicksLimit: 6
       }
     }
   }
@@ -168,24 +177,36 @@ const chartOptions = {
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600&display=swap');
+
 .chart-container {
-  width: 50%;
-  max-width: 950px;
+  width: 100%; /* Replaced fixed 50% width to be naturally responsive */
   height: 380px;
-  padding: 20px 22px 16px;
-  border-radius: 18px;
-  background: #fff;
-  border: 1.5px solid #ebebeb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 6px 24px rgba(0,0,0,0.06);
+  padding: 24px 24px 20px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff, #fafafa);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.01);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  gap: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  
+  /* Entrance Animation */
+  animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: 0.1s; /* Slight delay to cascade with the daily chart */
+}
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(15px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 .chart-container:hover {
   border-color: rgba(14, 96, 8, 0.3);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04), 0 12px 32px rgba(14,96,8,0.09);
+  box-shadow: 0 10px 25px rgba(14, 96, 8, 0.06), 0 4px 10px rgba(0, 0, 0, 0.02);
+  transform: translateY(-2px);
 }
 
 /* HEADER */
@@ -193,84 +214,166 @@ const chartOptions = {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 10px;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .label {
-  margin: 0 0 2px;
-  font-size: 13px;
+  margin: 0;
+  font-size: 16px;
   font-weight: 600;
-  color: black;
+  color: #111827;
+  letter-spacing: -0.2px;
 }
 
 .chart-header h3 {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  color: #7a7a7a;
-  letter-spacing: -0.3px;
-  transition: color 0.2s;
+  color: #6b7280;
 }
 
 .header-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 4px;
 }
 
-.trend {
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: -0.2px;
 }
 
-.trend.up   { color: #16a34a; }
-.trend.down { color: #dc2626; }
+.trend-badge i {
+  font-size: 15px;
+}
+
+.trend-badge.up { 
+  color: #15803d; 
+  background-color: #dcfce7;
+  border: 1px solid #bbf7d0;
+}
+
+.trend-badge.down { 
+  color: #b91c1c; 
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+}
 
 .vs-label {
-  font-size: 10.5px;
-  color: #bbb;
+  font-size: 11px;
+  color: #9ca3af;
   font-weight: 500;
 }
 
 /* FILTER ROW */
 .filter-row {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .filter-btn {
-  padding: 5px 13px;
+  padding: 6px 14px;
   border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #fafafa;
-  font-size: 11.5px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 12px;
   font-weight: 500;
-  color: #777;
+  color: #6b7280;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  line-height: 1.4;
+  font-family: 'DM Sans', system-ui, sans-serif;
 }
 
 .filter-btn:hover {
-  border-color: #c5d9c4;
-  color: #3a6b37;
-  background: #f5fbf4;
+  border-color: #bbf7d0;
+  color: #15803d;
+  background: #f0fdf4;
 }
 
 .filter-btn.active {
   background: #0E6008;
   border-color: #0E6008;
-  color: #fff;
+  color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(14, 96, 8, 0.25);
+  box-shadow: 0 4px 6px rgba(14, 96, 8, 0.2);
+  transform: translateY(-1px);
 }
 
 /* CHART */
 .chart-wrapper {
   flex: 1;
   min-height: 0;
+  width: 100%;
+}
+
+/* ── RESPONSIVE BREAKPOINTS ── */
+
+@media (max-width: 1024px) {
+  .chart-container {
+    height: 350px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    height: 350px;
+    padding: 16px;
+    border-radius: 14px;
+  }
+  
+  .label {
+    font-size: 15px;
+  }
+  
+  .filter-btn {
+    padding: 5px 12px;
+    font-size: 11.5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-container {
+    height: auto; /* Let the height adapt to stacked elements */
+    min-height: 320px;
+    padding: 14px;
+  }
+  
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-right {
+    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .filter-row {
+    gap: 6px;
+    padding-bottom: 10px;
+  }
+
+  .chart-wrapper {
+    height: 200px; /* Give the canvas a strict height on small phones */
+  }
 }
 </style>

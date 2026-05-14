@@ -5,53 +5,64 @@
       @toggle="sidebarOpen = !sidebarOpen; localStorage.setItem('adminSidebarOpen', sidebarOpen)"
     />
 
-    <main>
+    <main class="main-area">
       <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen; localStorage.setItem('adminSidebarOpen', sidebarOpen)" />
 
       <div class="main-container">
-        <div class="header-title">
+        <div class="header-title fade-in">
           <h1 class="title">Emotional Trends</h1>
-          <p class="subtext">Anonymized emotional patterns</p>
+          <p class="subtext">Analyze anonymized emotional patterns and referral statistics over time.</p>
         </div>
 
         <div class="charts-container">
-          <div class="charts-separation">
+          <div class="charts-separation animate-card stagger-1">
             <TrendsChart :weeklyData="weeklyData" :weekLabels="weekLabels" />
           </div>
 
           <div class="charts-flex">
-            <div class="referrals-card">
-              <h2 class="referrals-card__title">Referrals</h2>
+            
+            <div class="referrals-card animate-card stagger-2">
+              <div class="card-header">
+                <div class="icon-wrapper icon-green"><i class='bx bx-user-plus'></i></div>
+                <h2 class="card-title">Referrals</h2>
+              </div>
               <div class="referrals-card__divider" />
               <ul class="referrals-card__list">
                 <li v-for="stat in referralStats" :key="stat.label" class="referrals-card__row">
                   <span class="referrals-card__label">{{ stat.label }}</span>
-                  <span class="referrals-card__value" :class="`referrals-card__value--${stat.modifier}`">
+                  <span class="referrals-badge" :class="`badge--${stat.modifier}`">
                     {{ stat.value }}
                   </span>
                 </li>
               </ul>
             </div>
 
-            <div class="card">
-              <h3 class="emotion-title">Top Emotions</h3>
-              <div
-                v-for="(item, index) in topEmotions"
-                :key="index"
-                class="emotion-item"
-              >
-                <div class="label-row">
-                  <span class="name">{{ item.name }}</span>
-                  <span class="percent">{{ item.value }}%</span>
-                </div>
-                <div class="progress-bar">
-                  <div
-                    class="progress-fill"
-                    :style="{ width: item.value + '%' }"
-                  ></div>
+            <div class="top-emotions-card animate-card stagger-3">
+              <div class="card-header">
+                <div class="icon-wrapper icon-blue"><i class='bx bx-heart'></i></div>
+                <h3 class="card-title">Top Emotions</h3>
+              </div>
+              
+              <div class="emotions-list">
+                <div
+                  v-for="(item, index) in topEmotions"
+                  :key="index"
+                  class="emotion-item"
+                >
+                  <div class="label-row">
+                    <span class="name">{{ item.name }}</span>
+                    <span class="percent">{{ item.value }}%</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div
+                      class="progress-fill"
+                      :style="{ width: item.value + '%' }"
+                    ></div>
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>

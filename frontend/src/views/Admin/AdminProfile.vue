@@ -1,17 +1,17 @@
 <template>
   <div class="layout">
     <SidebarAdmin
-            :open="sidebarOpen"
-            @toggle="sidebarOpen = !sidebarOpen"
-        />
+      :open="sidebarOpen"
+      @toggle="sidebarOpen = !sidebarOpen; localStorage.setItem('adminSidebarOpen', sidebarOpen)"
+    />
 
-    <main>
-      <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen" />
+    <main class="main-area">
+      <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen; localStorage.setItem('adminSidebarOpen', sidebarOpen)" />
 
       <div class="main-container">
 
         <!-- Page Header -->
-        <div class="page-header">
+        <div class="page-header fade-in">
           <div>
             <h2 class="page-title">My Profile</h2>
             <p class="page-subtitle">Manage your account information and credentials</p>
@@ -21,13 +21,12 @@
         <div class="profile-wrapper">
 
           <!-- LEFT: Info Card -->
-          <div class="info-card">
-
+          <div class="info-card animate-card stagger-1">
             <!-- Avatar -->
             <div class="avatar-section">
-              <label for="upload-photo" class="avatar-label">
+              <label for="upload-photo" class="avatar-label hover-glow-img">
                 <img
-                  :src="preview || profile.profile_image_url || 'https://via.placeholder.com/100'"
+                  :src="preview || profile.profile_image_url || 'https://via.placeholder.com/150'"
                   class="avatar-img"
                   alt="Profile Photo"
                 />
@@ -44,11 +43,8 @@
 
             <!-- Info List -->
             <div class="info-list">
-
               <div class="info-row">
-                <div class="info-icon-wrap">
-                  <i class='bx bx-envelope'></i>
-                </div>
+                <div class="info-icon-wrap"><i class='bx bx-envelope'></i></div>
                 <div class="info-text">
                   <span class="info-key">Email</span>
                   <p class="info-val">{{ profile.email || 'N/A' }}</p>
@@ -56,9 +52,7 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon-wrap">
-                  <i class='bx bx-phone'></i>
-                </div>
+                <div class="info-icon-wrap"><i class='bx bx-phone'></i></div>
                 <div class="info-text">
                   <span class="info-key">Phone</span>
                   <p class="info-val">{{ profile.phone_number || 'N/A' }}</p>
@@ -66,9 +60,7 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon-wrap">
-                  <i class='bx bx-buildings'></i>
-                </div>
+                <div class="info-icon-wrap"><i class='bx bx-buildings'></i></div>
                 <div class="info-text">
                   <span class="info-key">Unit</span>
                   <p class="info-val">{{ profile.unit || 'N/A' }}</p>
@@ -76,15 +68,12 @@
               </div>
 
               <div class="info-row">
-                <div class="info-icon-wrap">
-                  <i class='bx bx-id-card'></i>
-                </div>
+                <div class="info-icon-wrap"><i class='bx bx-id-card'></i></div>
                 <div class="info-text">
                   <span class="info-key">Role</span>
                   <p class="info-val">{{ profile.role === 'guidance' ? 'Guidance Counselor' : 'Administrator' }}</p>
                 </div>
               </div>
-
             </div>
           </div>
 
@@ -92,18 +81,15 @@
           <div class="forms-column">
 
             <!-- Profile Information -->
-            <div class="form-card">
+            <div class="form-card animate-card stagger-2">
               <div class="form-card-header">
-                <div>
-                  <h3 class="form-card-title">Profile Information</h3>
-                  <p class="form-card-desc">Update your personal details below.</p>
-                </div>
+                <h3 class="form-card-title">Profile Information</h3>
+                <p class="form-card-desc">Update your personal details below.</p>
               </div>
 
               <hr class="form-hr" />
 
               <div class="form-grid">
-
                 <div class="form-group">
                   <label class="form-label">First Name</label>
                   <input
@@ -145,7 +131,7 @@
 
                 <div class="form-group">
                   <label class="form-label">Unit</label>
-                  <select class="form-input" v-model="form.unit">
+                  <select class="form-input custom-select" v-model="form.unit">
                     <option value="" disabled>Select Unit</option>
                     <option value="Gordon College">Gordon College</option>
                     <option value="Guidance Unit">Guidance Unit</option>
@@ -154,17 +140,16 @@
 
                 <div class="form-group">
                   <label class="form-label">Role</label>
-                  <select class="form-input" v-model="form.role">
+                  <select class="form-input custom-select" v-model="form.role" disabled>
                     <option value="" disabled>Select Role</option>
                     <option value="admin">Administrator</option>
                     <option value="guidance">Guidance Counselor</option>
                   </select>
                 </div>
-
               </div>
 
               <div class="form-action">
-                <button class="btn-save" @click="submitProfile" :disabled="isSaving">
+                <button class="btn-save hover-glow" @click="submitProfile" :disabled="isSaving">
                   <i class='bx bx-save'></i>
                   {{ isSaving ? 'Saving...' : 'Save Changes' }}
                 </button>
@@ -172,18 +157,15 @@
             </div>
 
             <!-- Change Password -->
-            <div class="form-card">
+            <div class="form-card animate-card stagger-3">
               <div class="form-card-header">
-                <div>
-                  <h3 class="form-card-title">Change Password</h3>
-                  <p class="form-card-desc">Update your password to keep your account secure.</p>
-                </div>
+                <h3 class="form-card-title">Change Password</h3>
+                <p class="form-card-desc">Update your password to keep your account secure.</p>
               </div>
 
               <hr class="form-hr" />
 
               <div class="form-grid">
-
                 <div class="form-group">
                   <label class="form-label">Current Password</label>
                   <div class="input-icon-wrap">
@@ -195,7 +177,7 @@
                     />
                     <i
                       v-if="passwords.current"
-                      :class="showCurrent ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
+                      :class="showCurrent ? 'bx bx-hide' : 'bx bx-show'"
                       class="eye-btn"
                       @click="showCurrent = !showCurrent"
                     ></i>
@@ -213,7 +195,7 @@
                     />
                     <i
                       v-if="passwords.new"
-                      :class="showNew ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
+                      :class="showNew ? 'bx bx-hide' : 'bx bx-show'"
                       class="eye-btn"
                       @click="showNew = !showNew"
                     ></i>
@@ -231,17 +213,16 @@
                     />
                     <i
                       v-if="passwords.confirm"
-                      :class="showConfirm ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"
+                      :class="showConfirm ? 'bx bx-hide' : 'bx bx-show'"
                       class="eye-btn"
                       @click="showConfirm = !showConfirm"
                     ></i>
                   </div>
                 </div>
-
               </div>
 
               <div class="form-action">
-                <button class="btn-save" @click="submitPassword" :disabled="isSavingPassword">
+                <button class="btn-save hover-glow" @click="submitPassword" :disabled="isSavingPassword">
                   <i class='bx bx-lock-alt'></i>
                   {{ isSavingPassword ? 'Saving...' : 'Update Password' }}
                 </button>
@@ -252,48 +233,46 @@
         </div>
 
         <!-- OTP Modal -->
-        <transition name="fade-slide">
-          <div v-if="showOTP" class="modal-overlay" @click.self="showOTP = false">
-            <div class="otp-modal">
+        <Teleport to="body">
+          <transition name="fade-slide">
+            <div v-if="showOTP" class="modal-overlay" @click.self="showOTP = false">
+              <div class="otp-modal">
+                <button class="otp-close" @click="showOTP = false">
+                  <i class='bx bx-x'></i>
+                </button>
 
-              <button class="otp-close" @click="showOTP = false">
-                <i class='bx bx-x'></i>
-              </button>
+                <div class="otp-icon-wrap"><i class='bx bx-shield-quarter'></i></div>
 
-              <div class="otp-icon-wrap">
-                <i class='bx bx-shield-quarter'></i>
+                <h3 class="otp-title">Verify Password Change</h3>
+                <p class="otp-sub">We've sent a 6-digit code to your email address.</p>
+
+                <div class="otp-inputs">
+                  <input
+                    v-for="(digit, index) in otp"
+                    :key="index"
+                    type="text"
+                    maxlength="1"
+                    class="otp-box"
+                    v-model="otp[index]"
+                    @input="handleOtpInput($event, index)"
+                    :id="'otp-' + index"
+                  />
+                </div>
+
+                <div v-if="otpTimer > 0" class="otp-timer">
+                  Resend code in <strong>{{ otpTimer }}s</strong>
+                </div>
+                <div v-else class="otp-resend" @click="sendOTP">
+                  Resend OTP
+                </div>
+
+                <button class="btn-save hover-glow otp-verify-btn" @click="finalizePasswordChange" :disabled="isSavingPassword">
+                  {{ isSavingPassword ? 'Verifying...' : 'Verify & Update Password' }}
+                </button>
               </div>
-
-              <h3 class="otp-title">Verify Password Change</h3>
-              <p class="otp-sub">We've sent a 6-digit code to your email address.</p>
-
-              <div class="otp-inputs">
-                <input
-                  v-for="(digit, index) in otp"
-                  :key="index"
-                  type="text"
-                  maxlength="1"
-                  class="otp-box"
-                  v-model="otp[index]"
-                  @input="handleOtpInput($event, index)"
-                  :id="'otp-' + index"
-                />
-              </div>
-
-              <div v-if="otpTimer > 0" class="otp-timer">
-                Resend code in <strong>{{ otpTimer }}s</strong>
-              </div>
-              <div v-else class="otp-resend" @click="sendOTP">
-                Resend OTP
-              </div>
-
-              <button class="otp-verify-btn" @click="finalizePasswordChange" :disabled="isSavingPassword">
-                {{ isSavingPassword ? 'Verifying...' : 'Verify & Update Password' }}
-              </button>
-
             </div>
-          </div>
-        </transition>
+          </transition>
+        </Teleport>
 
       </div>
     </main>

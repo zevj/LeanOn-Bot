@@ -1,7 +1,7 @@
 <template>
   <header class="header">
     <div class="logo-section">
-      <img src="/leanOnBot.png" class="logo-icon" />
+      <img src="/leanOnBot.png" class="logo-icon" alt="LeanOnBot Logo" />
       <div class="logo-separation">
         <span class="logo-text">LeanOnBot</span>
         <p class="subtext">Admin Panel</p>

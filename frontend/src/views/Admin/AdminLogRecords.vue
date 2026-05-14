@@ -1,143 +1,174 @@
 <template>
     <div class="layout">
+        <!-- Sidebar -->
         <SidebarAdmin
             :open="sidebarOpen"
             @toggle="sidebarOpen = !sidebarOpen; localStorage.setItem('adminSidebarOpen', sidebarOpen)"
         />
 
-        <main>
+        <main class="main-area">
             <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen; localStorage.setItem('adminSidebarOpen', sidebarOpen)" />
 
-            <div class="main-container">
-                <div class="header-title">
-                    <h1 class="title">Log Records</h1>
-                    <p class="subtext">Track student login and logout activity across the system.</p>
+            <!-- Attached the ref here so we can target this specific container for the PDF -->
+            <div class="main-container" ref="logsContainerRef">
+
+                <!-- ── HEADER ── -->
+                <div class="page-header-wrapper fade-in">
+                    <div class="header-title">
+                        <h1 class="title">Log Records</h1>
+                        <p class="subtext">Track student login and logout activity across the system in real-time.</p>
+                    </div>
+
+                    <!-- PDF Download Button -->
+                    <button class="download-btn hover-glow" @click="downloadPDF" data-html2canvas-ignore="true">
+                        <i class='bx bx-cloud-download'></i>
+                        <span>Export PDF</span>
+                    </button>
                 </div>
 
                 <div class="audit-log">
 
                     <!-- ── STAT CARDS ── -->
                     <div class="audit-stats">
-
-                        <div class="stat-card sc-total">
+                        <div class="stat-card sc-total animate-card stagger-1">
                             <div class="sc-left">
-                                <div class="sc-label">Total logs</div>
+                                <div class="sc-label">Total Logs</div>
                                 <div class="sc-val">{{ totalLogs }}</div>
                             </div>
                             <div class="sc-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M9 12h6M9 16h6M7 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/>
-                                    <rect x="7" y="2" width="10" height="4" rx="1"/>
-                                </svg>
+                                <i class='bx bx-list-ul'></i>
                             </div>
                         </div>
 
-                        <div class="stat-card sc-active">
+                        <div class="stat-card sc-active animate-card stagger-2">
                             <div class="sc-left">
-                                <div class="sc-label">Active sessions</div>
+                                <div class="sc-label">Active Sessions</div>
                                 <div class="sc-val">{{ activeSessions }}</div>
                             </div>
                             <div class="sc-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                                </svg>
+                                <i class='bx bx-radar'></i>
                             </div>
                         </div>
 
-                        <div class="stat-card sc-closed">
+                        <div class="stat-card sc-closed animate-card stagger-3">
                             <div class="sc-left">
-                                <div class="sc-label">Closed sessions</div>
+                                <div class="sc-label">Closed Sessions</div>
                                 <div class="sc-val">{{ closedSessions }}</div>
                             </div>
                             <div class="sc-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-                                </svg>
+                                <i class='bx bx-check-circle'></i>
                             </div>
                         </div>
 
-                        <div class="stat-card sc-depts">
+                        <div class="stat-card sc-depts animate-card stagger-4">
                             <div class="sc-left">
                                 <div class="sc-label">Departments</div>
                                 <div class="sc-val">{{ departments.length }}</div>
                             </div>
                             <div class="sc-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="7" width="20" height="14" rx="2"/>
-                                    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-                                    <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
-                                </svg>
+                                <i class='bx bx-buildings'></i>
                             </div>
                         </div>
-
                     </div>
 
                     <!-- ── CONTROLS ── -->
-                    <div class="log-controls">
-                        <input
-                            v-model="search"
-                            type="text"
-                            placeholder="Search name, email, or log ID…"
-                            @input="debounceFetch"
-                        />
-                        <select v-model="deptFilter" @change="fetchLogs">
-                            <option value="">All departments</option>
-                            <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
-                        </select>
-                        <select v-model="statusFilter" @change="fetchLogs">
-                            <option value="">All sessions</option>
-                            <option value="active">Active (in)</option>
-                            <option value="closed">Closed (out)</option>
-                        </select>
+                    <div class="log-controls animate-card stagger-5" data-html2canvas-ignore="true">
+                        <div class="search-wrapper">
+                            <i class='bx bx-search search-icon'></i>
+                            <input
+                                v-model="search"
+                                type="text"
+                                placeholder="Search by ID, name, or email..."
+                                @input="debounceFetch"
+                            />
+                        </div>
+                        <div class="filters-wrapper">
+                            <div class="select-box">
+                                <select v-model="deptFilter" @change="fetchLogs">
+                                    <option value="">All Departments</option>
+                                    <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
+                                </select>
+                            </div>
+                            <div class="select-box">
+                                <select v-model="statusFilter" @change="fetchLogs">
+                                    <option value="">All Sessions</option>
+                                    <option value="active">Active (In)</option>
+                                    <option value="closed">Closed (Out)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- ── TABLE ── -->
-                    <div class="log-table-wrap">
+                    <div class="log-table-wrap animate-card stagger-5">
                         <table class="log-table">
                             <thead>
                                 <tr>
                                     <th>Log ID</th>
-                                    <th>Email</th>
-                                    <th>Dept</th>
-                                    <th>Program</th>
+                                    <th>User Details</th>
+                                    <th>Department</th>
                                     <th>Date</th>
-                                    <th>Session in</th>
-                                    <th>Session out</th>
+                                    <th>Time In</th>
+                                    <th>Time Out</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-if="loading">
-                                    <td colspan="6" class="log-empty">Loading...</td>
+                                    <td colspan="6" class="log-empty">
+                                        <div class="spinner"></div> <span>Syncing records...</span>
+                                    </td>
                                 </tr>
                                 <tr v-if="!loading && !logs.length">
-                                    <td colspan="6" class="log-empty">No records found.</td>
+                                    <td colspan="6" class="log-empty">
+                                        <div class="empty-state-content">
+                                            <i class='bx bx-folder-open empty-icon'></i>
+                                            <h3>No records found</h3>
+                                            <p>Try adjusting your search or filters to find what you're looking for.</p>
+                                        </div>
+                                    </td>
                                 </tr>
-                                <tr v-for="r in logs" :key="r.id">
-                                    <td><span class="log-id">LOG-{{ String(r.id).padStart(8, '0') }}</span></td>
-                                    <td class="log-email">{{ r.masked_email }}</td>
-                                    <td>
+                                <!-- Staggered row animation -->
+                                <tr 
+                                    v-for="(r, index) in logs" 
+                                    :key="r.id" 
+                                    class="fade-in-row"
+                                    :style="{ animationDelay: `${0.1 + (index * 0.04)}s` }"
+                                >
+                                    <td data-label="Log ID">
+                                        <span class="log-id">
+                                            <i class='bx bx-hash'></i>{{ String(r.id).padStart(8, '0') }}
+                                        </span>
+                                    </td>
+                                    <td data-label="User Details">
+                                        <div class="user-cell">
+                                            <span class="log-email">{{ r.masked_email }}</span>
+                                            <span class="program-text">{{ r.program }}</span>
+                                        </div>
+                                    </td>
+                                    <td data-label="Department">
                                         <span class="dept-badge" :class="'dept-' + (r.department || '').toLowerCase()">
                                             {{ r.department }}
                                         </span>
                                     </td>
-                                    <td>{{ r.program }}</td>
-                                    <td>
-                                        <span class="log-date">{{ fmt(r.session_start).date }}</span>
+                                    <td data-label="Date">
+                                        <span class="log-date"><i class='bx bx-calendar'></i> {{ fmt(r.session_start).date }}</span>
                                     </td>
-                                    <td>
-                                        <span class="sess-pill sess-in">
-                                            <span class="sess-dot dot-in"></span>In
-                                        </span>
-                                        <span class="sess-time">{{ fmt(r.session_start).time }}</span>
+                                    <td data-label="Time In">
+                                        <div class="session-cell">
+                                            <span class="sess-pill sess-in"><span class="sess-dot dot-in"></span>IN</span>
+                                            <span class="sess-time">{{ fmt(r.session_start).time }}</span>
+                                        </div>
                                     </td>
-                                    <td>
-                                        <template v-if="r.session_end">
-                                            <span class="sess-pill sess-out">
-                                                <span class="sess-dot dot-out"></span>Out
+                                    <td data-label="Time Out">
+                                        <div class="session-cell">
+                                            <template v-if="r.session_end">
+                                                <span class="sess-pill sess-out"><span class="sess-dot dot-out"></span>OUT</span>
+                                                <span class="sess-time">{{ fmt(r.session_end).time }}</span>
+                                            </template>
+                                            <span v-else class="sess-active-label">
+                                                <div class="pulse-ring"></div> Active
                                             </span>
-                                            <span class="sess-time">{{ fmt(r.session_end).time }}</span>
-                                        </template>
-                                        <span v-else class="sess-active-label">— Active</span>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -145,13 +176,17 @@
                     </div>
 
                     <!-- ── PAGINATION ── -->
-                    <div class="log-pag">
+                    <div class="log-pag animate-card stagger-5" data-html2canvas-ignore="true">
                         <span class="log-pag-info">
-                            Showing {{ pagStart }}–{{ pagEnd }} of {{ pagTotal }} records
+                            Showing <strong>{{ pagStart }} – {{ pagEnd }}</strong> of <strong>{{ pagTotal }}</strong> entries
                         </span>
                         <div class="log-pag-btns">
-                            <button :disabled="page <= 1" @click="page--; fetchLogs()">← Prev</button>
-                            <button :disabled="page >= totalPages" @click="page++; fetchLogs()">Next →</button>
+                            <button :disabled="page <= 1" @click="page--; fetchLogs()" class="btn-prev">
+                                <i class='bx bx-chevron-left'></i> Previous
+                            </button>
+                            <button :disabled="page >= totalPages" @click="page++; fetchLogs()" class="btn-next">
+                                Next <i class='bx bx-chevron-right'></i>
+                            </button>
                         </div>
                     </div>
 
@@ -164,11 +199,15 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import SidebarAdmin from '@/components/sidebarAdmin.vue';
 import HeaderAdmin from '@/components/headerAdmin.vue';
 
 const sidebarOpen = ref(localStorage.getItem('adminSidebarOpen') !== 'false');
 const loading = ref(false);
+
+const logsContainerRef = ref(null); 
 
 const logs = ref([]);
 const departments = ref([]);
@@ -230,6 +269,96 @@ function fmt(dt) {
         time: d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
     };
 }
+
+// PDF Generation Logic 
+const downloadPDF = () => {
+    try {
+        const doc = new jsPDF({ orientation: 'landscape' });
+
+        // 1. Draw a Header Background Rectangle
+        doc.setFillColor(14, 96, 8); // #0E6008 
+        doc.rect(0, 0, doc.internal.pageSize.width, 28, 'F'); 
+
+        // 2. Add Custom Header Title
+        doc.setFontSize(18);
+        doc.setTextColor(255, 255, 255); 
+        doc.setFont("helvetica", "bold");
+        doc.text("System Log Records Report", 14, 19);
+
+        // 3. Add Subtitle / Timestamp
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.setFont("helvetica", "normal");
+        const currentDate = new Date().toLocaleString('en-PH', { 
+            month: 'short', day: '2-digit', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit', hour12: true 
+        });
+        doc.text(`Generated on: ${currentDate}`, 14, 38);
+
+        // 4. ADD FILTERS SECTION dynamically based on current vue ref states
+        const currentDept = deptFilter.value ? deptFilter.value : 'All Departments';
+        let currentStatus = 'All Sessions';
+        if (statusFilter.value === 'active') currentStatus = 'Active (In)';
+        if (statusFilter.value === 'closed') currentStatus = 'Closed (Out)';
+        
+        doc.text(`Filters Applied: ${currentDept} | ${currentStatus}`, 14, 46);
+        
+        // 5. Render Dashboard Stats
+        doc.setTextColor(40, 40, 40);
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Logs: ${totalLogs.value}   |   Active Sessions: ${activeSessions.value}   |   Closed Sessions: ${closedSessions.value}`, 14, 56);
+
+        // 6. Map the reactive logs data array into rows for the PDF table
+        const tableColumn = ["Log ID", "Email", "Department", "Program", "Date", "Session In", "Session Out"];
+        const tableRows = [];
+
+        logs.value.forEach(r => {
+            const logData = [
+                `LOG-${String(r.id).padStart(8, '0')}`,
+                r.masked_email || 'N/A',
+                r.department || 'N/A',
+                r.program || 'N/A',
+                fmt(r.session_start).date || 'N/A',
+                fmt(r.session_start).time || 'N/A',
+                r.session_end ? fmt(r.session_end).time : 'Active'
+            ];
+            tableRows.push(logData);
+        });
+
+        // 7. Build the stylized table using autoTable
+        autoTable(doc, {
+            head: [tableColumn],
+            body: tableRows,
+            startY: 62, // Pushed down to accommodate the new Filters line
+            theme: 'grid',
+            headStyles: { 
+                fillColor: [14, 96, 8], 
+                textColor: [255, 255, 255],
+                fontSize: 10,
+                halign: 'center',
+                fontStyle: 'bold'
+            },
+            bodyStyles: {
+                fontSize: 9,
+                halign: 'center',
+                textColor: [50, 50, 50]
+            },
+            alternateRowStyles: { 
+                fillColor: [248, 250, 248] 
+            },
+            styles: {
+                cellPadding: 4
+            }
+        });
+
+        // 8. Trigger Download
+        const safeDate = new Date().toLocaleDateString('en-PH').replace(/\//g, '-');
+        doc.save(`Log-Records-${safeDate}.pdf`);
+    } catch (error) {
+        console.error("PDF Generation failed:", error);
+        alert("There was an issue generating the PDF. Please check the console.");
+    }
+};
 
 onMounted(() => {
     fetchLogs();

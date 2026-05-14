@@ -1,5 +1,6 @@
 <template>
     <div class="layout">
+        <!-- Sidebar -->
         <SidebarAdmin
             :open="sidebarOpen"
             @toggle="sidebarOpen = !sidebarOpen; localStorage.setItem('adminSidebarOpen', sidebarOpen)"
@@ -9,30 +10,28 @@
             <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen; localStorage.setItem('adminSidebarOpen', sidebarOpen)" />
 
             <div class="main-container">
-                <div class="header-title">
+                <div class="header-title fade-in">
                     <h1 class="title">Crisis Alerts</h1>
                     <p class="subtext">Flagged conversations requiring attention</p>
                 </div>
 
                 <!-- STATS -->
                 <div class="whole-stat-card">
-                    <div class="stat-card-wrap s-severe">
+                    <div class="stat-card-wrap s-severe stagger-1">
                         <div class="stat-left">
                             <span class="stat-label">Severe</span>
                             <span class="stat-number">{{ statsData.severe_count ?? 0 }}</span>
                         </div>
                         <div class="stat-icon icon-severe"><i class="bx bxs-bell-ring"></i></div>
                     </div>
-
-                    <div class="stat-card-wrap s-moderate">
+                    <div class="stat-card-wrap s-moderate stagger-2">
                         <div class="stat-left">
                             <span class="stat-label">Moderate</span>
                             <span class="stat-number">{{ statsData.moderate_count ?? 0 }}</span>
                         </div>
                         <div class="stat-icon icon-moderate"><i class="bx bx-info-circle"></i></div>
                     </div>
-
-                    <div class="stat-card-wrap s-low">
+                    <div class="stat-card-wrap s-low stagger-3">
                         <div class="stat-left">
                             <span class="stat-label">Low</span>
                             <span class="stat-number">{{ statsData.low_count ?? 0 }}</span>
@@ -42,7 +41,7 @@
                 </div>
 
                 <!-- KEYWORD REFERENCE -->
-                <div class="section-card">
+                <div class="section-card fade-in">
                     <p class="section-label">Keyword reference</p>
                     <div class="keyword-severity-tabs">
                         <button
@@ -56,186 +55,319 @@
                         </button>
                     </div>
                     <div class="keyword-tags" :class="activeSeverity">
-                        <span
-                            v-for="kw in currentKeywords"
-                            :key="kw"
-                            class="keyword-tag"
-                        >
+                        <span v-for="kw in currentKeywords" :key="kw" class="keyword-tag">
                             {{ kw }}
                         </span>
                     </div>
                 </div>
 
-                <!-- FILTERS -->
-                <div class="alert-filters">
-                    <select v-model="filterPriority" class="filter-select" @change="fetchAlerts">
-                        <option value="">All priorities</option>
-                        <option value="severe">Severe</option>
-                        <option value="moderate">Moderate</option>
-                        <option value="low">Low</option>
-                    </select>
-                    <select v-model="filterStatus" class="filter-select" @change="fetchAlerts">
-                        <option value="">All statuses</option>
-                        <option value="new">New</option>
-                        <option value="reviewed">Under review</option>
-                        <option value="resolved">Resolved</option>
-                    </select>
+                <!-- ── AWAITING CLASSIFICATION ── -->
+                <div class="alert-section fade-in" v-if="unclassifiedAlerts.length > 0">
+                    <div class="alert-section-header">
+                        <div class="alert-section-label-group">
+                            <span class="alert-section-dot dot-pending"></span>
+                            <span class="alert-section-label">Awaiting Classification</span>
+                            <span class="alert-section-count">{{ unclassifiedAlerts.length }}</span>
+                        </div>
+                        <p class="alert-section-hint">Assign a severity level to each flagged message below</p>
+                    </div>
+
+                    <div class="alert-list">
+                        <div
+                            v-for="alert in unclassifiedAlerts"
+                            :key="alert.id"
+                            class="alert-card alert-card--plain"
+                            :class="{ 'is-assigning': assigningId === alert.id }"
+                        >
+                            <div class="alert-card-left">
+                                <!-- No badges at all — only the timestamp -->
+                                <div class="alert-meta">
+                                    <span class="alert-time">
+                                        <i class="bx bx-time-five"></i> {{ formatTime(alert.created_at) }}
+                                    </span>
+                                </div>
+
+                                <p class="alert-message">"{{ alert.message }}"</p>
+
+                                <div class="alert-keywords-row">
+                                    <span class="alert-keywords-label">Keywords:</span>
+                                    <span
+                                        v-for="kw in (alert.detected_keywords || [])"
+                                        :key="kw"
+                                        class="alert-keyword-tag keyword--plain"
+                                    >{{ kw }}</span>
+                                </div>
+
+                                <p class="alert-user">{{ alert.user_display }} · {{ alert.masked_email }}</p>
+
+                                <!-- SEVERITY ASSIGNMENT -->
+                                <div class="severity-assign-row">
+                                    <span class="severity-assign-label">Assign severity:</span>
+                                    <div class="severity-assign-buttons">
+                                        <button
+                                            class="severity-assign-btn severity-assign-btn--severe"
+                                            :class="{ selected: pendingSeverity[alert.id] === 'severe' }"
+                                            @click="setPendingSeverity(alert.id, 'severe')"
+                                        >
+                                            <i class="bx bxs-bell-ring"></i> Severe
+                                        </button>
+                                        <button
+                                            class="severity-assign-btn severity-assign-btn--moderate"
+                                            :class="{ selected: pendingSeverity[alert.id] === 'moderate' }"
+                                            @click="setPendingSeverity(alert.id, 'moderate')"
+                                        >
+                                            <i class="bx bx-info-circle"></i> Moderate
+                                        </button>
+                                        <button
+                                            class="severity-assign-btn severity-assign-btn--low"
+                                            :class="{ selected: pendingSeverity[alert.id] === 'low' }"
+                                            @click="setPendingSeverity(alert.id, 'low')"
+                                        >
+                                            <i class="bx bx-check-shield"></i> Low
+                                        </button>
+                                    </div>
+                                    <button
+                                        v-if="pendingSeverity[alert.id]"
+                                        class="severity-confirm-btn"
+                                        :disabled="assigningId === alert.id"
+                                        @click="confirmSeverity(alert)"
+                                    >
+                                        <i class="bx bx-check"></i>
+                                        {{ assigningId === alert.id ? 'Saving…' : 'Confirm' }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="alert-card-actions">
+                                <button class="action-btn action-btn--email" @click="openEmailModal(alert)">
+                                    <i class="bx bx-send"></i> Email
+                                </button>
+                                <button class="action-btn action-btn--review" @click="updateStatus(alert, 'reviewed')">
+                                    <i class="bx bx-search-alt"></i> Review
+                                </button>
+                                <button class="action-btn action-btn--resolve" @click="openResolveModal(alert)">
+                                    <i class="bx bx-check"></i> Resolve
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- ALERT LIST -->
-                <div class="alert-list">
-                    <div
-                        v-for="alert in alerts"
-                        :key="alert.id"
-                        class="alert-card"
-                        :class="`p-${alert.severity}`"
-                    >
-                        <div class="alert-card-left">
-                            <div class="alert-meta">
-                                <span class="badge" :class="`b-${alert.severity}`">
-                                    {{ capitalize(alert.severity) }}
-                                </span>
-                                <span class="badge" :class="`b-${alert.status}`">
-                                    <i v-if="alert.status === 'new'" class="bx bx-error-circle"></i>
-                                    {{ alert.status === 'reviewed' ? 'Under review' : capitalize(alert.status) }}
-                                </span>
-                                <span class="alert-time">
-                                    <i class="bx bx-time-five"></i> {{ formatTime(alert.created_at) }}
-                                </span>
-                            </div>
-                            <p class="alert-message">"{{ alert.message }}"</p>
-                            <div class="alert-keywords-row">
-                                <span class="alert-keywords-label">Keywords:</span>
-                                <span
-                                    v-for="kw in (alert.detected_keywords || [])"
-                                    :key="kw"
-                                    class="alert-keyword-tag"
-                                    :class="`keyword--${alert.severity}`"
-                                >
-                                    {{ kw }}
-                                </span>
-                            </div>
-                            <p class="alert-user">{{ alert.user_display }} · {{ alert.masked_email }}</p>
+                <!-- ── CLASSIFIED ALERTS ── -->
+                <div class="alert-section fade-in stagger-4">
+                    <div class="alert-section-header">
+                        <div class="alert-section-label-group">
+                            <span class="alert-section-dot dot-classified"></span>
+                            <span class="alert-section-label">Classified Alerts</span>
+                            <span class="alert-section-count">{{ classifiedAlerts.length }}</span>
                         </div>
-                        <div class="alert-card-actions">
-                            <button class="action-btn action-btn--email" @click="openEmailModal(alert)">
-                                <i class="bx bx-send"></i> Email
-                            </button>
-                            <button
-                                class="action-btn action-btn--review"
-                                @click="updateStatus(alert, 'reviewed')"
-                                :disabled="alert.status === 'reviewed'"
-                            >
-                                <i class="bx bx-search-alt"></i> Review
-                            </button>
-                            <button
-                                class="action-btn action-btn--resolve"
-                                @click="openResolveModal(alert)"
-                                :disabled="alert.status === 'resolved'"
-                            >
-                                <i class="bx bx-check"></i> Resolve
-                            </button>
+                        <div class="alert-filters">
+                            <select v-model="filterPriority" class="filter-select" @change="fetchAlerts">
+                                <option value="">All priorities</option>
+                                <option value="severe">Severe</option>
+                                <option value="moderate">Moderate</option>
+                                <option value="low">Low</option>
+                            </select>
+                            <select v-model="filterStatus" class="filter-select" @change="fetchAlerts">
+                                <option value="">All statuses</option>
+                                <option value="new">New</option>
+                                <option value="reviewed">Under review</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
                         </div>
                     </div>
 
-                    <p v-if="alerts.length === 0 && !loading" class="no-alerts">
-                        No alerts match the current filters.
-                    </p>
-                    <p v-if="loading" class="no-alerts">Loading alerts...</p>
+                    <div class="alert-list">
+                        <div
+                            v-for="alert in classifiedAlerts"
+                            :key="alert.id"
+                            class="alert-card"
+                            :class="[`p-${alert.severity}`, { 'is-assigning': assigningId === alert.id }]"
+                        >
+                            <div class="alert-card-left">
+                                <div class="alert-meta">
+                                    <span class="badge" :class="`b-${alert.severity}`">
+                                        {{ capitalize(alert.severity) }}
+                                    </span>
+                                    <span class="badge" :class="`b-${alert.status}`">
+                                        <i v-if="alert.status === 'new'" class="bx bx-error-circle"></i>
+                                        {{ alert.status === 'reviewed' ? 'Under review' : capitalize(alert.status) }}
+                                    </span>
+                                    <span class="alert-time">
+                                        <i class="bx bx-time-five"></i> {{ formatTime(alert.created_at) }}
+                                    </span>
+                                </div>
+
+                                <p class="alert-message">"{{ alert.message }}"</p>
+
+                                <div class="alert-keywords-row">
+                                    <span class="alert-keywords-label">Keywords:</span>
+                                    <span
+                                        v-for="kw in (alert.detected_keywords || [])"
+                                        :key="kw"
+                                        class="alert-keyword-tag"
+                                        :class="`keyword--${alert.severity}`"
+                                    >{{ kw }}</span>
+                                </div>
+
+                                <p class="alert-user">{{ alert.user_display }} · {{ alert.masked_email }}</p>
+
+                                <!-- SEVERITY RE-ASSIGNMENT -->
+                                <div class="severity-assign-row">
+                                    <span class="severity-assign-label">Change severity:</span>
+                                    <div class="severity-assign-buttons">
+                                        <button
+                                            class="severity-assign-btn severity-assign-btn--severe"
+                                            :class="{ selected: pendingSeverity[alert.id] === 'severe' || (!pendingSeverity[alert.id] && alert.severity === 'severe') }"
+                                            @click="setPendingSeverity(alert.id, 'severe')"
+                                        >
+                                            <i class="bx bxs-bell-ring"></i> Severe
+                                        </button>
+                                        <button
+                                            class="severity-assign-btn severity-assign-btn--moderate"
+                                            :class="{ selected: pendingSeverity[alert.id] === 'moderate' || (!pendingSeverity[alert.id] && alert.severity === 'moderate') }"
+                                            @click="setPendingSeverity(alert.id, 'moderate')"
+                                        >
+                                            <i class="bx bx-info-circle"></i> Moderate
+                                        </button>
+                                        <button
+                                            class="severity-assign-btn severity-assign-btn--low"
+                                            :class="{ selected: pendingSeverity[alert.id] === 'low' || (!pendingSeverity[alert.id] && alert.severity === 'low') }"
+                                            @click="setPendingSeverity(alert.id, 'low')"
+                                        >
+                                            <i class="bx bx-check-shield"></i> Low
+                                        </button>
+                                    </div>
+                                    <button
+                                        v-if="pendingSeverity[alert.id] && pendingSeverity[alert.id] !== alert.severity"
+                                        class="severity-confirm-btn"
+                                        :disabled="assigningId === alert.id"
+                                        @click="confirmSeverity(alert)"
+                                    >
+                                        <i class="bx bx-check"></i>
+                                        {{ assigningId === alert.id ? 'Saving…' : 'Confirm' }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="alert-card-actions">
+                                <button class="action-btn action-btn--email" @click="openEmailModal(alert)">
+                                    <i class="bx bx-send"></i> Email
+                                </button>
+                                <button
+                                    class="action-btn action-btn--review"
+                                    @click="updateStatus(alert, 'reviewed')"
+                                    :disabled="alert.status === 'reviewed'"
+                                >
+                                    <i class="bx bx-search-alt"></i> Review
+                                </button>
+                                <button
+                                    class="action-btn action-btn--resolve"
+                                    @click="openResolveModal(alert)"
+                                    :disabled="alert.status === 'resolved'"
+                                >
+                                    <i class="bx bx-check"></i> Resolve
+                                </button>
+                            </div>
+                        </div>
+
+                        <p v-if="classifiedAlerts.length === 0 && !loading" class="no-alerts">
+                            No classified alerts match the current filters.
+                        </p>
+                        <p v-if="loading" class="no-alerts">Loading alerts...</p>
+                    </div>
                 </div>
             </div>
         </main>
 
-
-<Teleport to="body">
-    <!-- EMAIL MODAL -->
-    <Transition name="modal-fade">
-        <div v-if="emailModal.visible" class="email-modal-overlay" @click.self="closeEmailModal">
-            <div class="email-modal">
-                <div class="email-modal-header">
-                    <div class="email-modal-header-left">
-                        <div class="email-modal-icon"><i class="bx bx-send"></i></div>
-                        <div>
-                            <p class="email-modal-title">Send Crisis Alert Email</p>
-                            <p class="email-modal-subtitle">Review and edit before sending</p>
+        <!-- Modals -->
+        <Teleport to="body">
+            <!-- EMAIL MODAL -->
+            <Transition name="modal-fade">
+                <div v-if="emailModal.visible" class="email-modal-overlay" @click.self="closeEmailModal">
+                    <div class="email-modal">
+                        <div class="email-modal-header">
+                            <div class="email-modal-header-left">
+                                <div class="email-modal-icon"><i class="bx bx-send"></i></div>
+                                <div>
+                                    <p class="email-modal-title">Send Crisis Alert Email</p>
+                                    <p class="email-modal-subtitle">Review and edit before sending</p>
+                                </div>
+                            </div>
+                            <button class="email-modal-close" @click="closeEmailModal">
+                                <i class="bx bx-x"></i>
+                            </button>
+                        </div>
+                        <div class="email-modal-body">
+                            <div class="email-field-group">
+                                <span class="email-field-label">To</span>
+                                <div class="email-field-value">{{ emailModal.maskedEmail }}</div>
+                            </div>
+                            <div class="email-field-group">
+                                <span class="email-field-label">Subject</span>
+                                <div class="email-field-value">{{ emailModal.subject }}</div>
+                            </div>
+                            <div class="email-field-group">
+                                <span class="email-field-label">Severity</span>
+                                <div style="padding: 6px 0;">
+                                    <span v-if="emailModal.severity" class="badge" :class="`b-${emailModal.severity}`">
+                                        {{ capitalize(emailModal.severity) }}
+                                    </span>
+                                    <span v-else class="badge b-unclassified">Unclassified</span>
+                                </div>
+                            </div>
+                            <div class="email-field-group">
+                                <span class="email-field-label">Message body</span>
+                                <textarea
+                                    class="email-field-value email-field-textarea"
+                                    v-model="emailModal.body"
+                                ></textarea>
+                            </div>
+                        </div>
+                        <div class="email-modal-footer">
+                            <button class="action-btn" @click="closeEmailModal">Cancel</button>
+                            <button class="action-btn action-btn--email" @click="sendEmail">
+                                <i class="bx bx-send"></i> Send Email
+                            </button>
                         </div>
                     </div>
-                    <button class="email-modal-close" @click="closeEmailModal">
-                        <i class="bx bx-x"></i>
-                    </button>
                 </div>
+            </Transition>
 
-                <div class="email-modal-body">
-                    <div class="email-field-group">
-                        <span class="email-field-label">To</span>
-                        <div class="email-field-value">{{ emailModal.maskedEmail }}</div>
-                    </div>
-                    <div class="email-field-group">
-                        <span class="email-field-label">Subject</span>
-                        <div class="email-field-value">{{ emailModal.subject }}</div>
-                    </div>
-                    <div class="email-field-group">
-                        <span class="email-field-label">Severity</span>
-                        <div style="padding: 6px 0;">
-                            <span class="badge" :class="`b-${emailModal.severity}`">
-                                {{ capitalize(emailModal.severity) }}
-                            </span>
+            <!-- RESOLVE CONFIRMATION MODAL -->
+            <Transition name="modal-fade">
+                <div v-if="resolveModal.visible" class="email-modal-overlay" @click.self="closeResolveModal">
+                    <div class="email-modal resolve-modal">
+                        <div class="email-modal-header">
+                            <div class="email-modal-header-left">
+                                <div class="email-modal-icon icon-resolve"><i class="bx bx-check-shield"></i></div>
+                                <div>
+                                    <p class="email-modal-title">Resolve Alert</p>
+                                    <p class="email-modal-subtitle">Confirm resolution status</p>
+                                </div>
+                            </div>
+                            <button class="email-modal-close" @click="closeResolveModal">
+                                <i class="bx bx-x"></i>
+                            </button>
+                        </div>
+                        <div class="email-modal-body resolve-body">
+                            <div class="resolve-icon-large"><i class="bx bx-check-circle"></i></div>
+                            <p class="resolve-text">
+                                Are you sure you want to mark the alert for
+                                <strong class="resolve-user">{{ resolveModal.alert?.user_display }}</strong> as resolved?
+                            </p>
+                            <p class="resolve-subtext">This action indicates that the crisis has been properly addressed and handled.</p>
+                        </div>
+                        <div class="email-modal-footer">
+                            <button class="action-btn" @click="closeResolveModal">Cancel</button>
+                            <button class="action-btn action-btn--confirm-resolve" @click="confirmResolve">
+                                <i class="bx bx-check"></i> Confirm Resolution
+                            </button>
                         </div>
                     </div>
-                    <div class="email-field-group">
-                        <span class="email-field-label">Message body</span>
-                        <textarea
-                            class="email-field-value email-field-textarea"
-                            v-model="emailModal.body"
-                        ></textarea>
-                    </div>
                 </div>
-
-                <div class="email-modal-footer">
-                    <button class="action-btn" @click="closeEmailModal">Cancel</button>
-                    <button class="action-btn action-btn--email" @click="sendEmail">
-                        <i class="bx bx-send"></i> Send Email
-                    </button>
-                </div>
-            </div>
-        </div>
-    </Transition>
-
-    <!-- RESOLVE CONFIRMATION MODAL -->
-    <Transition name="modal-fade">
-        <div v-if="resolveModal.visible" class="email-modal-overlay" @click.self="closeResolveModal">
-            <div class="email-modal resolve-modal">
-                <div class="email-modal-header">
-                    <div class="email-modal-header-left">
-                        <div class="email-modal-icon icon-resolve"><i class="bx bx-check-shield"></i></div>
-                        <div>
-                            <p class="email-modal-title">Resolve Alert</p>
-                            <p class="email-modal-subtitle">Confirm resolution status</p>
-                        </div>
-                    </div>
-                    <button class="email-modal-close" @click="closeResolveModal">
-                        <i class="bx bx-x"></i>
-                    </button>
-                </div>
-
-                <div class="email-modal-body resolve-body">
-                    <div class="resolve-icon-large"><i class="bx bx-check-circle"></i></div>
-                    <p class="resolve-text">
-                        Are you sure you want to mark the alert for <strong class="resolve-user">{{ resolveModal.alert?.user_display }}</strong> as resolved?
-                    </p>
-                    <p class="resolve-subtext">This action indicates that the crisis has been properly addressed and handled.</p>
-                </div>
-
-                <div class="email-modal-footer">
-                    <button class="action-btn" @click="closeResolveModal">Cancel</button>
-                    <button class="action-btn action-btn--confirm-resolve" @click="confirmResolve">
-                        <i class="bx bx-check"></i> Confirm Resolution
-                    </button>
-                </div>
-            </div>
-        </div>
-    </Transition>
-</Teleport>
+            </Transition>
+        </Teleport>
     </div>
 </template>
 
@@ -256,7 +388,7 @@ const severityLevels = [
     { label: 'Moderate', key: 'moderate' },
     { label: 'Low',      key: 'low'      },
 ];
-const activeSeverity = ref('severe'); 
+const activeSeverity = ref('severe');
 
 const keywordMap = {
     severe:   ['hopeless', 'worthless', 'no one understands', 'breaking down', "can't cope"],
@@ -265,17 +397,62 @@ const keywordMap = {
 };
 const currentKeywords = computed(() => keywordMap[activeSeverity.value] ?? []);
 
-// ── Filters ────────────────────────────────────────────────────
+// ── Filters (classified section only) ─────────────────────────
 const filterPriority = ref('');
 const filterStatus   = ref('');
 
 // ── Alert Data ─────────────────────────────────────────────────
 const alerts = ref([]);
-const statsData = ref({
-    severe_count: 0,
-    moderate_count: 0,
-    low_count: 0,
-});
+const statsData = ref({ severe_count: 0, moderate_count: 0, low_count: 0 });
+
+// ── Static Pending Alerts (for demo — no backend yet) ──────────
+// Remove these once the backend returns unclassified alerts properly.
+const staticPendingAlerts = ref([
+    {
+        id: 'static-1',
+        message: "I just feel so hopeless lately, I don't think things will ever get better.",
+        detected_keywords: ['hopeless'],
+        user_display: 'Maria S.',
+        masked_email: 'm****@school.edu',
+        created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString(), // 18 mins ago
+        severity: null,
+        status: 'new',
+        _isStatic: true,
+    },
+    {
+        id: 'static-2',
+        message: "No one understands what I'm going through. I feel completely alone and I'm breaking down.",
+        detected_keywords: ['no one understands', 'alone', 'breaking down'],
+        user_display: 'Juan R.',
+        masked_email: 'j****@school.edu',
+        created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 mins ago
+        severity: null,
+        status: 'new',
+        _isStatic: true,
+    },
+    {
+        id: 'static-3',
+        message: "I've been so overwhelmed with everything, I can't sleep and I can't cope anymore.",
+        detected_keywords: ['overwhelmed', "can't cope"],
+        user_display: 'Ana L.',
+        masked_email: 'a****@school.edu',
+        created_at: new Date(Date.now() - 1000 * 60 * 72).toISOString(), // 72 mins ago
+        severity: null,
+        status: 'new',
+        _isStatic: true,
+    },
+]);
+
+// Combine static pending + any unclassified from backend
+const unclassifiedAlerts = computed(() => [
+    ...staticPendingAlerts.value,
+    ...alerts.value.filter(a => !a.severity || a.severity === 'unclassified'),
+]);
+
+// Classified = severity has been set and confirmed
+const classifiedAlerts = computed(() =>
+    alerts.value.filter(a => a.severity && a.severity !== 'unclassified')
+);
 
 const fetchAlerts = async () => {
     loading.value = true;
@@ -283,14 +460,14 @@ const fetchAlerts = async () => {
         const token = localStorage.getItem('token');
         const params = {};
         if (filterPriority.value) params.severity = filterPriority.value;
-        if (filterStatus.value)   params.status = filterStatus.value;
+        if (filterStatus.value)   params.status   = filterStatus.value;
 
         const res = await axios.get('/api/admin/crisis-alerts', {
             headers: { Authorization: `Bearer ${token}` },
             params,
         });
 
-        alerts.value = res.data.alerts.data;
+        alerts.value    = res.data.alerts.data;
         statsData.value = res.data.stats;
     } catch (err) {
         console.error('Failed to fetch crisis alerts:', err);
@@ -303,17 +480,12 @@ const fetchAlerts = async () => {
 const updateStatus = async (alert, newStatus) => {
     try {
         const token = localStorage.getItem('token');
-        await axios.patch(`/api/admin/crisis-alerts/${alert.id}`, {
-            status: newStatus,
-        }, {
+        await axios.patch(`/api/admin/crisis-alerts/${alert.id}`, { status: newStatus }, {
             headers: { Authorization: `Bearer ${token}` },
         });
-
         alert.status = newStatus;
         const label = newStatus === 'reviewed' ? 'under review' : 'resolved';
         toast.success(`Alert from ${alert.user_display} is now ${label}.`, { timeout: 3000 });
-
-        // Refresh stats
         fetchAlerts();
     } catch (err) {
         console.error('Failed to update alert:', err);
@@ -323,41 +495,82 @@ const updateStatus = async (alert, newStatus) => {
 
 const formatTime = (dateStr) => {
     if (!dateStr) return '';
-    const d = new Date(dateStr);
-    return d.toLocaleString('en-PH', {
+    return new Date(dateStr).toLocaleString('en-PH', {
         month: 'numeric', day: 'numeric', year: 'numeric',
         hour: 'numeric', minute: '2-digit', hour12: true,
     });
 };
 
-// ── Helpers ────────────────────────────────────────────────────
-const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 
-onMounted(() => {
-    fetchAlerts();
-});
+onMounted(() => { fetchAlerts(); });
+
+// ── Severity Assignment ────────────────────────────────────────
+const pendingSeverity = ref({});
+const assigningId     = ref(null);
+
+const setPendingSeverity = (alertId, level) => {
+    // On classified cards, clicking the already-active current severity clears the pending pick
+    if (pendingSeverity.value[alertId] === level) {
+        const copy = { ...pendingSeverity.value };
+        delete copy[alertId];
+        pendingSeverity.value = copy;
+    } else {
+        pendingSeverity.value = { ...pendingSeverity.value, [alertId]: level };
+    }
+};
+
+const confirmSeverity = async (alert) => {
+    const chosen = pendingSeverity.value[alert.id];
+    if (!chosen) return;
+    assigningId.value = alert.id;
+
+    // ── Static alert: handle locally, no API call ──
+    if (alert._isStatic) {
+        const idx = staticPendingAlerts.value.findIndex(a => a.id === alert.id);
+        if (idx !== -1) {
+            const moved = { ...staticPendingAlerts.value[idx], severity: chosen, status: 'new' };
+            delete moved._isStatic;
+            staticPendingAlerts.value.splice(idx, 1);
+            alerts.value.unshift(moved);
+        }
+        const copy = { ...pendingSeverity.value };
+        delete copy[alert.id];
+        pendingSeverity.value = copy;
+        assigningId.value = null;
+        toast.success(`Alert classified as ${capitalize(chosen)}.`, { timeout: 3000 });
+        return;
+    }
+
+    // ── Backend alert: PATCH as normal ──
+    try {
+        const token = localStorage.getItem('token');
+        await axios.patch(`/api/admin/crisis-alerts/${alert.id}`, { severity: chosen }, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        // Optimistic update — card instantly moves to Classified section
+        alert.severity = chosen;
+        const copy = { ...pendingSeverity.value };
+        delete copy[alert.id];
+        pendingSeverity.value = copy;
+        toast.success(`Alert classified as ${capitalize(chosen)}.`, { timeout: 3000 });
+        fetchAlerts();
+    } catch (err) {
+        console.error('Failed to assign severity:', err);
+        toast.error('Failed to assign severity. Please try again.');
+    } finally {
+        assigningId.value = null;
+    }
+};
 
 // ── Resolve Modal ──────────────────────────────────────────────
-const resolveModal = ref({
-    visible: false,
-    alert: null,
-});
+const resolveModal = ref({ visible: false, alert: null });
 
-const openResolveModal = (alert) => {
-    resolveModal.value = {
-        visible: true,
-        alert: alert,
-    };
-};
-
+const openResolveModal  = (alert) => { resolveModal.value = { visible: true, alert }; };
 const closeResolveModal = () => {
     resolveModal.value.visible = false;
-    // Delay clearing alert to avoid layout jump during fade out
-    setTimeout(() => {
-        if (!resolveModal.value.visible) resolveModal.value.alert = null;
-    }, 200);
+    setTimeout(() => { if (!resolveModal.value.visible) resolveModal.value.alert = null; }, 200);
 };
-
 const confirmResolve = async () => {
     if (resolveModal.value.alert) {
         await updateStatus(resolveModal.value.alert, 'resolved');
@@ -366,30 +579,19 @@ const confirmResolve = async () => {
 };
 
 // ── Email Modal ────────────────────────────────────────────────
-const emailModal = ref({
-    visible: false,
-    maskedEmail: '',
-    subject: '',
-    severity: '',
-    body: '',
-    alertId: null,
-});
+const emailModal = ref({ visible: false, maskedEmail: '', subject: '', severity: '', body: '', alertId: null });
 
 const openEmailModal = (alert) => {
-    const keywords = (alert.detected_keywords || []).join('", "');
     emailModal.value = {
-        visible: true,
+        visible:     true,
         maskedEmail: alert.masked_email,
-        subject: `Urgent: Crisis Alert — Action Required`,
-        severity: alert.severity,
-        alertId: alert.id,
-        body: `Dear Student,`,
+        subject:     `Urgent: Crisis Alert — Action Required`,
+        severity:    alert.severity || '',
+        alertId:     alert.id,
+        body:        `Dear Student,`,
     };
 };
-
-const closeEmailModal = () => {
-    emailModal.value.visible = false;
-};
+const closeEmailModal = () => { emailModal.value.visible = false; };
 
 const sendEmail = async () => {
     try {
