@@ -101,26 +101,11 @@
                                 <div class="input-row">
                                     <div class="name-input">
                                         <label class="input-title">Age</label>
-                                        <!-- Changed to strict number filtering inline -->
-                                        <input 
-                                            type="text" 
-                                            inputmode="numeric"
-                                            class="input-info" 
-                                            v-model="form.age" 
-                                            @input="form.age = $event.target.value.replace(/[^0-9]/g, '')"
-                                            placeholder="e.g. 21"
-                                            maxlength="3"
-                                        >
+                                        <input type="text" class="input-info" v-model="form.age" readonly>
                                     </div>
                                     <div class="name-input">
                                         <label class="input-title">Gender</label>
-                                        <select class="input-info" v-model="form.gender">
-                                            <option value="" disabled selected>Select your gender</option>
-                                            <option value="Male">Male</option>
-                                            <option value="Female">Female</option>
-                                            <option value="Non-binary">Non-binary</option>
-                                            <option value="Prefer not to say">Prefer not to say</option>
-                                        </select>
+                                        <input type="text" class="input-info" v-model="form.gender" readonly>
                                     </div>
                                 </div>
 
@@ -132,14 +117,7 @@
                                     </div>
                                     <div class="name-input">
                                         <label class="input-title">Phone</label>
-                                        <input 
-                                            type="tel" 
-                                            class="input-info" 
-                                            v-model="form.phone_number"
-                                            @input="validatePhone"
-                                            placeholder="Enter your phone number..."
-                                            maxlength="11"
-                                        />
+                                        <input type="text" class="input-info" v-model="form.phone_number" readonly>
                                     </div>
                                 </div>
 
@@ -412,11 +390,6 @@ async function handleUpload(event) {
     } catch (error) {
         toast.error(error.response?.data?.message || "Failed to upload image")
     }
-}
-
-// Validation
-function validatePhone() {
-    form.value.phone_number = form.value.phone_number.replace(/\D/g, '').slice(0, 11)
 }
 
 function handleOtpInput(event, index) {

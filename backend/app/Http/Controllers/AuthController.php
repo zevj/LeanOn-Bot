@@ -371,12 +371,16 @@ public function resetPassword(Request $request)
     public function updateProfile(Request $request)
     {
         $request->validate([
-            'phone_number' => 'nullable|string|max:11'
+            'phone_number' => 'nullable|string|max:11',
+            'age' => 'nullable|integer',
+            'gender' => 'nullable|string|in:Male,Female,Non-binary,Prefer not to say'
         ]);
 
         $user = $request->user();
         $user->update([
-            'phone_number' => $request->phone_number
+            'phone_number' => $request->phone_number,
+            'age' => $request->age,
+            'gender' => $request->gender
         ]);
 
         return response()->json([
