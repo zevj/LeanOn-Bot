@@ -2,9 +2,9 @@
 
 .header {
   font-family: 'DM Sans', system-ui, sans-serif;
-  height: 80px; /* Consolidated height */
+  height: 80px;
   background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px); /* Modern glassmorphism effect */
+  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
@@ -14,11 +14,12 @@
   border-bottom: 1px solid rgba(229, 231, 235, 0.6);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 500;
+  box-sizing: border-box;
   transition: all 0.3s ease;
 }
 
-/* LEFT SECTION / LOGO */
+/* ── LEFT SECTION / LOGO ── */
 
 .logo-section {
   display: flex;
@@ -36,6 +37,7 @@
   width: 48px;
   filter: drop-shadow(0px 4px 8px rgba(14, 96, 8, 0.2));
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
 }
 
 .logo-section:hover .logo-icon {
@@ -51,11 +53,11 @@
 .logo-text {
   font-size: 20px;
   font-weight: 700;
-  color: #0E6008;
+  color: #0e6008;
   letter-spacing: 0.3px;
   margin: 0;
   line-height: 1.1;
-  background: linear-gradient(90deg, #0E6008, #16a34a);
+  background: linear-gradient(90deg, #0e6008, #16a34a);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -69,7 +71,7 @@
   letter-spacing: 0.2px;
 }
 
-/* RIGHT SECTION */
+/* ── RIGHT SECTION ── */
 
 .right-section {
   display: flex;
@@ -77,7 +79,38 @@
   gap: 16px;
 }
 
-/* LEGACY CLASSES (Styled nicely just in case they are used dynamically) */
+/* ── HAMBURGER — hidden on desktop ── */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.hamburger-btn:hover {
+  background: rgba(14, 96, 8, 0.08);
+}
+
+.ham-line {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #333;
+  border-radius: 2px;
+  transition: all 0.25s ease;
+}
+
+/* ── LEGACY CLASSES ── */
 
 .divider {
   width: 1px;
@@ -106,7 +139,7 @@
   background: linear-gradient(135deg, #e5e7eb, #d1d5db);
   border-radius: 50%;
   border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .user-info {
@@ -138,7 +171,9 @@
   stroke: #4b5563;
 }
 
-/* ── RESPONSIVE BREAKPOINTS ── */
+/* ══════════════════════════════════════════
+   BREAKPOINTS
+   ══════════════════════════════════════════ */
 
 /* Tablets & Small Laptops */
 @media (max-width: 1024px) {
@@ -147,47 +182,69 @@
   }
 }
 
-/* Mobile */
+/* Tablet & below — show hamburger, adjust sizing */
 @media (max-width: 768px) {
   .header {
     height: 70px;
     padding: 0 16px;
   }
-  
+
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .logo-section {
+    gap: 8px;
+  }
+
+  .logo-separation {
+    gap: 2px;
+  }
+
   .logo-icon {
     width: 40px;
   }
-  
+
   .logo-text {
     font-size: 18px;
   }
-  
+
   .subtext {
     font-size: 12px;
   }
 }
 
-/* Small Mobile Screens */
+/* Small mobile */
 @media (max-width: 480px) {
   .header {
     height: 65px;
     padding: 0 14px;
   }
-  
+
   .logo-section {
-    gap: 10px;
+    gap: 6px;
+  }
+
+  .logo-separation {
+    gap: 1px;
   }
 
   .logo-icon {
     width: 36px;
   }
-  
+
   .logo-text {
+    font-size: 16px;
+  }
+
+  .subtext {
     display: none;
   }
-  
-  /* Hides subtext on small phones to prevent layout breaking */
-  .subtext {
-    display: none; 
+}
+
+/* Very small */
+@media (max-width: 360px) {
+  .logo-separation {
+    display: none;
   }
 }

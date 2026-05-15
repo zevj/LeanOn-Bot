@@ -26,15 +26,18 @@
   min-width: 64px;
 }
 
-/* ── MOBILE BASE — off-screen left ── */
+/* ── MOBILE BASE — full-height side drawer ── */
 .sidebar.is-mobile {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: auto;
+  width: 280px;
+  height: 100vh;
   max-height: 100vh;
   z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
 
   transform: translateX(-100%);
   transition: transform 0.3s ease;
@@ -72,8 +75,8 @@
 
 /* ── TOGGLE BUTTON ── */
 .sidebar-toggle {
-  position: relative; /* Fixed: allows z-index to actually take priority */
-  z-index: 999;       /* Fixed: ensures button is clickable above container overlaps */
+  position: relative;
+  z-index: 999;
   width: 28px;
   height: 28px;
   border-radius: 6px;
@@ -171,6 +174,7 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   gap: 8px;
   color: #e5ffe7;
+  flex-shrink: 0;
 }
 
 .header-left {
@@ -189,6 +193,7 @@ hr {
   height: 1px;
   border: none;
   margin-bottom: 5px;
+  flex-shrink: 0;
 }
 
 /* ── NEW CONVO BUTTON ── */
@@ -197,6 +202,7 @@ hr {
   align-items: center;
   justify-content: center;
   padding: 15px 0;
+  flex-shrink: 0;
 }
 
 .new-convo-btn {
@@ -227,6 +233,7 @@ hr {
   gap: 6px;
   padding: 0 16px;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .menu-item {
@@ -272,6 +279,7 @@ hr {
   user-select: none;
   transition: background-color 0.2s ease, opacity 0.2s ease;
   border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .chat-history-header:hover {
@@ -308,11 +316,13 @@ hr {
   transform: rotate(-90deg);
 }
 
+/* ── NAV WRAPPER ── */
 .menu {
   display: flex;
   flex-direction: column;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .chat-convo-module {
@@ -323,6 +333,7 @@ hr {
   overflow-y: auto;
   padding: 0 16px 25px;
   flex: 1;
+  min-height: 0;
   transform-origin: top center;
 }
 
@@ -444,6 +455,7 @@ hr {
   box-shadow: 0px -1px 10px rgba(0, 0, 0, 0.3);
   width: 100%;
   margin-top: auto;
+  flex-shrink: 0;
 }
 
 .picture-info-separation {
@@ -487,7 +499,7 @@ hr {
   border-radius: 12px;
   padding: 8px 0;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-  z-index: 9999;
+  z-index: 999998;
   opacity: 0;
   animation: fadeIn 0.2s ease forwards;
 }
@@ -514,7 +526,7 @@ hr {
   width: 100vw;
   height: 100vh;
   background: transparent;
-  z-index: 99998;
+  z-index: 999998;
 }
 
 /* Desktop — expanded sidebar */
@@ -527,7 +539,7 @@ hr {
   border-radius: 16px;
   padding: 10px 0;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-  z-index: 99999;
+  z-index: 999999;
 }
 
 /* Desktop — collapsed rail */
@@ -540,21 +552,20 @@ hr {
   border-radius: 16px;
   padding: 10px 0;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-  z-index: 99999;
+  z-index: 999999;
 }
 
-/* Mobile — centered above footer */
+/* Mobile — top of the sidebar drawer */
 .modal-mobile {
   position: fixed;
-  left: 50%;
   bottom: 100px;
-  transform: translateX(-50%);
-  width: min(280px, 90vw);
+  left: 10px;
+  width: 260px;
   background: #f3f3f3;
   border-radius: 16px;
   padding: 10px 0;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-  z-index: 99999;
+  z-index: 999999;
 }
 
 .modal-item {
@@ -596,7 +607,7 @@ hr {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 99999;
+  z-index: 999999;
   padding: 16px;
   box-sizing: border-box;
 }
@@ -729,7 +740,7 @@ hr {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 99999;
+  z-index: 999999;
   padding: 16px;
   box-sizing: border-box;
 }
@@ -806,7 +817,7 @@ hr {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 99999;
+  z-index: 999999;
   padding: 16px;
   box-sizing: border-box;
 }
@@ -891,22 +902,23 @@ hr {
    ══════════════════════════════════════════ */
 
 @media (max-width: 768px) {
-  /* Sidebar doesn't shrink the page layout */
   .sidebar.is-mobile {
     width: 280px;
     min-width: unset;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
   }
 
   .sidebar {
-    height: auto;
-    max-height: 80vh;
-    border-bottom-left-radius: 16px;
-    border-bottom-right-radius: 16px;
+    height: 100vh;
+    border-radius: 0;
   }
 
-  /* Slightly narrower on small phones */
   .sidebar-full {
     width: 280px;
+    height: 100%;
+    flex: 1 1 auto;
   }
 
   .sidebar-header {
@@ -932,7 +944,7 @@ hr {
     border-radius: 0 !important;
   }
 
-   .title-footer {
+  .title-footer {
     gap: 2px;
     line-height: 28px;
     align-items: start;
@@ -945,34 +957,42 @@ hr {
 @media (max-width: 360px) {
   .sidebar.is-mobile {
     width: 260px;
+    height: 100vh;
   }
 
   .sidebar-full {
     width: 260px;
+    height: 100%;
+  }
+
+  .modal-mobile {
+    width: 240px;
+    top: 10px;
+    left: 10px;
   }
 }
 
 @media (max-width: 425px) {
-   .dropdown-inline {
-     position: static !important;
-     width: 100% !important;
-     box-shadow: none !important;
-     border-radius: 0 0 8px 8px !important;
-     border-top: 1px solid rgba(255,255,255,0.08) !important;
-     background: rgba(0, 0, 0, 0.35) !important;
-     padding: 4px 0 !important;
-     animation: none !important;
-     opacity: 1 !important;
-   }
-   .dropdown-inline .dropdown-item {
-     color: #e5ffe7 !important;
-     font-size: 13px;
-     padding: 10px 14px;
-   }
-   .dropdown-inline .dropdown-item:hover {
-     background: rgba(255,255,255,0.08) !important;
-   }
-   .dropdown-inline .dropdown-item.delete {
-     color: #fca5a5 !important;
-   }
+  .dropdown-inline {
+    position: static !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    border-radius: 0 0 8px 8px !important;
+    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    background: rgba(0, 0, 0, 0.35) !important;
+    padding: 4px 0 !important;
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .dropdown-inline .dropdown-item {
+    color: #e5ffe7 !important;
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+  .dropdown-inline .dropdown-item:hover {
+    background: rgba(255,255,255,0.08) !important;
+  }
+  .dropdown-inline .dropdown-item.delete {
+    color: #fca5a5 !important;
+  }
 }
