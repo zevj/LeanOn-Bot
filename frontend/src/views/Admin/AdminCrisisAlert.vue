@@ -15,7 +15,7 @@
                     <p class="subtext">Flagged conversations requiring attention</p>
                 </div>
 
-                <!-- STATS -->
+                <!-- STATS — order: Severe → Moderate → Low -->
                 <div class="whole-stat-card">
                     <div class="stat-card-wrap s-severe stagger-1">
                         <div class="stat-left">
@@ -74,13 +74,13 @@
 
                     <div class="alert-list">
                         <div
-                            v-for="alert in unclassifiedAlerts"
+                            v-for="alert in pagedUnclassified"
                             :key="alert.id"
                             class="alert-card alert-card--plain"
                             :class="{ 'is-assigning': assigningId === alert.id }"
                         >
                             <div class="alert-card-left">
-                                <!-- No badges at all — only the timestamp -->
+                                <!-- Timestamp only — no status badge -->
                                 <div class="alert-meta">
                                     <span class="alert-time">
                                         <i class="bx bx-time-five"></i> {{ formatTime(alert.created_at) }}
@@ -151,24 +151,52 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Pagination — Awaiting Classification -->
+                    <div class="pagination-row">
+                        <button
+                            class="page-btn"
+                            :disabled="unclassifiedPage === 1"
+                            @click="unclassifiedPage--"
+                        ><i class="bx bx-chevron-left"></i></button>
+
+                        <button
+                            v-for="p in pageRange(totalUnclassifiedPages)"
+                            :key="p"
+                            class="page-btn"
+                            :class="{ 'page-btn--active': p === unclassifiedPage }"
+                            @click="unclassifiedPage = p"
+                        >{{ p }}</button>
+
+                        <button
+                            class="page-btn"
+                            :disabled="unclassifiedPage === totalUnclassifiedPages"
+                            @click="unclassifiedPage++"
+                        ><i class="bx bx-chevron-right"></i></button>
+
+                        <span class="page-info">
+                            {{ (unclassifiedPage - 1) * PAGE_SIZE + 1 }}–{{ Math.min(unclassifiedPage * PAGE_SIZE, unclassifiedAlerts.length) }}
+                            of {{ unclassifiedAlerts.length }}
+                        </span>
+                    </div>
                 </div>
 
-                <!-- ── CLASSIFIED ALERTS ── -->
+                <!-- ── CLASSIFIED ALERTS — sorted: Severe → Moderate → Low ── -->
                 <div class="alert-section fade-in stagger-4">
                     <div class="alert-section-header">
                         <div class="alert-section-label-group">
                             <span class="alert-section-dot dot-classified"></span>
                             <span class="alert-section-label">Classified Alerts</span>
-                            <span class="alert-section-count">{{ classifiedAlerts.length }}</span>
+                            <span class="alert-section-count">{{ sortedClassifiedAlerts.length }}</span>
                         </div>
                         <div class="alert-filters">
-                            <select v-model="filterPriority" class="filter-select" @change="fetchAlerts">
+                            <select v-model="filterPriority" class="filter-select" @change="onFilterChange">
                                 <option value="">All priorities</option>
                                 <option value="severe">Severe</option>
                                 <option value="moderate">Moderate</option>
                                 <option value="low">Low</option>
                             </select>
-                            <select v-model="filterStatus" class="filter-select" @change="fetchAlerts">
+                            <select v-model="filterStatus" class="filter-select" @change="onFilterChange">
                                 <option value="">All statuses</option>
                                 <option value="new">New</option>
                                 <option value="reviewed">Under review</option>
@@ -179,18 +207,21 @@
 
                     <div class="alert-list">
                         <div
-                            v-for="alert in classifiedAlerts"
+                            v-for="alert in pagedClassified"
                             :key="alert.id"
                             class="alert-card"
                             :class="[`p-${alert.severity}`, { 'is-assigning': assigningId === alert.id }]"
                         >
                             <div class="alert-card-left">
+                                <!-- Severity badge + reactive status badge + timestamp -->
                                 <div class="alert-meta">
                                     <span class="badge" :class="`b-${alert.severity}`">
                                         {{ capitalize(alert.severity) }}
                                     </span>
                                     <span class="badge" :class="`b-${alert.status}`">
                                         <i v-if="alert.status === 'new'" class="bx bx-error-circle"></i>
+                                        <i v-else-if="alert.status === 'reviewed'" class="bx bx-search-alt"></i>
+                                        <i v-else-if="alert.status === 'resolved'" class="bx bx-check-circle"></i>
                                         {{ alert.status === 'reviewed' ? 'Under review' : capitalize(alert.status) }}
                                     </span>
                                     <span class="alert-time">
@@ -271,10 +302,38 @@
                             </div>
                         </div>
 
-                        <p v-if="classifiedAlerts.length === 0 && !loading" class="no-alerts">
+                        <p v-if="sortedClassifiedAlerts.length === 0 && !loading" class="no-alerts">
                             No classified alerts match the current filters.
                         </p>
                         <p v-if="loading" class="no-alerts">Loading alerts...</p>
+                    </div>
+
+                    <!-- Pagination — Classified Alerts -->
+                    <div class="pagination-row">
+                        <button
+                            class="page-btn"
+                            :disabled="classifiedPage === 1"
+                            @click="classifiedPage--"
+                        ><i class="bx bx-chevron-left"></i></button>
+
+                        <button
+                            v-for="p in pageRange(totalClassifiedPages)"
+                            :key="p"
+                            class="page-btn"
+                            :class="{ 'page-btn--active': p === classifiedPage }"
+                            @click="classifiedPage = p"
+                        >{{ p }}</button>
+
+                        <button
+                            class="page-btn"
+                            :disabled="classifiedPage === totalClassifiedPages"
+                            @click="classifiedPage++"
+                        ><i class="bx bx-chevron-right"></i></button>
+
+                        <span class="page-info">
+                            {{ (classifiedPage - 1) * PAGE_SIZE + 1 }}–{{ Math.min(classifiedPage * PAGE_SIZE, sortedClassifiedAlerts.length) }}
+                            of {{ sortedClassifiedAlerts.length }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -382,6 +441,38 @@ const toast = useToast();
 const sidebarOpen = ref(localStorage.getItem('adminSidebarOpen') !== 'false');
 const loading = ref(false);
 
+// ── Pagination ─────────────────────────────────────────────────
+const PAGE_SIZE = 3; // show 3 per page so pagination is always visible
+
+// Helper: generates [1, 2, 3, ...n]
+const pageRange = (n) => Array.from({ length: n }, (_, i) => i + 1);
+
+// Awaiting classification pagination
+const unclassifiedPage = ref(1);
+const totalUnclassifiedPages = computed(() =>
+    Math.max(1, Math.ceil(unclassifiedAlerts.value.length / PAGE_SIZE))
+);
+const pagedUnclassified = computed(() => {
+    const start = (unclassifiedPage.value - 1) * PAGE_SIZE;
+    return unclassifiedAlerts.value.slice(start, start + PAGE_SIZE);
+});
+
+// Classified pagination
+const classifiedPage = ref(1);
+const totalClassifiedPages = computed(() =>
+    Math.max(1, Math.ceil(sortedClassifiedAlerts.value.length / PAGE_SIZE))
+);
+const pagedClassified = computed(() => {
+    const start = (classifiedPage.value - 1) * PAGE_SIZE;
+    return sortedClassifiedAlerts.value.slice(start, start + PAGE_SIZE);
+});
+
+// Reset to page 1 when filters change
+const onFilterChange = () => {
+    classifiedPage.value = 1;
+    fetchAlerts();
+};
+
 // ── Keyword Reference ──────────────────────────────────────────
 const severityLevels = [
     { label: 'Severe',   key: 'severe'   },
@@ -406,15 +497,14 @@ const alerts = ref([]);
 const statsData = ref({ severe_count: 0, moderate_count: 0, low_count: 0 });
 
 // ── Static Pending Alerts (for demo — no backend yet) ──────────
-// Remove these once the backend returns unclassified alerts properly.
 const staticPendingAlerts = ref([
     {
         id: 'static-1',
         message: "I just feel so hopeless lately, I don't think things will ever get better.",
         detected_keywords: ['hopeless'],
-        user_display: 'Maria S.',
-        masked_email: 'm****@school.edu',
-        created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString(), // 18 mins ago
+        user_display: 'Anonymous #1001',
+        masked_email: '2023*****@gordoncollege.edu.ph',
+        created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
         severity: null,
         status: 'new',
         _isStatic: true,
@@ -423,9 +513,9 @@ const staticPendingAlerts = ref([
         id: 'static-2',
         message: "No one understands what I'm going through. I feel completely alone and I'm breaking down.",
         detected_keywords: ['no one understands', 'alone', 'breaking down'],
-        user_display: 'Juan R.',
-        masked_email: 'j****@school.edu',
-        created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 mins ago
+        user_display: 'Anonymous #1001',
+        masked_email: '2023*****@gordoncollege.edu.ph',
+        created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
         severity: null,
         status: 'new',
         _isStatic: true,
@@ -434,24 +524,27 @@ const staticPendingAlerts = ref([
         id: 'static-3',
         message: "I've been so overwhelmed with everything, I can't sleep and I can't cope anymore.",
         detected_keywords: ['overwhelmed', "can't cope"],
-        user_display: 'Ana L.',
-        masked_email: 'a****@school.edu',
-        created_at: new Date(Date.now() - 1000 * 60 * 72).toISOString(), // 72 mins ago
+        user_display: 'Anonymous #1001',
+        masked_email: '2023*****@gordoncollege.edu.ph',
+        created_at: new Date(Date.now() - 1000 * 60 * 72).toISOString(),
         severity: null,
         status: 'new',
         _isStatic: true,
     },
 ]);
 
-// Combine static pending + any unclassified from backend
+// Severity sort order: severe first, moderate second, low third
+const SEVERITY_ORDER = { severe: 0, moderate: 1, low: 2 };
+
 const unclassifiedAlerts = computed(() => [
     ...staticPendingAlerts.value,
     ...alerts.value.filter(a => !a.severity || a.severity === 'unclassified'),
 ]);
 
-// Classified = severity has been set and confirmed
-const classifiedAlerts = computed(() =>
-    alerts.value.filter(a => a.severity && a.severity !== 'unclassified')
+// Classified alerts sorted by severity hierarchy (severe → moderate → low)
+const sortedClassifiedAlerts = computed(() =>
+    [...alerts.value.filter(a => a.severity && a.severity !== 'unclassified')]
+        .sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 99) - (SEVERITY_ORDER[b.severity] ?? 99))
 );
 
 const fetchAlerts = async () => {
@@ -478,18 +571,25 @@ const fetchAlerts = async () => {
 };
 
 const updateStatus = async (alert, newStatus) => {
+    // Optimistic update — badge changes immediately before API call
+    const targetInArray = alerts.value.find(a => a.id === alert.id);
+    if (targetInArray) targetInArray.status = newStatus;
+    else alert.status = newStatus; // fallback for static/local refs
+
+    const label = newStatus === 'reviewed' ? 'under review' : 'resolved';
+    toast.success(`Alert from ${alert.user_display} is now ${label}.`, { timeout: 3000 });
+
     try {
         const token = localStorage.getItem('token');
         await axios.patch(`/api/admin/crisis-alerts/${alert.id}`, { status: newStatus }, {
             headers: { Authorization: `Bearer ${token}` },
         });
-        alert.status = newStatus;
-        const label = newStatus === 'reviewed' ? 'under review' : 'resolved';
-        toast.success(`Alert from ${alert.user_display} is now ${label}.`, { timeout: 3000 });
         fetchAlerts();
     } catch (err) {
         console.error('Failed to update alert:', err);
         toast.error('Failed to update alert status.');
+        // Revert optimistic update on failure
+        if (targetInArray) targetInArray.status = alert.status;
     }
 };
 
@@ -510,7 +610,6 @@ const pendingSeverity = ref({});
 const assigningId     = ref(null);
 
 const setPendingSeverity = (alertId, level) => {
-    // On classified cards, clicking the already-active current severity clears the pending pick
     if (pendingSeverity.value[alertId] === level) {
         const copy = { ...pendingSeverity.value };
         delete copy[alertId];
@@ -525,7 +624,7 @@ const confirmSeverity = async (alert) => {
     if (!chosen) return;
     assigningId.value = alert.id;
 
-    // ── Static alert: handle locally, no API call ──
+    // Static alert: handle locally
     if (alert._isStatic) {
         const idx = staticPendingAlerts.value.findIndex(a => a.id === alert.id);
         if (idx !== -1) {
@@ -533,6 +632,10 @@ const confirmSeverity = async (alert) => {
             delete moved._isStatic;
             staticPendingAlerts.value.splice(idx, 1);
             alerts.value.unshift(moved);
+            // Reset unclassified page if current page is now out of range
+            if (unclassifiedPage.value > totalUnclassifiedPages.value) {
+                unclassifiedPage.value = Math.max(1, totalUnclassifiedPages.value);
+            }
         }
         const copy = { ...pendingSeverity.value };
         delete copy[alert.id];
@@ -542,13 +645,12 @@ const confirmSeverity = async (alert) => {
         return;
     }
 
-    // ── Backend alert: PATCH as normal ──
+    // Backend alert: PATCH as normal
     try {
         const token = localStorage.getItem('token');
         await axios.patch(`/api/admin/crisis-alerts/${alert.id}`, { severity: chosen }, {
             headers: { Authorization: `Bearer ${token}` },
         });
-        // Optimistic update — card instantly moves to Classified section
         alert.severity = chosen;
         const copy = { ...pendingSeverity.value };
         delete copy[alert.id];

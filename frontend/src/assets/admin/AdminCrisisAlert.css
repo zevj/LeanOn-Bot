@@ -690,6 +690,58 @@
     animation: modal-pop-out 0.2s ease forwards;
 }
 
+/* ── Pagination ────────────────────────────────────────────── */
+.pagination-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 0 4px;
+    flex-wrap: wrap;
+}
+ 
+.page-btn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1.5px solid #d6e8d4;
+    background: #ffffff;
+    color: #3a6b35;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.16s ease;
+    font-family: inherit;
+}
+ 
+.page-btn:hover:not(:disabled) {
+    border-color: #0E6008;
+    background: #f3faf2;
+    color: #0E6008;
+}
+ 
+.page-btn--active {
+    background: #0E6008;
+    border-color: #0E6008;
+    color: #ffffff;
+    font-weight: 700;
+    cursor: default;
+}
+ 
+.page-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+ 
+.page-info {
+    margin-left: 6px;
+    font-size: 12px;
+    color: #7a9676;
+}
+
 @keyframes modal-pop-in {
     from { opacity: 0; transform: scale(0.95) translateY(15px); }
     to   { opacity: 1; transform: scale(1)    translateY(0); }

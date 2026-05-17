@@ -76,7 +76,7 @@
       <div class="about-grid">
         <div class="about-text">
           <span class="section-label">About the System</span>
-          <h2 class="section-title">Built for Gordon College Students, by Students</h2>
+          <h2 class="section-title">Built for Gordon College Students, by DualDev</h2>
           <p>LeanOn Bot was designed in response to a real need: Gordon College students often hesitate to visit the Guidance Office in person. Our AI-powered platform provides a private, stigma-free space to express concerns, receive coping strategies, and get connected to professional help when needed.</p>
           <p style="margin-top:.8rem;">This system complements — not replaces — the expert counselors at the Guidance Office. Think of it as your first-line, always-available mental wellness companion.</p>
           <div class="about-stats">
@@ -190,7 +190,7 @@
         <div class="logo-icon"><i class='bx bxs-leaf'></i></div>
         <span>LeanOn Bot</span>
       </div>
-      <p>AI-Assisted Mental Health Wellness Support System for Students</p>
+      <p>AI-Assisted Mental Health Wellness Support System for Gordon College Students</p>
       <p class="footer-sub">Gordon College – Guidance and Counseling Unit</p>
       <div class="footer-links">
         <a v-for="link in navLinks" :key="link.id"
