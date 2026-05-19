@@ -122,7 +122,7 @@ input[type="password"]::-webkit-textfield-decoration-container {
     font-size: 12px;
     color: #242424;
     text-decoration: none;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
     display: block;
     text-align: right;
 }
@@ -130,6 +130,42 @@ input[type="password"]::-webkit-textfield-decoration-container {
 .forgot-password:hover {
     text-decoration: underline;
     color: #049516;
+}
+
+/* ── Forgot password + terms agreement row ── */
+.forgot-terms-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+ 
+.terms-agreement {
+  font-size: 11.5px;
+  color: #7a9676;
+  line-height: 1.5;
+  margin: 0;
+  padding-bottom: 10px;
+  text-align: center;
+}
+ 
+.terms-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  color: #0E6008;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+ 
+.terms-link:hover {
+  color: #0b5006;
+  opacity: 0.85;
 }
 
 .login-button {
