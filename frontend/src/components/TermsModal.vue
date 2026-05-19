@@ -305,7 +305,7 @@ const handleDecline = async () => {
 
 /* Modal box */
 .terms-modal {
-  background: #ffffff;
+  background: var(--surface-color);
   border-radius: 16px;
   width: 100%;
   max-width: 600px;
@@ -315,17 +315,19 @@ const handleDecline = async () => {
   flex-direction: column;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(14, 96, 8, 0.12),
-    0 32px 72px rgba(8, 24, 8, 0.40);
+    0 0 0 1px var(--border-color),
+    0 32px 72px rgba(0, 0, 0, 0.40);
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 /* ── Header ─────────────────────────────────────── */
 .terms-header {
   padding: 28px 32px 22px;
-  border-bottom: 1px solid #e4ede3;
-  background: #f7fbf6;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   flex-shrink: 0;
   position: relative;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .terms-logo {
@@ -345,7 +347,7 @@ const handleDecline = async () => {
 .logo-text {
   font-size: 15px;
   font-weight: 700;
-  color: #0E6008;
+  color: var(--primary-color);
   letter-spacing: 0.2px;
 }
 
@@ -359,9 +361,9 @@ const handleDecline = async () => {
 .terms-tab {
   padding: 7px 16px;
   border-radius: 20px;
-  border: 1.5px solid #d2e8cf;
-  background: white;
-  color: #547150;
+  border: 1.5px solid var(--border-color);
+  background: var(--surface-color);
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -371,22 +373,22 @@ const handleDecline = async () => {
 }
 
 .terms-tab:hover {
-  border-color: #0E6008;
-  color: #0E6008;
-  background: #f3faf2;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--surface-hover);
 }
 
 .terms-tab.active {
-  background: #0E6008;
-  border-color: #0E6008;
-  color: white;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--white-const);
   font-weight: 600;
 }
 
 .terms-title {
   font-size: 22px;
   font-weight: 700;
-  color: #111e10;
+  color: var(--text-primary);
   margin: 0 0 8px;
   line-height: 1.25;
   letter-spacing: -0.3px;
@@ -394,7 +396,7 @@ const handleDecline = async () => {
 
 .terms-subtitle {
   font-size: 13.5px;
-  color: #547150;
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.65;
 }
@@ -404,6 +406,7 @@ const handleDecline = async () => {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  background: var(--surface-color);
 }
 
 .terms-body::-webkit-scrollbar {
@@ -411,18 +414,18 @@ const handleDecline = async () => {
 }
 
 .terms-body::-webkit-scrollbar-track {
-  background: #f0f5ef;
+  background: var(--bg-color);
 }
 
 .terms-body::-webkit-scrollbar-thumb {
-  background: #b5ceb2;
+  background: var(--border-color);
   border-radius: 4px;
 }
 
 /* Sections */
 .terms-section {
   padding: 20px 20px;
-  border-bottom: 1px solid #edf3ec;
+  border-bottom: 1px solid var(--border-color);
   margin: 0;
 }
 
@@ -433,7 +436,7 @@ const handleDecline = async () => {
 .terms-section h3 {
   font-size: 11px;
   font-weight: 700;
-  color: #0E6008;
+  color: var(--primary-color);
   margin: 0 0 8px;
   text-transform: uppercase;
   letter-spacing: 0.9px;
@@ -449,8 +452,8 @@ const handleDecline = async () => {
   width: 20px;
   height: 20px;
   min-width: 20px;
-  background: #0E6008;
-  color: white;
+  background: var(--primary-color);
+  color: var(--white-const);
   border-radius: 50%;
   font-size: 9.5px;
   font-weight: 700;
@@ -459,7 +462,7 @@ const handleDecline = async () => {
 
 .terms-section p {
   font-size: 13.5px;
-  color: #374535;
+  color: var(--text-primary);
   line-height: 1.75;
   margin: 0 0 8px;
 }
@@ -469,7 +472,7 @@ const handleDecline = async () => {
 }
 
 .terms-section strong {
-  color: #111e10;
+  color: var(--primary-color);
   font-weight: 600;
 }
 
@@ -496,7 +499,8 @@ const handleDecline = async () => {
 
 .scroll-hint-text {
   font-size: 11.5px;
-  color: #97b894;
+  color: var(--primary-color);
+  opacity: 0.8;
   display: inline-block;
   animation: bob 1.6s ease-in-out infinite;
 }
@@ -509,9 +513,10 @@ const handleDecline = async () => {
 /* ── Footer ──────────────────────────────────────── */
 .terms-footer {
   padding: 16px 32px 24px;
-  border-top: 1px solid #e4ede3;
-  background: #f7fbf6;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   flex-shrink: 0;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .checkboxes {
@@ -529,19 +534,19 @@ const handleDecline = async () => {
   user-select: none;
   padding: 11px 13px;
   border-radius: 9px;
-  border: 1.5px solid #d2e8cf;
-  background: #ffffff;
+  border: 1.5px solid var(--border-color);
+  background: var(--surface-color);
   transition: border-color 0.18s ease, background 0.18s ease;
 }
 
 .checkbox-label:hover {
-  border-color: #0E6008;
-  background: #f3faf2;
+  border-color: var(--primary-color);
+  background: var(--surface-hover);
 }
 
 .checkbox-label.checked {
-  border-color: #0E6008;
-  background: #eef7ed;
+  border-color: var(--primary-color);
+  background: var(--surface-hover);
 }
 
 .custom-check {
@@ -549,8 +554,8 @@ const handleDecline = async () => {
   height: 19px;
   min-width: 19px;
   border-radius: 5px;
-  border: 2px solid #b5ceb2;
-  background: white;
+  border: 2px solid var(--border-color);
+  background: var(--bg-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -560,8 +565,8 @@ const handleDecline = async () => {
 }
 
 .checkbox-label.checked .custom-check {
-  background: #0E6008;
-  border-color: #0E6008;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .custom-check svg {
@@ -571,12 +576,12 @@ const handleDecline = async () => {
 
 .check-text {
   font-size: 13px;
-  color: #374535;
+  color: var(--text-primary);
   line-height: 1.55;
 }
 
 .check-text strong {
-  color: #111e10;
+  color: var(--primary-color);
 }
 
 /* Buttons */
@@ -589,9 +594,9 @@ const handleDecline = async () => {
   flex: 0 0 auto;
   padding: 11px 20px;
   border-radius: 9px;
-  border: 1.5px solid #d2e8cf;
-  background: white;
-  color: #6a8068;
+  border: 1.5px solid var(--border-color);
+  background: var(--surface-color);
+  color: var(--text-secondary);
   font-size: 13.5px;
   font-weight: 500;
   cursor: pointer;
@@ -602,7 +607,7 @@ const handleDecline = async () => {
 .btn-decline:hover {
   border-color: #d9534f;
   color: #d9534f;
-  background: #fff6f6;
+  background: rgba(217, 83, 79, 0.1);
 }
 
 .btn-accept {
@@ -610,8 +615,8 @@ const handleDecline = async () => {
   padding: 11px 20px;
   border-radius: 9px;
   border: none;
-  background: #cce3ca;
-  color: #8aad87;
+  background: var(--border-color);
+  color: var(--text-secondary);
   font-size: 13.5px;
   font-weight: 600;
   cursor: not-allowed;
@@ -624,15 +629,15 @@ const handleDecline = async () => {
 }
 
 .btn-accept.active {
-  background: #0E6008;
-  color: white;
+  background: var(--primary-color);
+  color: var(--white-const);
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(14, 96, 8, 0.28);
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28);
 }
 
 .btn-accept.active:hover {
-  background: #0b5006;
-  box-shadow: 0 6px 18px rgba(14, 96, 8, 0.36);
+  background: var(--secondary-color);
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.36);
 }
 
 .btn-icon {
@@ -655,18 +660,18 @@ const handleDecline = async () => {
   align-items: center;
   justify-content: center;
   border: none;
-  background: white;
+  background: var(--surface-color);
   border-radius: 50%;
   cursor: pointer;
   font-size: 16px;
-  color: #0E6008;
+  color: var(--primary-color);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   z-index: 9999;
   transition: background 0.18s ease, transform 0.18s ease;
 }
 
 .modal-close-btn:hover {
-  background: #f2f7f1;
+  background: var(--surface-hover);
   transform: scale(1.05);
 }
 

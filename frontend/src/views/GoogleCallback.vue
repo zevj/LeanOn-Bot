@@ -12,27 +12,55 @@ import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 
+import { decryptPayload } from '@/utils/crypto.js'
+
 const router = useRouter()
 const route = useRoute()
 const toast = useToast()
 
-onMounted(() => {
-  const { token, user, session_log_id } = route.query
+onMounted(async () => {
+  const { payload, token: directToken, user: directUser, session_log_id: directSessionLogId } = route.query
 
-  if (token && user) {
-    // Store token and user info
-    localStorage.setItem('token', token)
-    localStorage.setItem('user', user) // Already JSON string from backend
-    if (session_log_id) {
-      localStorage.setItem('session_log_id', session_log_id)
+  if (payload) {
+    try {
+      const decrypted = await decryptPayload(payload)
+      const { token, user, session_log_id } = decrypted
+
+      if (token && user) {
+        localStorage.setItem('token', token)
+        localStorage.setItem('user', user) // Already JSON string from backend
+        if (session_log_id) {
+          localStorage.setItem('session_log_id', session_log_id)
+        }
+
+        const userData = JSON.parse(user)
+        toast.success(`Welcome back, ${userData.first_name || 'Student'}!`)
+
+        if (userData.role === 'guidance') {
+          router.push('/adminDashboard')
+        } else {
+          router.push('/ChatConvo')
+        }
+      } else {
+        toast.error('Authentication failed. Missing secure token.')
+        router.push('/login')
+      }
+    } catch (err) {
+      console.error('Secure decryption failed:', err)
+      toast.error('Authentication failed. Decryption error.')
+      router.push('/login')
+    }
+  } else if (directToken && directUser) {
+    // Fallback to direct parameters if encryption is bypassed or disabled
+    localStorage.setItem('token', directToken)
+    localStorage.setItem('user', directUser)
+    if (directSessionLogId) {
+      localStorage.setItem('session_log_id', directSessionLogId)
     }
 
-    const userData = JSON.parse(user)
+    const userData = JSON.parse(directUser)
     toast.success(`Welcome back, ${userData.first_name || 'Student'}!`)
 
-    // Redirect to appropriate dashboard
-    // Terms check is handled by sidebarStudent.vue (shows TermsModal if terms_accepted_at is null)
-    // Backend EnsureTermsAccepted middleware also blocks API calls until accepted
     if (userData.role === 'guidance') {
       router.push('/adminDashboard')
     } else {

@@ -87,52 +87,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function register(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'regex:/^[0-9]{9}@gordoncollege\.edu\.ph$/',
-                'unique:users,email'
-            ],
-            'password' => 'required|min:6|confirmed',
-            'department' => 'required|string',
-            'program' => 'required|string',
-            'year_level' => 'required|string',
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
-        }
-    
-        $otp = rand(100000, 999999);
-    
-        $expiresAt = Carbon::now()->addMinutes(5); 
-    
-        $user = User::create([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'otp' => Hash::make($otp),
-            'otp_expires_at' => $expiresAt,
-            'role' => 'student',
-            'department' => $request->department,
-            'program' => $request->program,
-            'year_level' => $request->year_level,
-        ]);
 
-        $this->mailService->sendOtp($user->email, $otp, 'register');
-    
-        return response()->json([
-            'message' => 'User registered successfully',
-            'user' => $user,
-            'otp_expires_at' => $expiresAt
-        ]);
-    }
 
 public function verifyOtp(Request $request)
 {

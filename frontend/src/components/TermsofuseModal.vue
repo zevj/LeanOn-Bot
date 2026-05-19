@@ -106,7 +106,7 @@ defineEmits(['close'])
 
 /* Modal box */
 .tou-modal {
-  background: #ffffff;
+  background: var(--surface-color);
   border-radius: 16px;
   width: 100%;
   max-width: 580px;
@@ -116,16 +116,18 @@ defineEmits(['close'])
   overflow: hidden;
   position: relative;
   box-shadow:
-    0 0 0 1px rgba(14, 96, 8, 0.12),
-    0 32px 72px rgba(8, 24, 8, 0.40);
+    0 0 0 1px var(--border-color),
+    0 32px 72px rgba(0, 0, 0, 0.40);
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 /* ── Header ── */
 .tou-header {
   padding: 24px 28px 18px;
-  border-bottom: 1px solid #e4ede3;
-  background: #f7fbf6;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   flex-shrink: 0;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .tou-logo {
@@ -145,7 +147,7 @@ defineEmits(['close'])
 .tou-logo-text {
   font-size: 13.5px;
   font-weight: 700;
-  color: #0E6008;
+  color: var(--primary-color);
   letter-spacing: 0.2px;
 }
 
@@ -160,8 +162,8 @@ defineEmits(['close'])
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: #0E6008;
-  color: white;
+  background: var(--primary-color);
+  color: var(--white-const);
   font-size: 13px;
   font-weight: 700;
   padding: 6px 14px;
@@ -180,24 +182,24 @@ defineEmits(['close'])
   align-items: center;
   justify-content: center;
   border: none;
-  background: white;
+  background: var(--surface-color);
   border-radius: 50%;
   cursor: pointer;
   font-size: 15px;
-  color: #0E6008;
+  color: var(--primary-color);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: background 0.18s ease, transform 0.18s ease;
   flex-shrink: 0;
 }
 
 .tou-close-btn:hover {
-  background: #f2f7f1;
+  background: var(--surface-hover);
   transform: scale(1.08);
 }
 
 .tou-subtitle {
   font-size: 12.5px;
-  color: #547150;
+  color: var(--text-secondary);
   margin: 0;
   line-height: 1.55;
 }
@@ -207,15 +209,16 @@ defineEmits(['close'])
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  background: var(--surface-color);
 }
 
 .tou-body::-webkit-scrollbar { width: 5px; }
-.tou-body::-webkit-scrollbar-track { background: #f0f5ef; }
-.tou-body::-webkit-scrollbar-thumb { background: #b5ceb2; border-radius: 4px; }
+.tou-body::-webkit-scrollbar-track { background: var(--bg-color); }
+.tou-body::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
 .tou-section {
   padding: 18px 20px;
-  border-bottom: 1px solid #edf3ec;
+  border-bottom: 1px solid var(--border-color);
   margin: 0;
 }
 
@@ -226,7 +229,7 @@ defineEmits(['close'])
 .tou-section h3 {
   font-size: 10.5px;
   font-weight: 700;
-  color: #0E6008;
+  color: var(--primary-color);
   margin: 0 0 8px;
   text-transform: uppercase;
   letter-spacing: 0.9px;
@@ -242,8 +245,8 @@ defineEmits(['close'])
   width: 20px;
   height: 20px;
   min-width: 20px;
-  background: #0E6008;
-  color: white;
+  background: var(--primary-color);
+  color: var(--white-const);
   border-radius: 50%;
   font-size: 9px;
   font-weight: 700;
@@ -252,31 +255,32 @@ defineEmits(['close'])
 
 .tou-section p {
   font-size: 13px;
-  color: #374535;
+  color: var(--text-primary);
   line-height: 1.75;
   margin: 0;
 }
 
-.tou-section strong { color: #111e10; font-weight: 600; }
+.tou-section strong { color: var(--primary-color); font-weight: 600; }
 
 .tou-spacer { height: 12px; }
 
 /* ── Footer ── */
 .tou-footer {
   padding: 14px 28px 20px;
-  border-top: 1px solid #e4ede3;
-  background: #f7fbf6;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
   flex-shrink: 0;
   display: flex;
   justify-content: flex-end;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .tou-close-footer-btn {
   padding: 9px 24px;
   border-radius: 9px;
-  border: 1.5px solid #d2e8cf;
-  background: white;
-  color: #0E6008;
+  border: 1.5px solid var(--border-color);
+  background: var(--surface-color);
+  color: var(--primary-color);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -285,9 +289,9 @@ defineEmits(['close'])
 }
 
 .tou-close-footer-btn:hover {
-  background: #0E6008;
-  border-color: #0E6008;
-  color: white;
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--white-const);
 }
 
 /* ── Transition ── */
