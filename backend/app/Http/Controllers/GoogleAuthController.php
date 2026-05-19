@@ -10,9 +10,17 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Client;
+use App\Services\ApiEncryptionService;
 
 class GoogleAuthController extends Controller
 {
+    protected ApiEncryptionService $encryptionService;
+
+    public function __construct(ApiEncryptionService $encryptionService)
+    {
+        $this->encryptionService = $encryptionService;
+    }
+
     /**
      * Redirect the user to the Google authentication page.
      *
@@ -84,18 +92,28 @@ class GoogleAuthController extends Controller
             'session_start' => Carbon::now(),
         ]);
 
-        // 5. Redirect back to frontend with token and user info
-        // We use a dedicated callback route on the frontend to handle this
+        // 5. Redirect back to frontend with encrypted token and user info
         $frontendUrl = env('FRONTEND_URL', 'http://localhost:5173');
-        $userData = rawurlencode(json_encode([
+        $userData = json_encode([
             'id' => $user->id,
             'email' => $user->email,
             'first_name' => $user->first_name,
             'last_name' => $user->last_name,
             'role' => $user->role,
             'terms_accepted_at' => $user->terms_accepted_at,
-        ]));
+        ]);
 
-        return redirect("{$frontendUrl}/auth/google/callback?token={$token}&user={$userData}&session_log_id={$sessionLog->id}");
+        try {
+            $encryptedPayload = $this->encryptionService->encrypt([
+                'token' => $token,
+                'user' => $userData,
+                'session_log_id' => (string) $sessionLog->id
+            ]);
+
+            return redirect("{$frontendUrl}/auth/google/callback?payload=" . urlencode($encryptedPayload));
+        } catch (\Exception $e) {
+            Log::error('Google Auth Redirect Encryption Failed: ' . $e->getMessage());
+            return redirect("{$frontendUrl}/login?error=google_auth_failed");
+        }
     }
 }
