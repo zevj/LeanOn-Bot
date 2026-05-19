@@ -322,8 +322,8 @@ import { useToast } from 'vue-toastification'
 import { useChats } from '@/composables/useChats'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
 import TermsModal from '@/components/TermsModal.vue'
-import TermsOfUseModal from '@/components/TermsOfUseModal.vue'
-import PrivacyPolicyModal from '@/components/PrivacyPolicyModal.vue'
+import TermsOfUseModal from '@/components/TermsofuseModal.vue'
+import PrivacyPolicyModal from '@/components/PrivacypolicyModal.vue'
 import { useSidebarToggle } from '@/composables/useSidebarToggle'
 import axios from 'axios'
 
@@ -380,16 +380,7 @@ const termsModalMode = ref('accept')
 const termsModalSection = ref('terms')
 const showTermsModal = ref(false)
 
-/**
- * Called from the account popup menu.
- * @param {'terms'|'privacy'} section - which tab to open
- */
-const openTermsModal = (section = 'terms') => {
-  closeModal() // close the account popup first
-  termsModalMode.value = 'view'
-  termsModalSection.value = section
-  showTermsModal.value = true
-}
+
 
 const closeTermsModal = () => {
   showTermsModal.value = false

@@ -175,7 +175,7 @@ import axios from 'axios'
 import { gsap } from 'gsap'
 import LoadingButton from '@/views/loadingButton.vue'
 import OtpModal from '@/components/OtpModal.vue'
-import TermsOfUseModal from '@/components/TermsOfuseModal.vue'
+import TermsOfUseModal from '@/components/TermsofuseModal.vue'
 import PrivacyPolicyModal from '@/components/PrivacypolicyModal.vue'
  
 const showOtp = ref(false)
