@@ -1,86 +1,145 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+
 .header {
-  height: 70px;
-  background: #ffffff;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 4px 2px 10px rgba(0, 0, 0, 0.09);
-  padding: 0 28px;
-  border-bottom: 1px solid #dcdcdc;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  padding: 0 32px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.6);
   position: sticky;
   top: 0;
-  height: 90px;
-  z-index: 100;
+  z-index: 500;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
 }
 
-/* LEFT */
+/* ── LEFT SECTION / LOGO ── */
 
-i {
-  font-size: 24px;
-  color: #333;
-  cursor: pointer;
-}
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 14px;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.logo-separation {
-    display: flex;
-    flex-direction: column;
+.logo-section:hover {
+  transform: translateY(-1px);
 }
 
 .logo-icon {
-  width: 50px;
-  margin-right: 5px;
-  margin-left: 5px;
-  filter: drop-shadow(0px 0px 8px rgba(0,0,0, 0.180));
+  width: 48px;
+  filter: drop-shadow(0px 4px 8px rgba(14, 96, 8, 0.2));
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+}
+
+.logo-section:hover .logo-icon {
+  transform: rotate(-6deg) scale(1.05);
+}
+
+.logo-separation {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .logo-text {
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 700;
-  color: #0E6008;
-  letter-spacing: 1px;
+  color: #0e6008;
+  letter-spacing: 0.3px;
+  margin: 0;
+  line-height: 1.1;
+  background: linear-gradient(90deg, #0e6008, #16a34a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .subtext {
-    font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  margin: 2px 0 0 0;
+  letter-spacing: 0.2px;
 }
 
-/* RIGHT */
+/* ── RIGHT SECTION ── */
 
 .right-section {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
+/* ── HAMBURGER — hidden on desktop ── */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 6px;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
 
+.hamburger-btn:hover {
+  background: rgba(14, 96, 8, 0.08);
+}
 
-/* Divider */
+.ham-line {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: #333;
+  border-radius: 2px;
+  transition: all 0.25s ease;
+}
+
+/* ── LEGACY CLASSES ── */
 
 .divider {
   width: 1px;
-  height: 40px;
-  background: #d8d8d8;
-  margin: 0 18px;
+  height: 32px;
+  background: #e5e7eb;
+  margin: 0 16px;
 }
-
-/* User */
 
 .user-section {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-right: 30px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.user-section:hover {
+  background: #f3f4f6;
 }
 
 .avatar {
   width: 40px;
   height: 40px;
-  background: #d9d9d9;
+  background: linear-gradient(135deg, #e5e7eb, #d1d5db);
   border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 .user-info {
@@ -90,18 +149,152 @@ i {
 .name {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: #111827;
 }
 
 .role {
-  font-size: 13px;
-  color: #777;
-  padding-top: 5px;
+  font-size: 12px;
+  color: #6b7280;
+  padding-top: 3px;
 }
 
 .arrow {
   width: 18px;
-  stroke: #666;
+  stroke: #9ca3af;
   stroke-width: 2;
   fill: none;
+  transition: transform 0.2s ease;
+}
+
+.user-section:hover .arrow {
+  transform: translateY(2px);
+  stroke: #4b5563;
+}
+
+/* ══════════════════════════════════════════
+   BREAKPOINTS
+   ══════════════════════════════════════════ */
+
+/* Tablets & Small Laptops */
+@media (max-width: 1024px) {
+  .header {
+    padding: 0 24px;
+  }
+}
+
+/* Tablet & below — show hamburger, adjust sizing */
+@media (max-width: 768px) {
+  .header {
+    height: 70px;
+    padding: 0 16px;
+  }
+
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .logo-section {
+    gap: 8px;
+  }
+
+  .logo-separation {
+    gap: 2px;
+  }
+
+  .logo-icon {
+    width: 40px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+  }
+
+  .subtext {
+    font-size: 12px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .header {
+    height: 65px;
+    padding: 0 14px;
+  }
+
+  .logo-section {
+    gap: 6px;
+  }
+
+  .logo-separation {
+    gap: 1px;
+  }
+
+  .logo-icon {
+    width: 36px;
+  }
+
+  .logo-text {
+    font-size: 16px;
+  }
+
+  .subtext {
+    display: none;
+  }
+}
+
+/* Very small */
+@media (max-width: 360px) {
+  .logo-separation {
+    display: none;
+  }
+}
+
+/* ── DARK MODE OVERRIDES ── */
+[data-theme="dark"] .header {
+  background: rgba(30, 41, 59, 0.95); /* Slate 800 */
+  border-bottom-color: var(--border-color);
+  box-shadow: 0 4px 20px var(--shadow-color);
+}
+
+[data-theme="dark"] .logo-text {
+  background: linear-gradient(90deg, var(--tertiary-color), #22c55e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="dark"] .subtext {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .ham-line {
+  background: var(--text-primary);
+}
+
+[data-theme="dark"] .divider {
+  background: var(--border-color);
+}
+
+[data-theme="dark"] .user-section:hover {
+  background: var(--surface-hover);
+}
+
+[data-theme="dark"] .avatar {
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .name {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .role {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .arrow {
+  stroke: var(--text-secondary);
+}
+
+[data-theme="dark"] .user-section:hover .arrow {
+  stroke: var(--text-primary);
 }

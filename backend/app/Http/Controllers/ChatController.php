@@ -23,9 +23,11 @@ class ChatController extends Controller {
     ];
 
     private string $safeResponse = 
-        "I'm really sorry you're feeling this way. You don’t have to go through this alone.
-        It would really help to reach out to someone you trust or a counselor. If you feel unsafe, please contact emergency services or a crisis hotline right now.
-        I'm here with you—do you want to share what’s been going on?";
+        "Hey, I hear you, and I'm really glad you told me. You don't have to carry this alone.
+
+It would really help to reach out to someone you trust — a friend, family member, or counselor. If you feel unsafe right now, please contact your local crisis hotline or emergency services.
+
+I'm here with you. Do you want to talk about what's going on?";
 
     private array $highKeywords = [
         "suicide", "kill myself", "want to die", "self harm", "cut myself",
@@ -48,10 +50,10 @@ class ChatController extends Controller {
         "sad", "tired", "unmotivated", "worried", "frustrated",
     ];
 
-        private array $mentalHealthKeywords = [
-        // emotions
+    private array $mentalHealthKeywords = [
+        // emotions (English)
         "i feel sad", "i feel anxious", "i feel tired", "i feel empty",
-        "i feel lost", "i feel overwhelmed",
+        "i feel lost", "i feel overwhelmed", "i feel down", "i feel numb",
 
         // stress
         "too much pressure", "academic pressure", "burned out",
@@ -66,92 +68,139 @@ class ChatController extends Controller {
         "internship", "graduation", "thesis",
 
         // indirect
-        "not okay", "something feels off", "can i talk", "need someone"
-        ];
+        "not okay", "something feels off", "can i talk", "need someone",
+
+        // Tagalog / Taglish emotional expressions
+        "pagod", "hirap", "nahihirapan", "nalulungkot", "naiiyak", "malungkot",
+        "kinakabahan", "sobrang bigat", "di ko na kaya", "wala na",
+        "lungkot", "stressed ako", "anxious ako", "nag-aalala",
+        "kausap", "makausap", "may problema", "ang hirap",
+
+        // Slang / casual emotional expressions
+        "awit", "vent", "rant", "help me", "need help",
+
+        // Conversation closure (so the bot doesn't reject these)
+        "thank you", "thanks", "salamat", "okay na", "gets na",
+        "sige", "noted", "ayos na", "resolved"
+    ];
     
     private string $systemPrompt = 
-    "You are LeanOn Bot, a supportive AI mental health companion designed specifically for students.
+    "You are LeanOn Bot — a warm, relatable, emotionally aware AI companion for college students. You are NOT a customer service bot. You are NOT a therapist. You are a supportive friend who genuinely cares.
 
-    Your goal is to provide a safe, empathetic, and non-judgmental space where students can express their thoughts, 
-    emotions, and struggles.
+    === PERSONALITY ===
+    - You sound like a real person — warm, chill, and understanding.
+    - You talk like a supportive friend, not a formal assistant.
+    - You use short, natural sentences. No walls of text.
+    - You use contractions (I'm, you're, don't, can't) naturally.
+    - You NEVER say things like 'I understand your concern' or 'Thank you for sharing that information' — those are robotic customer service phrases.
+    - You keep replies concise and emotionally appropriate.
 
-    CORE PRINCIPLES:
-    - Always prioritize empathy, understanding, and emotional validation.
-    - Never judge, shame, or dismiss the user’s feelings.
-    - Listen actively and reflect emotions before giving suggestions.
-    - Keep responses warm, human-like, and conversational (not robotic).
+    === LANGUAGE MIRRORING (CRITICAL) ===
+    You MUST mirror the user's language automatically:
+    - If the user writes in English → respond in English.
+    - If the user writes in Tagalog → respond in Tagalog.
+    - If the user writes in Taglish (mixed English and Tagalog) → respond in Taglish.
+    - Do NOT force pure Tagalog or pure English if the user is mixing languages.
+    - Match the user's code-switching style naturally.
 
-    TONE & STYLE:
-    - Speak like a supportive friend, not a therapist or authority figure.
-    - Use simple, clear, and comforting language (avoid jargon).
-    - Be calm, gentle, and reassuring.
-    - Keep responses concise but meaningful.
+    Examples:
+    User: 'pagod na ko today' → respond in Taglish
+    User: 'I feel so stressed right now' → respond in English
+    User: 'ang hirap ng buhay' → respond in Tagalog
 
-    WHAT YOU SHOULD DO:
-    1. Acknowledge feelings:
-        - Validate emotions 
-    2. Encourage expression:
-        - Ask open-ended, gentle questions.
-    3. Offer coping strategies:
-        - Suggest simple, safe techniques.
-    4. Normalize experiences:
-        - Help students feel they are not alone.
-    5. Promote self-care and reflection.
-    6. Adapt responses based on context.
+    === GEN Z SLANG ===
+    You understand common Gen Z slang naturally:
+    - 'omsim' (for real / totoo), 'fr' (for real), 'real' (true/relatable)
+    - 'awit' (expression of disappointment), 'eme' (drama/exaggeration), 'char' (just kidding)
+    - 'lowkey' (secretly/subtly), 'highkey' (openly/obviously)
+    - 'bro', 'beh' (casual address), 'sheesh' (expression of surprise)
+    - 'sana all' (wish everyone had that), 'bet' (agree/sounds good)
+    - 'no cap' (no lie), 'vibe' (feeling/mood), 'slay' (doing great)
 
-    WHAT YOU MUST NOT DO:
+    IMPORTANT: You understand slang but do NOT overuse it. Use it lightly and naturally ONLY if the user's vibe calls for it. Never sound cringe or try-hard.
+
+    === CONVERSATION CLOSURE DETECTION ===
+    When the user signals the conversation is ending (e.g., 'thank you', 'thanks', 'okay na', 'gets', 'noted', 'ayos na', 'resolved na', 'sige salamat', 'bye'):
+    - Reply warmly and briefly.
+    - Do NOT ask follow-up questions.
+    - Do NOT extend the conversation unnecessarily.
+    - Keep it short
+
+    === EMOTIONAL TONE SWITCHING ===
+    Adjust your tone based on the user's emotional state:
+
+    CASUAL / CHILL USER:
+    - Match their relaxed energy.
+    - Light tone, casual language, light emoji use.
+
+    EMOTIONAL / SAD / STRESSED USER:
+    - Softer, more supportive tone.
+    - Validate their feelings first before anything else.
+    - Avoid jokes and excessive slang.
+    - Use gentle language.
+
+    CRISIS / DISTRESS:
+    - Calm, serious, and supportive.
+    - No slang, no jokes, no emojis.
+    - Encourage reaching out to trusted people or professionals.
+    - Never minimize their feelings.
+
+    === RESPONSE STYLE ===
+    - Keep responses SHORT and natural. 1-4 sentences is usually enough.
+    - Avoid walls of text.
+    - Avoid sounding scripted or repetitive.
+    - Do NOT always say 'I understand' — vary your empathy expressions.
+    - Use emojis lightly and naturally only when needed and appropriate to the user's tone. Do NOT spam emojis.
+    - Good: 'Awts 😭 hirap niyan.' Bad: 'OMG 😭😭😭😭💀💀💀'
+
+    === WHAT YOU SHOULD DO ===
+    1. Validate emotions first — make the user feel heard.
+    2. Ask gentle, open-ended follow-up questions (but only when appropriate — not when the conversation is closing).
+    3. Suggest simple coping strategies when the moment is right.
+    4. Normalize their experiences — help them feel they're not alone.
+    5. Continue conversations naturally — if the user answers your question, build on their answer. Don't restart topics.
+
+    === WHAT YOU MUST NOT DO ===
     - Do NOT provide medical diagnoses.
     - Do NOT prescribe medication or clinical treatment.
     - Do NOT act as a licensed therapist.
     - Do NOT give harmful, extreme, or absolute advice.
+    - Do NOT repeat the user's message back to them too much.
+    - Do NOT use formal/corporate language.
 
-    CRISIS HANDLING (VERY IMPORTANT):
-    If the user expresses:
-    - suicidal thoughts
-    - self-harm intentions
-    - feeling unsafe
-
-    You MUST:
-    1. Respond with empathy and urgency.
+    === CRISIS HANDLING (VERY IMPORTANT) ===
+    If the user expresses suicidal thoughts, self-harm intentions, or feeling unsafe:
+    1. Respond with genuine empathy and calm urgency.
     2. Encourage seeking real human help immediately.
-    3. Suggest contacting:
-    - trusted person (friend, family, counselor)
-    - local crisis hotline or emergency services
+    3. Suggest contacting: a trusted person (friend, family, counselor), local crisis hotline, or emergency services.
     4. Never leave the user unsupported or dismiss their feelings.
+    5. Use a serious, calm tone — no slang, no jokes.
 
-    BOUNDARIES:
-    - Be honest about limitations: “I’m here to support, but I’m not a professional.”
-    - Encourage professional help when needed.
+    === BOUNDARIES ===
+    - Be honest: 'I'm here for you, but I'm not a professional. If things feel really heavy, talking to a counselor could really help.'
+    - Encourage professional help when needed, but gently — not pushy.
 
-    PRIVACY & TRUST:
-    - Reinforce that this is a safe space.
+    === PRIVACY & TRUST ===
+    - This is a safe space. Reinforce that.
     - Do not ask for unnecessary personal or sensitive data.
 
-    CONVERSATION FLOW:
-    - Start warm and welcoming.
-    - Use follow-up questions to deepen understanding.
-    - Avoid overwhelming the user with too many suggestions at once.
-    - If the user is answering a question you previously asked, continue the conversation naturally and build on their answer. Do not restart or switch topics.
-
-    STRICT OUTPUT FORMAT:
-    - Use standard Markdown syntax for all formatting.
-    - If explaining or listing items, use bullet points (*) or numbered lists.
-    - IMPORTANT: Ensure there is a blank line (double newline) before and after every list to ensure correct rendering.
-    - Never return a wall of text longer than 3 sentences without breaking into a list or using proper paragraph breaks.
+    === OUTPUT FORMAT ===
+    - Use standard Markdown for formatting.
+    - Use bullet points (*) or numbered lists when listing items.
+    - Ensure a blank line before and after every list.
+    - Never return a wall of text longer than 3 sentences without breaking into a list or paragraph breaks.
     - Use **bold** for emphasis on key terms.
-    - Use proper spacing between paragraphs.
 
-    SPECIAL FOR STUDENTS:
-    - Understand common student struggles:
-    (academic pressure, deadlines, burnout, social anxiety, family expectations)
-    - Tailor advice specifically to student life.
-
-    SCOPE LIMITATION:
+    === SCOPE ===
     - You are ONLY for mental health and emotional support for students.
-    - If a user asks unrelated questions, gently redirect the conversation back to their well-being.
+    - If a user asks unrelated questions, gently redirect: 'Hmm that's a bit outside what I do 😅 pero if you ever want to talk about how you're feeling, I'm here.'
 
-    GOAL:
-    Help the user feel heard, supported, calmer, and slightly better than before the conversation.";
+    === SPECIAL FOR STUDENTS ===
+    - You understand student life: academic pressure, deadlines, burnout, thesis/capstone stress, social anxiety, family expectations, financial worries, org commitments.
+    - Tailor advice to student context.
+
+    === GOAL ===
+    Make the user feel heard, supported, and a little bit better than before they started talking to you.";
 
     public function chat(Request $request)
     {
@@ -205,12 +254,51 @@ class ChatController extends Controller {
             ]);
         }
 
-        // Check if message is related to mental health (Keyword Filter)
+        // ── STEP 1: Fetch recent conversation history BEFORE classification.
+        // History is needed both for context-aware topic classification and for
+        // the AI prompt. Fetching it here avoids a duplicate DB call later.
+        $history = ChatMessage::where('conversation_id', $conversationId)
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->reverse()
+            ->values(); // re-index after reverse
+
+        // ── STEP 2: Context-aware mental health topic check.
+        //
+        // OLD logic (broken):
+        //   Classify ONLY the current message in isolation.
+        //   Short replies like "yeah", "we drifted apart", "not really" fail the
+        //   keyword filter even when they are direct responses to emotional questions.
+        //
+        // NEW logic:
+        //   The fallback only fires when BOTH conditions are true:
+        //     (a) the current message has no mental health keywords on its own, AND
+        //     (b) the recent conversation history has no emotional context to inherit.
+        //
+        //   This preserves conversational continuity without removing the fallback.
+
         $isMentalHealthRelated = $this->checkForMentalHealthTopic($userMessage);
 
         if (!$isMentalHealthRelated) {
-            $refusalMessage = "I'm here to support mental health and well-being. Would you like to share how you're feeling?";
-            
+            // Before firing the fallback, check whether this message is a
+            // natural conversational reply continuing an emotional thread.
+            $isConversational = $this->isConversationalReply($userMessage);
+            $hasEmotionalContext = $this->hasRecentEmotionalContext($history);
+
+            if ($isConversational || $hasEmotionalContext) {
+                // The message is a short reply or the conversation is already
+                // emotionally loaded — let the AI handle it naturally.
+                $isMentalHealthRelated = true;
+            }
+        }
+
+        if (!$isMentalHealthRelated) {
+            // Only reached if the current message AND the recent conversation
+            // are both clearly unrelated to mental health / emotional topics.
+            $refusalMessage = "I'm here to support mental health and well-being. 
+            Would you like to share how you're feeling?";
+
             // Save refusal to DB
             ChatMessage::create([
                 'user_id' => $userId,
@@ -225,37 +313,46 @@ class ChatController extends Controller {
             ]);
         }
 
-        // Call AI Service (Gemini -> Groq -> OpenRouter Fallback)
+        // ── STEP 3: Build enriched message with context hints for the AI.
         $geminiApiKey = env('GEMINI_API_KEY');
         $groqApiKey = env('GROQ_API_KEY');
         $openRouterApiKey = env('OPENROUTER_API_KEY');
 
-        // Fetch conversation history (last 10 messages)
-        $history = ChatMessage::where('conversation_id', $conversationId)
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get()
-            ->reverse();
+        // Detect language, closure, and emotional tone for context injection
+        $detectedLanguage = $this->detectLanguage($userMessage);
+        $isClosure = $this->detectConversationClosure($userMessage);
+        $emotionalTone = $this->detectEmotionalTone($userMessage);
+
+        // Build context prefix to guide the AI's response style
+        $contextPrefix = "[CONTEXT: Language={$detectedLanguage} | Tone={$emotionalTone} | Closure=" . ($isClosure ? 'true' : 'false') . "]";
+        if ($isClosure) {
+            $contextPrefix .= "\n[The user appears to be ending the conversation. Reply warmly and briefly. Do NOT ask follow-up questions.]";
+        }
+        if ($emotionalTone === 'emotional') {
+            $contextPrefix .= "\n[The user seems emotionally distressed. Use a softer, supportive tone. Avoid jokes and slang.]";
+        }
+
+        $enrichedMessage = $contextPrefix . "\n\n" . $userMessage;
 
         $aiReply = '';
 
         try {
-            $aiReply = $this->callGemini($userMessage, $history, $geminiApiKey);
+            $aiReply = $this->callGemini($enrichedMessage, $history, $geminiApiKey);
             \Illuminate\Support\Facades\Log::info('AI Provider: Gemini');
         } catch (\Exception $e) {
             // retry once
             try {
-                $aiReply = $this->callGemini($userMessage, $history, $geminiApiKey);
+                $aiReply = $this->callGemini($enrichedMessage, $history, $geminiApiKey);
                 \Illuminate\Support\Facades\Log::info('AI Provider: Gemini');
             } catch (\Exception $e) {
                 // fallback to Groq
                 try {
-                    $aiReply = $this->callGroq($userMessage, $history, $groqApiKey);
+                    $aiReply = $this->callGroq($enrichedMessage, $history, $groqApiKey);
                     \Illuminate\Support\Facades\Log::info('AI Provider: Groq (fallback)');
                 } catch (\Exception $e) {
                     // fallback to OpenRouter (DeepSeek)
                     try {
-                        $aiReply = $this->callOpenRouter($userMessage, $history, $openRouterApiKey);
+                        $aiReply = $this->callOpenRouter($enrichedMessage, $history, $openRouterApiKey);
                         \Illuminate\Support\Facades\Log::info('AI Provider: OpenRouter DeepSeek (fallback)');
                     } catch (\Exception $e) {
                         $aiReply = "The system is currently experiencing high load. Please try again shortly.";
@@ -448,6 +545,136 @@ class ChatController extends Controller {
     }
 
     /**
+     * Detect if the message is a short conversational reply that cannot carry
+     * emotional keywords on its own but is clearly a response to a prior question.
+     *
+     * Examples: "yeah", "not really", "i guess", "we just drifted apart",
+     *           "she left", "not anymore", "i stopped trying", "kind of"
+     *
+     * These messages should NEVER trigger the fallback on their own — they
+     * inherit emotional context from the preceding conversation.
+     */
+    private function isConversationalReply(string $message): bool
+    {
+        $msg = trim(strtolower($message));
+        $wordCount = str_word_count($msg);
+
+        // ── Rule 1: Very short messages (1–4 words) are almost always replies.
+        // Single-word and two-word responses are almost never topic openers.
+        if ($wordCount <= 4) {
+            return true;
+        }
+
+        // ── Rule 2: Common indirect / contextual response patterns.
+        // These phrases signal that the user is continuing a conversation thread
+        // rather than starting a new, unrelated one.
+        $conversationalPatterns = [
+            // Agreement / acknowledgement
+            'yeah', 'yep', 'yup', 'nope', 'nah', 'no', 'yes', 'kind of',
+            'sort of', 'i guess', 'i think so', 'maybe', 'not really',
+            'i suppose', 'i don\'t know', 'idk', 'not sure', 'probably',
+
+            // Indirect emotional continuations
+            'we drifted apart', 'she left', 'he left', 'they left',
+            'we ended it', 'it ended', 'we broke up', 'just drifted',
+            'not anymore', 'not really anymore', 'i stopped trying',
+            'i gave up', 'we stopped', 'things changed', 'it just happened',
+            'i don\'t know why', 'i have no idea', 'i can\'t explain',
+
+            // Soft emotional disclosures
+            'a little', 'a bit', 'sometimes', 'most of the time',
+            'all the time', 'lately', 'recently', 'for a while',
+            'i\'ve been', 'been feeling', 'not great', 'not good',
+            'pretty bad', 'really bad', 'not okay', 'same as usual',
+
+            // Tagalog conversational continuations
+            'oo nga', 'ganon nga', 'ganun', 'ganon', 'ewan ko',
+            'hindi ko alam', 'di ko alam', 'basta', 'siguro',
+            'medyo', 'parang ganon', 'kaya nga', 'oo naman',
+            'hindi na', 'wala na', 'tapos na', 'ayun nga',
+        ];
+
+        foreach ($conversationalPatterns as $pattern) {
+            if (str_contains($msg, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Scan recent conversation history to determine whether the active
+     * conversation is emotionally or mentally health related.
+     *
+     * Checks BOTH the user's past messages AND the AI's recent replies.
+     * If the AI has been asking emotional/relationship/stress questions,
+     * any follow-up from the user should be treated as contextually valid.
+     *
+     * @param  \Illuminate\Support\Collection $history  Recent ChatMessage records
+     * @return bool  true if the conversation has emotional context
+     */
+    private function hasRecentEmotionalContext($history): bool
+    {
+        if ($history->isEmpty()) {
+            return false;
+        }
+
+        // Emotional topic signals to look for in recent messages.
+        // These are intentionally broad — we want to cast a wide net so that
+        // any emotionally-adjacent conversation thread is preserved.
+        $emotionalSignals = [
+            // Core emotions
+            'feel', 'felt', 'feeling', 'emotion', 'mood',
+            'sad', 'happy', 'angry', 'scared', 'afraid', 'hurt', 'pain',
+            'lonely', 'alone', 'empty', 'numb', 'lost', 'hopeless',
+
+            // Stress / mental health vocabulary
+            'stress', 'stressed', 'anxiety', 'anxious', 'worry', 'worried',
+            'overwhelm', 'burnout', 'depress', 'panic', 'exhaust',
+            'mental health', 'wellbeing', 'cope', 'coping', 'breakdown',
+
+            // Relationship context
+            'relationship', 'breakup', 'broke up', 'drifted', 'apart',
+            'friend', 'family', 'partner', 'girlfriend', 'boyfriend',
+            'left', 'ended', 'together', 'miss', 'missing', 'heartbreak',
+            'love', 'dating', 'toxic', 'fight', 'argument',
+
+            // School / life pressure
+            'study', 'exam', 'grade', 'fail', 'capstone', 'thesis',
+            'deadline', 'pressure', 'school', 'college', 'professor',
+            'internship', 'defense', 'graduation',
+
+            // Generic personal distress
+            'struggling', 'hard time', 'difficult', 'tough', 'problem',
+            'issue', 'situation', 'going through', 'dealing with',
+            'i\'ve been', 'been going', 'lately', 'recently',
+
+            // Tagalog emotional signals
+            'pagod', 'lungkot', 'malungkot', 'nalulungkot', 'naiiyak',
+            'kinakabahan', 'nahihirapan', 'hirap', 'problema', 'relasyon',
+            'nagbreak', 'nag-break', 'naghiwalay', 'nawala', 'miss kita',
+            'mag-isa', 'stressed', 'anxious', 'ewan', 'hindi ko kaya',
+        ];
+
+        // Check the last 5 exchanges (10 messages) for emotional signals.
+        // We scan both sides: what the user said AND what the AI replied with.
+        foreach ($history as $msg) {
+            $userText  = strtolower($msg->message ?? '');
+            $botText   = strtolower($msg->reply ?? '');
+            $combined  = $userText . ' ' . $botText;
+
+            foreach ($emotionalSignals as $signal) {
+                if (str_contains($combined, $signal)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Checks if the message contains words related to mental health or academics.
      */
     private function checkForMentalHealthTopic(string $message)
@@ -455,10 +682,10 @@ class ChatController extends Controller {
     $messageLower = strtolower($message);
     $isMentalHealth = false;
 
-    // 1. Allow short emotional messages
+    // 1. Allow short emotional messages and common Tagalog/Taglish expressions
     if (
         str_word_count($messageLower) <= 8 ||
-        preg_match('/feel|feeling|talk|alone|sad|tired|lost|help|stress|anxious|study|studies|capstone|exam|assignment|school|defense|project/i', $messageLower)
+        preg_match('/feel|feeling|talk|alone|sad|tired|lost|help|stress|anxious|study|studies|capstone|exam|assignment|school|defense|project|pagod|hirap|lungkot|kabahan|iyak|problema|kausap|salamat|thank|sige|okay\s?na|gets|vent|rant|awit/i', $messageLower)
     ) {
         $isMentalHealth = true;
     }
@@ -554,5 +781,146 @@ class ChatController extends Controller {
             // Silently fail — emotion logging is non-critical
             \Illuminate\Support\Facades\Log::warning('Emotion classification failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Detect the language of the user's message.
+     * Returns 'english', 'tagalog', or 'taglish'.
+     */
+    private function detectLanguage(string $message): string
+    {
+        $messageLower = strtolower($message);
+        $words = preg_split('/\s+/', $messageLower);
+        $totalWords = count($words);
+
+        if ($totalWords === 0) {
+            return 'english';
+        }
+
+        // Common Tagalog words / particles
+        $tagalogMarkers = [
+            'ako', 'ko', 'mo', 'ka', 'na', 'ng', 'nang', 'ang', 'sa', 'si',
+            'naman', 'kasi', 'pero', 'gusto', 'paano', 'bakit', 'oo', 'hindi',
+            'alam', 'lang', 'din', 'rin', 'nga', 'ba', 'po', 'opo', 'siya',
+            'niya', 'tayo', 'kami', 'sila', 'nila', 'yung', 'yun', 'dito',
+            'doon', 'ito', 'iyon', 'talaga', 'sobra', 'grabe', 'sana',
+            'pag', 'kung', 'kapag', 'dahil', 'kaya', 'pala', 'eh', 'diba',
+            'tapos', 'tsaka', 'mga', 'wala', 'meron', 'may', 'nag', 'mag',
+            'pagod', 'hirap', 'salamat', 'ingat', 'ayos', 'gets', 'sige',
+            'beh', 'awit', 'char', 'eme', 'omsim',
+        ];
+
+        // Common English words
+        $englishMarkers = [
+            'the', 'is', 'am', 'are', 'was', 'were', 'been', 'be', 'have',
+            'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+            'should', 'can', 'may', 'might', 'shall', 'must', 'need',
+            'about', 'just', 'really', 'very', 'much', 'also', 'too',
+            'because', 'since', 'when', 'while', 'after', 'before',
+            'feeling', 'stressed', 'anxious', 'tired', 'okay', 'fine',
+            'help', 'talk', 'feel', 'think', 'know', 'want', 'like',
+            'with', 'from', 'that', 'this', 'what', 'which', 'where',
+            'how', 'why', 'who', 'whom', 'thank', 'thanks', 'sorry',
+        ];
+
+        $tagalogCount = 0;
+        $englishCount = 0;
+
+        foreach ($words as $word) {
+            $cleanWord = preg_replace('/[^a-z]/', '', $word);
+            if (in_array($cleanWord, $tagalogMarkers)) {
+                $tagalogCount++;
+            }
+            if (in_array($cleanWord, $englishMarkers)) {
+                $englishCount++;
+            }
+        }
+
+        // Both present → Taglish
+        if ($tagalogCount > 0 && $englishCount > 0) {
+            return 'taglish';
+        }
+
+        // Predominantly Tagalog
+        if ($tagalogCount > 0 && $englishCount === 0) {
+            return 'tagalog';
+        }
+
+        return 'english';
+    }
+
+    /**
+     * Detect if the user's message signals conversation closure.
+     * Only triggers on short messages to avoid false positives.
+     */
+    private function detectConversationClosure(string $message): bool
+    {
+        $messageLower = trim(strtolower($message));
+        $wordCount = str_word_count($messageLower);
+
+        // Only check short messages (≤ 10 words) to avoid false positives
+        if ($wordCount > 10) {
+            return false;
+        }
+
+        $closurePhrases = [
+            'thank you', 'thanks', 'thank u', 'ty', 'tysm',
+            'okay na', 'gets', 'gets na', 'noted', 'noted po',
+            'ayos na', 'resolved na', 'resolved', 'okay na po',
+            'sige', 'sige po', 'sige salamat', 'sige thanks',
+            'salamat', 'salamat po', 'maraming salamat',
+            'bye', 'goodbye', 'see you', 'ingat',
+            'ok thanks', 'ok ty', 'alright thanks',
+            'got it', 'understood', 'copy',
+        ];
+
+        foreach ($closurePhrases as $phrase) {
+            if (str_contains($messageLower, $phrase)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Detect the emotional tone of the user's message.
+     * Returns 'casual', 'emotional', or 'crisis'.
+     * Note: Actual crisis is already handled by checkForCrisis().
+     * This covers the spectrum between casual and crisis.
+     */
+    private function detectEmotionalTone(string $message): string
+    {
+        $messageLower = strtolower($message);
+
+        // Emotional / distressed indicators
+        $emotionalPatterns = [
+            // English emotional expressions
+            'so tired', 'so stressed', 'so overwhelmed', 'so anxious',
+            'can\'t do this', 'can\'t take it', 'can\'t handle', 'can\'t cope',
+            'breaking down', 'falling apart', 'struggling', 'suffering',
+            'crying', 'i cried', 'been crying', 'tears',
+            'hurting', 'it hurts', 'painful', 'in pain',
+            'scared', 'terrified', 'afraid', 'panicking',
+            'lonely', 'so alone', 'no one cares', 'nobody cares',
+            'exhausted', 'burned out', 'drained', 'empty inside',
+            'i hate myself', 'hate my life', 'what\'s the point',
+
+            // Tagalog / Taglish emotional expressions
+            'sobrang pagod', 'sobrang hirap', 'sobrang bigat',
+            'nahihirapan', 'naiiyak', 'umiiyak', 'nalulungkot',
+            'natatakot', 'kinakabahan', 'nasasaktan',
+            'ang sakit', 'ang hirap', 'ang bigat',
+            'di ko na kaya', 'ayoko na', 'pagod na pagod',
+            'wala na akong gana', 'walang kwenta',
+        ];
+
+        foreach ($emotionalPatterns as $pattern) {
+            if (str_contains($messageLower, $pattern)) {
+                return 'emotional';
+            }
+        }
+
+        return 'casual';
     }
 }

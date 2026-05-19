@@ -31,6 +31,8 @@ class User extends Authenticatable {
         'program',
         'year_level',
         'phone_number',
+        'age',
+        'gender',
         'profile_image',
         'terms_accepted_at',
     ];

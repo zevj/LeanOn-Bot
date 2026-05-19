@@ -34,7 +34,14 @@
 
 .login-form {
     width: 100%;
-    max-width: 600px;
+    max-width: 580px;
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    box-sizing: border-box;
+    transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
 }
 
 .login-title {
@@ -122,7 +129,7 @@ input[type="password"]::-webkit-textfield-decoration-container {
     font-size: 12px;
     color: #242424;
     text-decoration: none;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
     display: block;
     text-align: right;
 }
@@ -130,6 +137,42 @@ input[type="password"]::-webkit-textfield-decoration-container {
 .forgot-password:hover {
     text-decoration: underline;
     color: #049516;
+}
+
+/* ── Forgot password + terms agreement row ── */
+.forgot-terms-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+ 
+.terms-agreement {
+  font-size: 11.5px;
+  color: #7a9676;
+  line-height: 1.5;
+  margin: 0;
+  padding-bottom: 10px;
+  text-align: center;
+}
+ 
+.terms-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  color: #0E6008;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+ 
+.terms-link:hover {
+  color: #0b5006;
+  opacity: 0.85;
 }
 
 .login-button {
@@ -539,11 +582,11 @@ input[type="password"]::-webkit-textfield-decoration-container {
     /* Left panel goes full-width, centered */
     .login-form {
         width: 100%;
-        max-width: 480px;
-        background-color: #ffffff;
-        padding: 40px 40px;
-        border-radius: 10px;
-        box-shadow: 0px 3px 10px rgba(0, 0, 0, 0.2);
+        max-width: 440px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        box-sizing: border-box;
     }
 
     .left-container {
@@ -563,14 +606,6 @@ input[type="password"]::-webkit-textfield-decoration-container {
     .login-subtitle {
         text-align: center;
         padding-bottom: 1.8rem;
-    }
-
-    .login-form {
-        width: 100%;
-        max-width: 420px;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
     }
 
     .form-group {
@@ -675,4 +710,109 @@ input[type="password"]::-webkit-textfield-decoration-container {
         height: 48px;
         font-size: 13px;
     }
+}
+
+/* ── DARK MODE OVERRIDES ── */
+[data-theme="dark"] .login-container {
+    background-color: var(--bg-color);
+}
+
+[data-theme="dark"] .left-container {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .login-form {
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
+}
+
+[data-theme="dark"] .input-wrapper input {
+    background-color: var(--surface-color);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+[data-theme="dark"] .input-wrapper input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+[data-theme="dark"] .email-icon,
+[data-theme="dark"] .password-icon,
+[data-theme="dark"] .input-wrapper .eye-icon {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .forgot-password {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .forgot-password:hover {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .divider span {
+    background: var(--border-color);
+}
+
+[data-theme="dark"] .divider p {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .google-signin {
+    background: var(--surface-color);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+[data-theme="dark"] .google-signin:hover {
+    background: var(--surface-hover);
+}
+
+[data-theme="dark"] .new-student {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .new-student a {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .overlay {
+    background: linear-gradient(to right, var(--bg-color) 0%, rgba(10, 65, 6, 0.6) 100%);
+}
+
+[data-theme="dark"] .orb-1 {
+    background: radial-gradient(circle, rgba(22, 163, 74, 0.12) 0%, rgba(11, 17, 32, 0.05) 70%, transparent 100%);
+}
+
+[data-theme="dark"] .orb-2 {
+    background: radial-gradient(circle, rgba(134, 239, 172, 0.1) 0%, rgba(11, 17, 32, 0.05) 70%, transparent 100%);
+}
+
+[data-theme="dark"] .terms-agreement {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .terms-link {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .terms-link:hover {
+    color: var(--secondary-color);
+}
+
+[data-theme="dark"] input:-webkit-autofill,
+[data-theme="dark"] input:-webkit-autofill:hover,
+[data-theme="dark"] input:-webkit-autofill:focus,
+[data-theme="dark"] input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px var(--surface-color) inset !important;
+    box-shadow: 0 0 0 1000px var(--surface-color) inset !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
 }

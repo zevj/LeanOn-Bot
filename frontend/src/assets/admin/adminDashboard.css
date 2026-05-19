@@ -21,55 +21,124 @@
   flex: 1;
   overflow-y: auto;
   padding: 2rem 2.5rem 3rem;
+  scroll-behavior: smooth;
 }
 
-/* ── Header ── */
+/* ── Header Wrapper ── */
+.page-header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+/* ── Header Title ── */
 .header-title {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  margin-bottom: 2rem;
 }
 
 .title {
   font-size: 30px;
   font-weight: 700;
-  color: var(--primary-color);
+  color: var(--primary-color, #111);
   letter-spacing: -0.3px;
+  margin: 0;
 }
 
 .subtext {
   font-size: 13px;
-  color: #999;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ── Download Button ── */
+.download-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #0E6008 0%, #16a34a 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(14, 96, 8, 0.25);
+}
+
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(14, 96, 8, 0.35);
+    background: linear-gradient(135deg, #0b4e06 0%, #15803d 100%);
+}
+
+.download-btn i {
+    font-size: 20px;
+}
+
+.download-btn:hover {
+    background-color: #0a4806;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(14, 96, 8, 0.25), 0 2px 4px rgba(14, 96, 8, 0.15);
+}
+
+.download-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(14, 96, 8, 0.15);
+}
+
+.download-btn i {
+    font-size: 18px;
 }
 
 /* ── Stat cards ── */
 .whole-stat-card {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
-  margin-bottom: 1.75rem;
-  padding-right: 0;          /* remove old fixed padding */
+  gap: 1.25rem;
+  margin-bottom: 2rem;
 }
 
 .high-stat-card,
 .severe-stat-card,
 .stat-card {
-  background: #fff;
+  background: linear-gradient(145deg, #ffffff, #fcfcfc);
   border-radius: 14px;
-  border: 1px solid #efefef;
+  border: 1px solid #e5e7eb;
   border-left: 4px solid;
-  padding: 1.1rem 1.2rem;
+  padding: 1.25rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 96px;
-  width: auto;               /* remove old fixed width */
-  height: 100px;
-  box-shadow: none;
-  transition: border-color 0.2s;
+  height: 110px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.01);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  overflow: hidden;
+}
+
+/* Entrance Animation for Stat Cards */
+.stat-card-animate {
+    animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes fadeSlideUp {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.high-stat-card:hover,
+.severe-stat-card:hover,
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05), 0 4px 8px rgba(0, 0, 0, 0.02);
 }
 
 /* Left content block */
@@ -78,68 +147,184 @@
 .stat-card-title-moderate {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 0;                /* remove old padding */
+  gap: 6px;
+  z-index: 2;
 }
 
 .title-stat {
-  font-size: 12px;
-  font-weight: 500;
-  color: #999;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  margin: 0;
 }
 
 .stat-number {
-  font-size: 30px;
-  font-weight: 600;
-  color: #111;
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  margin: 0;
 }
 
 /* Icons */
 .icon-bg-high,
 .icon-bg-severe,
 .icon-bg-moderate {
-  position: static;          /* remove old absolute positioning */
-  width: 46px;
-  height: 46px;
-  border-radius: 10px;
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
   border: 1.5px solid;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: none;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 2;
+}
+
+/* Hover effect targets the icon container inside the card */
+.high-stat-card:hover .icon-bg-high,
+.severe-stat-card:hover .icon-bg-severe,
+.stat-card:hover .icon-bg-moderate {
+    transform: scale(1.15) rotate(5deg);
 }
 
 .icon-bg-high i,
 .icon-bg-severe i,
 .icon-bg-moderate i {
-  font-size: 1.35rem;
+  font-size: 1.5rem;
 }
 
-/* Blue — Total Interactions */
+/* Colors */
 .high-stat-card   { border-left-color: #185FA5; }
 .high-stat-card:hover { border-color: #185FA5; }
-.icon-bg-high     { background: #e6f1fb; border-color: #185FA5; color: #185FA5; }
+.icon-bg-high     { background: #eff6ff; border-color: #bfdbfe; color: #185FA5; }
 
-/* Green — Active Users */
 .severe-stat-card { border-left-color: #0E6008; }
 .severe-stat-card:hover { border-color: #0E6008; }
-.icon-bg-severe   { background: #eaf3de; border-color: #0E6008; color: #0E6008; }
+.icon-bg-severe   { background: #f0fdf4; border-color: #bbf7d0; color: #0E6008; }
 
-/* Amber — Average Session */
 .stat-card        { border-left-color: #854F0B; }
 .stat-card:hover  { border-color: #854F0B; }
-.icon-bg-moderate { background: #faeeda; border-color: #854F0B; color: #854F0B; }
+.icon-bg-moderate { background: #fffbeb; border-color: #fef08a; color: #854F0B; }
 
 /* ── Graph area ── */
 .graph-stats {
   display: flex;
   justify-content: space-between;
+  gap: 1.5rem; 
+  animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: 0.4s;
 }
 
-/* Each chart component should have this wrapper — add it in DailyInteractionsChart.vue and MonthlyTrendChart.vue */
-/* .chart-card is applied inside those components, see below */
+.chart-wrapper {
+    flex: 1;
+    min-width: 0; /* Prevents flex flexbox blowout on resizing */
+}
+
+/* ── Upgraded Loading State ── */
+.graph-loading-state {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    padding: 5rem 0;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px dashed #e5e7eb;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(14, 96, 8, 0.1);
+    border-left-color: #0E6008;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ── Advanced Responsive Breakpoints ── */
+
+/* Tablet / Smaller Laptops */
+@media (max-width: 1024px) {
+    .main-container {
+        padding: 2rem 1.5rem 2.5rem;
+    }
+    
+    .whole-stat-card {
+        /* Changes to 2 columns, last item spans full width if odd */
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .graph-stats {
+        flex-direction: column;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .main-container {
+        padding: 1.5rem 1rem 2rem;
+    }
+
+    .page-header-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .whole-stat-card {
+        grid-template-columns: 1fr; /* Stack vertically */
+        gap: 1rem;
+    }
+
+    .high-stat-card,
+    .severe-stat-card,
+    .stat-card {
+        height: auto; /* Allow card to adjust to content */
+        padding: 1rem 1.25rem;
+    }
+
+    .stat-number {
+        font-size: 28px;
+    }
+    
+    .icon-bg-high,
+    .icon-bg-severe,
+    .icon-bg-moderate {
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* Small Mobile Devices */
+@media (max-width: 480px) {
+    .main-container {
+        padding: 1rem 1rem 1.5rem;
+    }
+
+    .header-title .title {
+        font-size: 24px;
+    }
+    
+    .download-btn {
+        width: 100%; /* Full width button for easier tapping on small screens */
+        justify-content: center;
+        padding: 12px;
+    }
+}

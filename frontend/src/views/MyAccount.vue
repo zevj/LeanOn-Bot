@@ -42,6 +42,18 @@
                                     <i class='bx bx-phone'></i>
                                     <span>Phone:</span> <p>{{ profile.phone_number || 'N/A' }}</p>
                                 </div>
+                                
+                                <!-- Age Info -->
+                                <div class="info-item">
+                                    <i class='bx bx-cake'></i>
+                                    <span>Age:</span> <p>{{ profile.age || 'N/A' }}</p>
+                                </div>
+
+                                <!-- Gender Info -->
+                                <div class="info-item">
+                                    <i class='bx bx-user-pin'></i>
+                                    <span>Gender:</span> <p>{{ profile.gender || 'N/A' }}</p>
+                                </div>
 
                                 <div class="info-item">
                                     <i class='bx bx-calendar'></i>
@@ -85,7 +97,19 @@
                                     </div>
                                 </div>
 
-                                <!-- Row 2: Email | Phone -->
+                                <!-- Row 2: Age | Gender -->
+                                <div class="input-row">
+                                    <div class="name-input">
+                                        <label class="input-title">Age</label>
+                                        <input type="text" class="input-info" v-model="form.age" readonly>
+                                    </div>
+                                    <div class="name-input">
+                                        <label class="input-title">Gender</label>
+                                        <input type="text" class="input-info" v-model="form.gender" readonly>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: Email | Phone -->
                                 <div class="input-row">
                                     <div class="name-input">
                                         <label class="input-title">Email</label>
@@ -93,18 +117,11 @@
                                     </div>
                                     <div class="name-input">
                                         <label class="input-title">Phone</label>
-                                        <input 
-                                            type="tel" 
-                                            class="input-info" 
-                                            v-model="form.phone_number"
-                                            @input="validatePhone"
-                                            placeholder="Enter your phone number..."
-                                            maxlength="11"
-                                        />
+                                        <input type="text" class="input-info" v-model="form.phone_number" readonly>
                                     </div>
                                 </div>
 
-                                <!-- Row 3: Department | Year Level -->
+                                <!-- Row 4: Department | Year Level -->
                                 <div class="input-row">
                                     <div class="name-input">
                                         <label class="input-title">Department</label>
@@ -116,9 +133,9 @@
                                     </div>
                                 </div>
 
-                                <!-- Row 4: Program (full width) -->
+                                <!-- Row 5: Program (full width) -->
                                 <div class="input-row">
-                                    <div class="name-input">
+                                    <div class="name-input full-width-input">
                                         <label class="input-title">Program</label>
                                         <input type="text" class="input-info" v-model="form.program" readonly>
                                     </div>
@@ -373,11 +390,6 @@ async function handleUpload(event) {
     } catch (error) {
         toast.error(error.response?.data?.message || "Failed to upload image")
     }
-}
-
-// Validation
-function validatePhone() {
-    form.value.phone_number = form.value.phone_number.replace(/\D/g, '').slice(0, 11)
 }
 
 function handleOtpInput(event, index) {

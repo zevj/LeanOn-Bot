@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { encryptPayload, decryptPayload } from '@/utils/crypto.js'
 
 // import vue3GoogleLogin from 'vue3-google-login'
 import App from './App.vue'
@@ -22,11 +23,64 @@ app.mount('#app')
 
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
-// 🔐 attach token automatically to every request
-axios.interceptors.request.use(config => {
+// 🔐 Axios Interceptors for E2E Encryption
+axios.interceptors.request.use(async config => {
+  // Attach token automatically to every request
   const token = localStorage.getItem('token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+
+  // Check if we should encrypt the request body
+  // We do not encrypt multipart/form-data (FormData) or requests without body
+  const isFormdata = config.data instanceof FormData
+  const hasBody = config.data !== undefined && config.data !== null
+
+  if (!isFormdata) {
+    config.headers['X-Encrypted'] = 'true'
+  }
+
+  if (hasBody && !isFormdata) {
+    try {
+      const encrypted = await encryptPayload(config.data)
+      config.data = { payload: encrypted }
+    } catch (err) {
+      console.error('Request encryption failed:', err)
+      return Promise.reject(err)
+    }
+  }
+
   return config
+}, error => {
+  return Promise.reject(error)
+})
+
+axios.interceptors.response.use(async response => {
+  const isEncryptedHeader = response.headers['x-encrypted'] === 'true'
+  const isEncryptedPayload = response.data && typeof response.data === 'object' && response.data.payload
+
+  if (isEncryptedHeader || isEncryptedPayload) {
+    try {
+      const decrypted = await decryptPayload(response.data.payload)
+      response.data = decrypted
+    } catch (err) {
+      console.error('Response decryption failed:', err)
+      return Promise.reject({
+        message: 'Failed to decrypt secure response payload',
+        response
+      })
+    }
+  }
+  return response
+}, async error => {
+  // Handle decryption for error responses (e.g. 422 validation, 401 unauthenticated)
+  if (error.response && error.response.data && error.response.data.payload) {
+    try {
+      const decrypted = await decryptPayload(error.response.data.payload)
+      error.response.data = decrypted
+    } catch (err) {
+      console.error('Failed to decrypt error response payload:', err)
+    }
+  }
+  return Promise.reject(error)
 })

@@ -1,35 +1,37 @@
 <template>
-  <div class="chart-container">
+  <div class="chart-container fade-in">
 
     <!-- HEADER -->
     <div class="chart-header">
-      <div>
+      <div class="header-text">
         <p class="eyebrow">Weekly Breakdown</p>
         <h3>Trends Over Time</h3>
       </div>
-      <div class="legend">
-        <span
-          v-for="d in chartData.datasets"
-          :key="d.label"
-          class="legend-item"
-          :class="{ dimmed: hiddenSets.has(d.label) }"
-          @click="toggleDataset(d.label)"
+      
+      <!-- FILTER ROW -->
+      <div class="filter-row">
+        <button
+          v-for="f in filters"
+          :key="f.key"
+          :class="['filter-btn', { active: selectedFilter === f.key }]"
+          @click="selectFilter(f.key)"
         >
-          <span class="legend-dot" :style="{ background: d.borderColor }"></span>
-          {{ d.label }}
-        </span>
+          {{ f.label }}
+        </button>
       </div>
     </div>
 
-    <!-- FILTER ROW -->
-    <div class="filter-row">
+    <!-- CUSTOM LEGEND (Interactive Pills) -->
+    <div class="legend-container">
       <button
-        v-for="f in filters"
-        :key="f.key"
-        :class="['filter-btn', { active: selectedFilter === f.key }]"
-        @click="selectFilter(f.key)"
+        v-for="d in chartData.datasets"
+        :key="d.label"
+        class="legend-pill"
+        :class="{ dimmed: hiddenSets.has(d.label) }"
+        @click="toggleDataset(d.label)"
       >
-        {{ f.label }}
+        <span class="legend-dot" :style="{ background: d.borderColor, boxShadow: `0 0 6px ${d.borderColor}` }"></span>
+        {{ d.label }}
       </button>
     </div>
 
@@ -89,13 +91,13 @@ const ranges = {
 
 const emotionColors = {
   positive:    { border: '#0A9569', fill: 'rgba(10,149,105,1)' },
-  sad:         { border: '#0066FF', fill: 'rgba(0,102,255,1)' },
-  anxious:     { border: '#9F7A00', fill: 'rgba(159,122,0,1)' },
-  stressed:    { border: '#DC2625', fill: 'rgba(220,38,37,1)' },
-  overwhelmed: { border: '#8B5CF6', fill: 'rgba(139,92,246,1)' },
-  lonely:      { border: '#EC4899', fill: 'rgba(236,72,153,1)' },
-  angry:       { border: '#F97316', fill: 'rgba(249,115,22,1)' },
-  hopeful:     { border: '#06B6D4', fill: 'rgba(6,182,212,1)' },
+  sad:         { border: '#3b82f6', fill: 'rgba(59,130,246,1)' },
+  anxious:     { border: '#eab308', fill: 'rgba(234,179,8,1)' },
+  stressed:    { border: '#ef4444', fill: 'rgba(239,68,68,1)' },
+  overwhelmed: { border: '#8b5cf6', fill: 'rgba(139,92,246,1)' },
+  lonely:      { border: '#ec4899', fill: 'rgba(236,72,153,1)' },
+  angry:       { border: '#f97316', fill: 'rgba(249,115,22,1)' },
+  hopeful:     { border: '#06b6d4', fill: 'rgba(6,182,212,1)' },
 }
 
 const gradientFill = (color) => (context) => {
@@ -103,20 +105,19 @@ const gradientFill = (color) => (context) => {
   const { ctx, chartArea } = chart
   if (!chartArea) return null
   const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
-  gradient.addColorStop(0, color.replace('1)', '0.15)'))
-  gradient.addColorStop(1, color.replace('1)', '0)'))
+  gradient.addColorStop(0, color.replace('1)', '0.2)'))
+  gradient.addColorStop(1, color.replace('1)', '0.0)'))
   return gradient
 }
 
 const buildDatasets = () => {
   const data = props.weeklyData
   if (!data || Object.keys(data).length === 0) {
-    // Fallback: empty datasets
     return []
   }
 
   return Object.keys(data).map(emotion => {
-    const color = emotionColors[emotion] || { border: '#888', fill: 'rgba(136,136,136,1)' }
+    const color = emotionColors[emotion] || { border: '#9ca3af', fill: 'rgba(156,163,175,1)' }
     return {
       label: emotion.charAt(0).toUpperCase() + emotion.slice(1),
       data: data[emotion],
@@ -137,13 +138,13 @@ const chartData = computed(() => {
       borderColor: d.borderColor,
       backgroundColor: gradientFill(d.fillColor),
       fill: true,
-      tension: 0.4,
-      borderWidth: 2.5,
+      tension: 0.45, /* Smoother curves */
+      borderWidth: 3, /* Bolder lines */
       pointRadius: 4,
-      pointHoverRadius: 6,
-      pointBackgroundColor: '#fff',
+      pointHoverRadius: 7,
+      pointBackgroundColor: '#ffffff',
       pointBorderColor: d.borderColor,
-      pointBorderWidth: 2
+      pointBorderWidth: 2.5
     }))
   }
 })
@@ -173,22 +174,23 @@ onMounted(() => { chartKey.value++ })
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
-  animation: { duration: 450, easing: 'easeOutQuart' },
+  animation: { duration: 600, easing: 'easeOutQuart' },
   plugins: {
-    legend: { display: false },
+    legend: { display: false }, /* Disabled native legend to use custom pills */
     tooltip: {
       mode: 'index',
       intersect: false,
-      backgroundColor: '#fff',
-      borderColor: '#e5e7eb',
+      backgroundColor: 'rgba(17, 24, 39, 0.95)', /* Dark glassmorphism tooltip */
+      borderColor: 'rgba(255, 255, 255, 0.1)',
       borderWidth: 1,
-      titleColor: '#111',
-      bodyColor: '#555',
-      padding: 12,
-      cornerRadius: 10,
-      boxPadding: 5,
-      titleFont: { size: 11, weight: '600' },
-      bodyFont: { size: 12 }
+      titleColor: '#f3f4f6',
+      bodyColor: '#e5e7eb',
+      padding: 14,
+      cornerRadius: 12,
+      boxPadding: 6,
+      usePointStyle: true,
+      titleFont: { size: 13, weight: 'bold', family: "'DM Sans', sans-serif" },
+      bodyFont: { size: 12, family: "'DM Sans', sans-serif" }
     }
   },
   interaction: { mode: 'index', intersect: false },
@@ -196,12 +198,16 @@ const chartOptions = {
     y: {
       beginAtZero: true,
       max: 100,
-      grid: { color: 'rgba(0,0,0,0.04)', drawTicks: false },
+      grid: { 
+        color: 'rgba(0,0,0,0.04)', 
+        drawBorder: false,
+        borderDash: [5, 5] /* Clean dashed grid lines */
+      },
       border: { display: false },
       ticks: {
-        color: '#bbb',
-        font: { size: 11 },
-        padding: 8,
+        color: '#9ca3af',
+        font: { size: 11, family: "'DM Sans', sans-serif" },
+        padding: 10,
         maxTicksLimit: 6,
         callback: (v) => v + '%'
       }
@@ -209,124 +215,227 @@ const chartOptions = {
     x: {
       grid: { display: false },
       border: { display: false },
-      ticks: { color: '#bbb', font: { size: 11 }, padding: 6 }
+      ticks: { 
+        color: '#6b7280', 
+        font: { size: 12, family: "'DM Sans', sans-serif" }, 
+        padding: 8 
+      }
     }
   }
 }
 </script>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+
+/* ── Container ── */
 .chart-container {
   width: 100%;
-  max-width: 790px;
-  height: 610px;
-  padding: 22px 24px 18px;
-  border-radius: 18px;
-  background: #fff;
-  border: 1.5px solid #ebebeb;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  height: 600px; /* Fluid height, scales down in media queries */
+  padding: 1.75rem 2rem;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff, #fafafa);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  gap: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  font-family: 'DM Sans', system-ui, sans-serif;
 }
 
 .chart-container:hover {
-  border-color: rgba(14, 96, 8, 0.3);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.08);
 }
 
-/* HEADER */
+.fade-in {
+  animation: fadeSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+@keyframes fadeSlideUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header ── */
 .chart-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .eyebrow {
-  margin: 0 0 2px;
-  font-size: 10.5px;
-  font-weight: 600;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #ccc;
+  color: #9ca3af;
 }
 
 .chart-header h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
-  color: #111;
+  color: #111827;
   letter-spacing: -0.2px;
 }
 
-/* LEGEND */
-.legend {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #555;
-  cursor: pointer;
-  user-select: none;
-  transition: opacity 0.15s ease;
-}
-
-.legend-item.dimmed {
-  opacity: 0.35;
-}
-
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-/* FILTER ROW */
+/* ── Filter Row ── */
 .filter-row {
   display: flex;
-  gap: 6px;
+  gap: 8px;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 10px;
 }
 
 .filter-btn {
-  padding: 5px 14px;
+  padding: 6px 16px;
   border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
-  background: #fafafa;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: #777;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'DM Sans', sans-serif;
 }
 
 .filter-btn:hover {
-  border-color: #c5d9c4;
-  color: #3a6b37;
-  background: #f5fbf4;
+  color: #374151;
 }
 
 .filter-btn.active {
-  background: #0E6008;
-  border-color: #0E6008;
-  color: #fff;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(14, 96, 8, 0.25);
+  background: #ffffff;
+  color: #0E6008;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* CHART */
+/* ── Legend (Interactive Pills) ── */
+.legend-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+}
+
+.legend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.legend-pill:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.legend-pill.dimmed {
+  opacity: 0.4;
+  filter: grayscale(80%);
+  background: #f3f4f6;
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+/* ── Chart Wrapper ── */
 .chart-wrapper {
   flex: 1;
-  min-height: 0;
+  min-height: 250px; /* Ensures chart doesn't collapse to 0 on tiny screens */
+  width: 100%;
+}
+
+/* ── 📱 RESPONSIVE BREAKPOINTS ── */
+
+@media (max-width: 1024px) {
+  .chart-container {
+    height: 500px;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    height: auto;
+    min-height: 450px;
+    padding: 1.25rem;
+  }
+
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .filter-row {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .filter-btn {
+    flex: 1;
+  }
+
+  .legend-container {
+    padding-bottom: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-container {
+    min-height: 400px;
+    padding: 1rem;
+    gap: 12px;
+  }
+
+  .chart-header h3 {
+    font-size: 16px;
+  }
+
+  .filter-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .legend-pill {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+  }
 }
 </style>

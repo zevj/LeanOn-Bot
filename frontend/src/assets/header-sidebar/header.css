@@ -196,3 +196,38 @@ i {
     display: none;
   }
 }
+
+/* ── DARK MODE OVERRIDES ── */
+[data-theme="dark"] .header {
+  background: var(--surface-color);
+  border-bottom-color: var(--border-color);
+  box-shadow: 0 4px 10px var(--shadow-color);
+}
+
+[data-theme="dark"] .logo-text {
+  color: var(--tertiary-color);
+}
+
+[data-theme="dark"] .subtext {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .ham-line {
+  background: var(--text-primary);
+}
+
+[data-theme="dark"] .divider {
+  background: var(--border-color);
+}
+
+[data-theme="dark"] .name {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .role {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] i {
+  color: var(--text-primary);
+}
