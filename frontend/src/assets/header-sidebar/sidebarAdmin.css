@@ -495,3 +495,103 @@
     left: 10px;
   }
 }
+
+/* ── SIDEBAR DARK MODE OVERRIDES ── */
+[data-theme="dark"] .sidebar {
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .sidebar-top {
+  border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .logo-texts h3 {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .logo-texts span {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .sidebar-toggle {
+  border-color: var(--border-color);
+  background: var(--surface-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .sidebar-toggle:hover {
+  background: var(--surface-hover);
+}
+
+[data-theme="dark"] .rail-btn {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .rail-btn:hover {
+  background: var(--surface-hover);
+}
+
+[data-theme="dark"] .rail-divider {
+  background: var(--border-color);
+}
+
+[data-theme="dark"] hr {
+  background-color: var(--border-color);
+}
+
+[data-theme="dark"] .menu-label {
+  color: var(--primary-color);
+}
+
+[data-theme="dark"] .menu-item {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .menu-item:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .menu-item.active,
+[data-theme="dark"] .menu-item.router-link-active {
+  background: var(--primary-color);
+  color: var(--white-const);
+}
+
+[data-theme="dark"] .logout {
+  background-color: var(--bg-color);
+  box-shadow: 0px -1px 10px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .picture-info-separation:hover {
+  background-color: var(--surface-hover);
+}
+
+[data-theme="dark"] .logo-text {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .subtext {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .modal-expanded,
+[data-theme="dark"] .modal-collapsed,
+[data-theme="dark"] .modal-mobile {
+  background: var(--surface-color);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .modal-item,
+[data-theme="dark"] .modal-item span,
+[data-theme="dark"] .modal-item i,
+[data-theme="dark"] .my-account {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .modal-item:hover {
+  background: var(--surface-hover);
+}

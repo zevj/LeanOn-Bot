@@ -374,3 +374,65 @@ main > :last-child {
         padding: 11px 14px;
     }
 }
+
+/* ── DARK MODE OVERRIDES ── */
+[data-theme="dark"] .layout,
+[data-theme="dark"] .main-container,
+[data-theme="dark"] .send-chat-wrapper {
+    background: var(--bg-color);
+}
+
+[data-theme="dark"] .main-title {
+    color: var(--tertiary-color);
+}
+
+[data-theme="dark"] .main-title span {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .sugguestion-buttons {
+    background: var(--surface-color);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .sugguestion-buttons:hover {
+    background: var(--surface-hover);
+    color: var(--tertiary-color);
+    border-color: var(--tertiary-color);
+}
+
+[data-theme="dark"] .bot-message {
+    background-color: var(--surface-color);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .user-message {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .typing-indicator {
+    background-color: var(--surface-color);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .quick-reply-pill {
+    background-color: var(--surface-color);
+    color: var(--tertiary-color);
+    border-color: var(--tertiary-color);
+}
+
+[data-theme="dark"] .quick-reply-pill:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .sugguestion-buttons:hover {
+    background: var(--surface-hover);
+    color: var(--tertiary-color);
+    border-color: var(--tertiary-color);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+}

@@ -3,7 +3,9 @@
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: #f4f5f4;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 main {
@@ -12,6 +14,7 @@ main {
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  background: var(--bg-color);
 }
 
 .main-container {
@@ -48,18 +51,18 @@ main {
 
 /* ── INFO CARD ── */
 .info-container {
-  background: #fff;
-  border: 1px solid #e8e8e8;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 30px 22px 24px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease, background 0.3s ease;
   width: 100%;
   box-sizing: border-box;
 }
 
 .info-container:hover {
-  border-color: rgba(14,96,8,0.25);
+  border-color: var(--primary-color);
   box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 8px 28px rgba(14,96,8,0.08);
   transform: translateY(-1px);
 }
@@ -92,14 +95,14 @@ main {
   font-size: 14.5px;
   font-weight: 700;
   text-align: center;
-  color: #0d0d0d;
+  color: var(--text-primary);
   letter-spacing: -0.2px;
   margin-bottom: 4px;
 }
 
 .domain-mail {
   font-size: 11.5px;
-  color: #aaa;
+  color: var(--text-secondary);
   text-align: center;
   padding-bottom: 18px;
 }
@@ -107,7 +110,7 @@ main {
 hr {
   width: 100%;
   border: none;
-  border-top: 1px solid #f2f2f2;
+  border-top: 1px solid var(--border-color);
   opacity: 1;
 }
 
@@ -128,7 +131,7 @@ hr {
 
 .info-item i {
   font-size: 15px;
-  color: #0E6008;
+  color: var(--primary-color);
   flex-shrink: 0;
   width: 18px;
   text-align: center;
@@ -136,13 +139,13 @@ hr {
 
 .info-item span {
   font-weight: 600;
-  color: #444;
+  color: var(--text-primary);
   white-space: nowrap;
 }
 
 .info-item p {
   margin: 0;
-  color: #888;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -151,11 +154,11 @@ hr {
 /* ── SHARED CARDS ── */
 .profile-input-container,
 .password-container {
-  background: #fff;
-  border: 1px solid #e8e8e8;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
   border-radius: 20px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.05);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
   width: 100%;
   box-sizing: border-box;
   padding-bottom: 28px;
@@ -179,20 +182,20 @@ hr {
 .profile-title {
   font-size: 14.5px;
   font-weight: 700;
-  color: #0d0d0d;
+  color: var(--text-primary);
   letter-spacing: -0.1px;
 }
 
 .profile-desc {
   font-size: 11.5px;
-  color: #bbb;
+  color: var(--text-secondary);
   font-weight: 400;
 }
 
 .profile-hr {
   width: 100%;
   border: none;
-  border-top: 1px solid #f2f2f2;
+  border-top: 1px solid var(--border-color);
   margin: 0;
 }
 
@@ -223,7 +226,7 @@ hr {
 .input-title {
   font-size: 11.5px;
   font-weight: 600;
-  color: #888;
+  color: var(--text-secondary);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -232,19 +235,19 @@ hr {
   width: 100%;
   padding: 10px 14px;
   border-radius: 10px;
-  border: 1.5px solid #eeeeee;
-  background: #fafafa;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-color);
   box-sizing: border-box;
   font-size: 13px;
-  color: #1a1a1a;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .input-info:focus {
   outline: none;
-  border-color: #0E6008;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(14,96,8,0.08);
+  border-color: var(--primary-color);
+  background: var(--surface-color);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
 }
 
 /* UI improvements for new dropdowns/numbers to not be boring */
@@ -276,10 +279,10 @@ select.input-info:focus {
 
 select.input-info:disabled,
 .input-disabled {
-  background: #f7f7f7;
-  color: #ccc;
+  background: var(--surface-hover);
+  color: var(--text-secondary);
   cursor: not-allowed;
-  border-color: #eee;
+  border-color: var(--border-color);
 }
 
 /* ── ACTION ROW ── */
@@ -295,7 +298,7 @@ select.input-info:disabled,
   padding: 10px 22px;
   border-radius: 10px;
   border: none;
-  background: #0E6008;
+  background: var(--primary-color);
   color: #fff;
   font-weight: 600;
   font-size: 13px;
@@ -305,8 +308,8 @@ select.input-info:disabled,
 }
 
 .save-btn:hover {
-  background: #0b4f06;
-  box-shadow: 0 3px 12px rgba(14,96,8,0.28);
+  background: var(--secondary-color);
+  box-shadow: 0 3px 12px var(--shadow-color);
 }
 
 .save-btn:active {
@@ -322,8 +325,8 @@ select.input-info:disabled,
 .cancel-btn {
   padding: 9px 20px;
   border-radius: 10px;
-  border: 1.5px solid #f0c0c0;
-  background: #fff8f8;
+  border: 1.5px solid rgba(220, 38, 37, 0.3);
+  background: rgba(220, 38, 37, 0.05);
   color: #DC2625;
   font-weight: 600;
   font-size: 13px;
@@ -359,7 +362,7 @@ select.input-info:disabled,
 .password-title {
   font-size: 11.5px;
   font-weight: 600;
-  color: #888;
+  color: var(--text-secondary);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -375,19 +378,19 @@ select.input-info:disabled,
   padding: 10px 38px 10px 14px;
   margin-top: 6px;
   border-radius: 10px;
-  border: 1.5px solid #eeeeee;
-  background: #fafafa;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-color);
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--text-primary);
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .password-input:focus {
   outline: none;
-  border-color: #0E6008;
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(14,96,8,0.08);
+  border-color: var(--primary-color);
+  background: var(--surface-color);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
 }
 
 .eye-icon {
@@ -397,12 +400,12 @@ select.input-info:disabled,
   transform: translateY(-50%);
   cursor: pointer;
   font-size: 13px;
-  color: #ccc;
+  color: var(--text-secondary);
   transition: color 0.15s ease;
 }
 
 .eye-icon:hover {
-  color: #0E6008;
+  color: var(--primary-color);
 }
 
 /* ── HIDE BROWSER PASSWORD ICONS ── */
@@ -415,15 +418,15 @@ input[type="password"]::-webkit-contacts-auto-fill-button {
 }
 input::-ms-reveal { display: none; }
 input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0px 1000px white inset !important;
-  box-shadow: 0 0 0px 1000px white inset !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--surface-color) inset !important;
+  box-shadow: 0 0 0px 1000px var(--surface-color) inset !important;
 }
 
 /* ── MODAL OVERLAY ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.38);
+  background: rgba(0,0,0,0.5);
   backdrop-filter: blur(3px);
   display: flex;
   justify-content: center;
@@ -434,7 +437,7 @@ input:-webkit-autofill {
 /* ── MODAL CARD ── */
 .modal-content {
   position: relative;
-  background: #fff;
+  background: var(--surface-color);
   padding: 36px 32px 32px;
   border-radius: 22px;
   width: 400px;
@@ -442,22 +445,23 @@ input:-webkit-autofill {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  box-shadow: 0 8px 48px rgba(0,0,0,0.16);
-  border: 1px solid #ebebeb;
+  box-shadow: 0 8px 48px var(--shadow-color);
+  border: 1px solid var(--border-color);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .close-btn {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: #f5f5f5;
+  background: var(--surface-hover);
   border: none;
   width: 28px;
   height: 28px;
   border-radius: 8px;
   font-size: 17px;
   cursor: pointer;
-  color: #999;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -465,8 +469,8 @@ input:-webkit-autofill {
 }
 
 .close-btn:hover {
-  background: #ececec;
-  color: #111;
+  background: var(--surface-hover);
+  color: var(--text-primary);
 }
 
 .otp-label-container {
@@ -478,13 +482,13 @@ input:-webkit-autofill {
 .otp-label-container label {
   font-size: 16px;
   font-weight: 700;
-  color: #0d0d0d;
+  color: var(--text-primary);
   letter-spacing: -0.2px;
 }
 
 .otp-label-container p {
   font-size: 12px;
-  color: #aaa;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -501,31 +505,31 @@ input:-webkit-autofill {
   text-align: center;
   font-size: 20px;
   font-weight: 700;
-  border: 1.5px solid #e8e8e8;
+  border: 1.5px solid var(--border-color);
   border-radius: 12px;
-  background: #fafafa;
-  color: #0d0d0d;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 
 .otp-input:focus {
-  border-color: #0E6008;
-  box-shadow: 0 0 0 3px rgba(14,96,8,0.1);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
   outline: none;
-  background: #fff;
+  background: var(--surface-color);
 }
 
 .otp-countdown {
   text-align: center;
   font-size: 12.5px;
-  color: #bbb;
+  color: var(--text-secondary);
 }
 
 .resend-link {
   text-align: center;
   font-size: 12.5px;
   font-weight: 600;
-  color: #0E6008;
+  color: var(--primary-color);
   cursor: pointer;
   transition: opacity 0.15s;
 }
@@ -536,7 +540,7 @@ input:-webkit-autofill {
 }
 
 .verify-btn {
-  background: #0E6008;
+  background: var(--primary-color);
   color: #fff;
   width: 100%;
   padding: 12px 0;
@@ -550,8 +554,8 @@ input:-webkit-autofill {
 }
 
 .verify-btn:hover {
-  background: #0b4f06;
-  box-shadow: 0 3px 12px rgba(14,96,8,0.28);
+  background: var(--secondary-color);
+  box-shadow: 0 3px 12px var(--shadow-color);
 }
 
 .verify-btn:active {

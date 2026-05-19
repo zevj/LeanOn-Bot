@@ -8,6 +8,8 @@
   --background-color: #faf9f6;
   --black-color: #242424;
   --white: #ffffff;
+  --surface-color: #ffffff;
+  --border-color: #e2e8f0;
   --gray: #6b7280;
   --light-gray: #f0f4f0;
 }
@@ -131,7 +133,7 @@
   top: 68px; 
   left: 0; 
   right: 0;
-  background: var(--white); 
+  background: var(--surface-color); 
   padding: 1.5rem 5%; 
   z-index: 99;
   border-bottom: 1px solid rgba(14,96,8,0.1);
@@ -310,7 +312,7 @@
 
 /* ── CHAT CARD ── */
 .chat-card {
-  background: var(--white); 
+  background: var(--surface-color); 
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(14,96,8,.15); 
   padding: 1.4rem;
@@ -495,7 +497,7 @@ section {
 
 /* ── ABOUT ── */
 .about { 
-  background: var(--white); 
+  background: var(--surface-color); 
 }
 
 .about-grid { 
@@ -599,7 +601,7 @@ section {
 }
 
 .feature-card {
-  background: var(--white); 
+  background: var(--surface-color); 
   border-radius: 20px; 
   padding: 2rem;
   border: 1px solid rgba(14,96,8,.07);
@@ -752,7 +754,7 @@ section {
 
 /* ── CONTACT ── */
 .contact { 
-  background: var(--white); 
+  background: var(--surface-color); 
 }
 
 .contact-grid { 
@@ -831,12 +833,12 @@ section {
 .form-group select {
   padding: .75rem 1rem; 
   border-radius: 10px;
-  border: 1.5px solid rgba(14,96,8,.15);
+  border: 1.5px solid var(--border-color);
   font-size: .88rem; 
   font-family: 'Poppins', sans-serif;
-  background: var(--white); 
+  background: var(--surface-color); 
   outline: none; 
-  transition: border-color .2s;
+  transition: border-color .2s, background-color .2s, color .2s;
   color: var(--black-color);
 }
 
@@ -857,7 +859,7 @@ section {
 
 /* ── FOOTER ── */
 footer {
-  background: var(--black-color); 
+  background: #090d16; 
   color: rgba(255,255,255,.7);
   padding: 3rem 5% 2rem; 
   text-align: center;
@@ -999,4 +1001,51 @@ footer p      {
   .btn-outline { 
     text-align: center; 
   }
+}
+
+/* ── DARK MODE OVERRIDES ── */
+[data-theme="dark"] {
+  --background-color: #0b1120;
+  --black-color: #f8fafc;
+  --white: #ffffff;
+  --surface-color: #1e293b;
+  --border-color: #334155;
+  --gray: #cbd5e1;
+  --light-gray: #1e293b;
+  --primary-color: #16a34a;
+  --secondary-color: #22c55e;
+  --tertiary-color: #86efac;
+}
+
+[data-theme="dark"] .navbar {
+  background: rgba(11, 17, 32, 0.92);
+  border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .mobile-menu {
+  background: var(--surface-color);
+  border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .mobile-menu a {
+  border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .about-visual {
+  background: linear-gradient(135deg, #1b4332 0%, #15803d 60%, #2e7d32 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .feature-card {
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .chat-input-mock {
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group textarea,
+[data-theme="dark"] .form-group select {
+  border-color: var(--border-color);
 }
