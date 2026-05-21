@@ -14,15 +14,15 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => '123456789@gordoncollege.edu.ph'],
-            [
+        if (!User::where('email', '123456789@gordoncollege.edu.ph')->exists()) {
+            User::create([
                 'first_name' => 'Test',
                 'last_name' => 'User',
+                'email' => '123456789@gordoncollege.edu.ph',
                 'password' => Hash::make('password123'),
                 'role' => 'guidance',
                 'email_verified_at' => now(),
-            ]
-        );
+            ]);
+        }
     }
 }

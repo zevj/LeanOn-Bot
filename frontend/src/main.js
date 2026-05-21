@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { encryptPayload, decryptPayload } from '@/utils/crypto.js'
+import { encryptPayload, decryptPayload, generateNonce, generateTimestamp, signRequest } from '@/utils/crypto.js'
 
 // import vue3GoogleLogin from 'vue3-google-login'
 import App from './App.vue'
@@ -23,7 +23,21 @@ app.mount('#app')
 
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
 
-// 🔐 Axios Interceptors for E2E Encryption
+// 🔐 Axios Interceptors for E2E Encryption + HMAC Signing
+//
+// Request flow:
+// 1. Attach auth token
+// 2. AES-encrypt the payload (existing)
+// 3. Generate timestamp + nonce
+// 4. HMAC-sign the encrypted body + timestamp + nonce
+// 5. Attach X-Timestamp, X-Nonce, X-Signature headers
+//
+// This ensures:
+// - Confidentiality (AES encryption)
+// - Integrity (HMAC signature)
+// - Authenticity (only our frontend has the HMAC key)
+// - Replay protection (unique nonce + timestamp window)
+
 axios.interceptors.request.use(async config => {
   // Attach token automatically to every request
   const token = localStorage.getItem('token')
@@ -42,10 +56,24 @@ axios.interceptors.request.use(async config => {
 
   if (hasBody && !isFormdata) {
     try {
+      // Step 1: AES-encrypt the payload
       const encrypted = await encryptPayload(config.data)
       config.data = { payload: encrypted }
+
+      // Step 2: Generate HMAC signing components
+      const timestamp = generateTimestamp()
+      const nonce = generateNonce()
+      const bodyString = JSON.stringify(config.data)
+
+      // Step 3: Sign the request body + timestamp + nonce
+      const signature = await signRequest(bodyString, timestamp, nonce)
+
+      // Step 4: Attach signing headers for backend verification
+      config.headers['X-Timestamp'] = timestamp
+      config.headers['X-Nonce'] = nonce
+      config.headers['X-Signature'] = signature
     } catch (err) {
-      console.error('Request encryption failed:', err)
+      console.error('Request encryption/signing failed:', err)
       return Promise.reject(err)
     }
   }

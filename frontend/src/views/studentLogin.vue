@@ -17,7 +17,7 @@
     @close="showPrivacyPolicy = false"
   />
  
-  <main ref="mainRef">
+  <main ref="mainRef" class="login-main">
     <div class="login-container" ref="containerRef">
  
       <!-- Blur orb decorations — CSS hides these on desktop, shows on mobile -->
@@ -90,14 +90,14 @@
               Forgot Password?
             </router-link>
  
-            <p class="terms-agreement">
-              By signing in you agree to our
-              <button type="button" class="terms-link" @click="showTermsOfUse = true">Terms of Use</button>
-              &amp;
-              <button type="button" class="terms-link privacy" @click="showPrivacyPolicy = true">Privacy Policy</button>
-            </p>
+            
           </div>
- 
+          <!-- Cloudflare Turnstile Captcha Widget -->
+          <div class="turnstile-wrapper">
+            <p v-if="!turnstileToken" class="turnstile-message">Verifying you are human. This may take a few seconds...</p>
+            <div id="turnstile-container"></div>
+          </div>
+
           <div ref="loginBtnRef">
             <LoadingButton
               :loading="isLoading"
@@ -117,7 +117,14 @@
           <button type="button" class="google-signin" @click="loginWithGoogle" ref="googleBtnRef">
             Sign in with Google Account
           </button>
- 
+          <div class="terms-container">
+            <p class="terms-agreement">
+              By signing in you agree to our
+              <button type="button" class="terms-link" @click="showTermsOfUse = true">Terms of Use</button>
+              &amp;
+              <button type="button" class="terms-link privacy" @click="showPrivacyPolicy = true">Privacy Policy</button>
+            </p>
+          </div>
         </form>
       </div>
  
@@ -168,7 +175,7 @@
 </template>
  
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
@@ -184,6 +191,9 @@ const username = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const isLoading = ref(false)
+
+const turnstileToken = ref('')
+const turnstileWidgetId = ref(null)
  
 const toast = useToast()
 const router = useRouter()
@@ -208,13 +218,19 @@ const handleLogin = async () => {
     toast.error('Please enter both email and password!')
     return
   }
+
+  if (!turnstileToken.value) {
+    toast.error('Please complete the security check!')
+    return
+  }
  
   isLoading.value = true
  
   try {
     const res = await axios.post('/api/login', {
       email: username.value,
-      password: password.value
+      password: password.value,
+      turnstile_token: turnstileToken.value
     })
  
     if (res.data.status === 'OTP_REQUIRED') {
@@ -231,6 +247,11 @@ const handleLogin = async () => {
  
   } catch (err) {
     toast.error(err.response?.data?.message || 'Login failed!')
+    // Reset Turnstile on login failure so they can try again
+    if (window.turnstile && turnstileWidgetId.value) {
+      window.turnstile.reset(turnstileWidgetId.value)
+      turnstileToken.value = ''
+    }
   } finally {
     isLoading.value = false
   }
@@ -297,7 +318,7 @@ onMounted(() => {
  
   gsap.set(googleBtnRef.value, { opacity: 0, y: 20, scale: 0.95 })
   tl.to(googleBtnRef.value, { opacity: 1, y: 0, scale: 1 }, 1.0)
-  tl.from('.new-student', { y: 15, opacity: 0 }, 1.1)
+
  
   if (!isMobile) {
     tl.from('.overlay', { opacity: 0 }, 0.3)
@@ -315,7 +336,98 @@ onMounted(() => {
     else if (error === 'user_not_found') toast.error('Account not found. Please register first.')
     else toast.error('Google authentication failed.')
   }
+
+  // Load Cloudflare Turnstile Script Dynamically
+  if (!window.turnstile) {
+    let script = document.getElementById('cf-turnstile-script')
+    if (!script) {
+      script = document.createElement('script')
+      script.id = 'cf-turnstile-script'
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback'
+      script.async = true
+      script.defer = true
+      document.head.appendChild(script)
+    }
+
+    window.onloadTurnstileCallback = () => {
+      renderTurnstile()
+    }
+  } else {
+    renderTurnstile()
+  }
+})
+
+const renderTurnstile = () => {
+  if (window.turnstile) {
+    turnstileWidgetId.value = window.turnstile.render('#turnstile-container', {
+      sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
+      callback: (token) => {
+        turnstileToken.value = token
+      },
+      'error-callback': () => {
+        toast.error('Turnstile security check failed to load.')
+      },
+      'expired-callback': () => {
+        turnstileToken.value = ''
+        if (turnstileWidgetId.value) {
+          window.turnstile.reset(turnstileWidgetId.value)
+        }
+      }
+    })
+  }
+}
+
+onUnmounted(() => {
+  if (window.turnstile && turnstileWidgetId.value !== null) {
+    window.turnstile.remove(turnstileWidgetId.value)
+  }
 })
 </script>
- 
+
 <style scoped src="../assets/login/Login.css"></style>
+
+<style scoped>
+.login-main {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.terms-container {
+  margin-top: 1.5rem;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.turnstile-wrapper {
+  margin: 1.25rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.turnstile-message {
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+  margin: 0;
+  animation: pulseText 1.5s infinite alternate;
+}
+
+[data-theme="dark"] .turnstile-message {
+  color: #aaa;
+}
+
+@keyframes pulseText {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+</style>

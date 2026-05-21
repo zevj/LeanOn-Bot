@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use App\Services\MailService;
 
 class AuthController extends Controller
@@ -33,10 +34,37 @@ class AuthController extends Controller
                 'required',
                 'regex:/^[0-9]{9}@gordoncollege\.edu\.ph$/'
             ],
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
+            'turnstile_token' => 'required|string'
         ], [
-            'email.regex' => 'Only Gordon College emails with 9-digit ID are allowed.'
+            'email.regex' => 'Only Gordon College emails with 9-digit ID are allowed.',
+            'turnstile_token.required' => 'Security check is required.'
         ]);
+
+        // ✅ Verify Turnstile Token with Cloudflare
+        $secretKey = config('services.turnstile.secret');
+        if (empty($secretKey)) {
+            Log::error('Turnstile secret key is not configured in services.php.');
+            return response()->json([
+                'message' => 'Internal server error. CAPTCHA configuration missing.'
+            ], 500);
+        }
+
+        $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
+            'secret' => $secretKey,
+            'response' => $request->turnstile_token,
+            'remoteip' => $request->ip(),
+        ]);
+
+        if (!$response->successful() || !$response->json('success')) {
+            Log::warning('Turnstile verification failed', [
+                'ip' => $request->ip(),
+                'response' => $response->json(),
+            ]);
+            return response()->json([
+                'message' => 'Security check failed. Please try again.'
+            ], 422);
+        }
         
         // ✅ Attempt login
         if (!Auth::attempt([
@@ -52,14 +80,18 @@ class AuthController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // 🔐 First-time login: require email OTP verification
-        if (is_null($user->email_verified_at)) {
+        // 🔐 First-time login or verification expired (older than 30 days): require email OTP verification
+        if (is_null($user->email_verified_at) || $user->email_verified_at->lt(now()->subDays(30))) {
+            if (!is_null($user->email_verified_at)) {
+                $user->update(['email_verified_at' => null]);
+            }
+
             $token = $user->createToken('auth_token')->plainTextToken;
             $expiresAt = $this->sendLoginOtp($user);
 
             return response()->json([
                 'status' => 'OTP_REQUIRED',
-                'message' => 'Please verify your email',
+                'message' => 'Please verify your email (verification is required every 30 days)',
                 'token' => $token,
                 'user' => $user,
                 'expires_at' => $expiresAt
@@ -463,18 +495,76 @@ public function resetPassword(Request $request)
         $user = Auth::user();
 
         if ($request->hasFile('profile_image')) {
+            $file = $request->file('profile_image');
+
+            // ── Security: Block dangerous file extensions ────────
+            // Even if MIME validation passes, reject known executable extensions.
+            // Attackers may craft files with valid image headers but dangerous extensions.
+            $dangerousExtensions = [
+                'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'phar',
+                'exe', 'bat', 'cmd', 'sh', 'bash', 'com', 'vbs', 'js',
+                'jar', 'py', 'pl', 'cgi', 'asp', 'aspx', 'jsp', 'svg',
+            ];
+
+            $extension = strtolower($file->getClientOriginalExtension());
+            if (in_array($extension, $dangerousExtensions)) {
+                Log::channel('security')->warning('Blocked dangerous file upload', [
+                    'user_id'   => $user->id,
+                    'extension' => $extension,
+                    'filename'  => $file->getClientOriginalName(),
+                ]);
+
+                return response()->json([
+                    'message' => 'This file type is not allowed.'
+                ], 422);
+            }
+
+            // ── Security: Verify actual MIME type server-side ────
+            // Don't trust the client-reported Content-Type. Use finfo
+            // to read the file's magic bytes and determine real type.
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $realMime = $finfo->file($file->getRealPath());
+            $allowedMimes = ['image/jpeg', 'image/png', 'image/gif'];
+
+            if (!in_array($realMime, $allowedMimes)) {
+                Log::channel('security')->warning('MIME type mismatch on upload', [
+                    'user_id'       => $user->id,
+                    'reported_mime' => $file->getMimeType(),
+                    'actual_mime'   => $realMime,
+                ]);
+
+                return response()->json([
+                    'message' => 'Invalid file type detected.'
+                ], 422);
+            }
+
+            // ── Security: Double-check file size at application level
+            // Belt-and-suspenders — form validation can be bypassed.
+            if ($file->getSize() > 2097152) { // 2MB in bytes
+                return response()->json([
+                    'message' => 'File size exceeds the 2MB limit.'
+                ], 422);
+            }
+
             // Delete old image if it exists
             if ($user->profile_image) {
                 Storage::disk('public')->delete($user->profile_image);
             }
 
-            $path = $request->file('profile_image')->store('profile_images', 'public');
+            // ── Security: Randomize filename ─────────────────────
+            // Prevents filename enumeration and path traversal attacks.
+            // Uses UUID + original extension for unique, safe filenames.
+            $safeFilename = \Illuminate\Support\Str::uuid() . '.' . $extension;
+            $path = $file->storeAs('profile_images', $safeFilename, 'public');
+
             $user->profile_image = $path;
             $user->save();
 
+            $freshUser = $user->fresh();
             return response()->json([
                 'message' => 'Profile image uploaded successfully',
-                'user' => $user->fresh() // Returns the user with the profile_image_url append
+                'user' => $freshUser,
+                'profile_image_url' => $freshUser->profile_image_url
             ]);
         }
 
@@ -508,6 +598,43 @@ public function resetPassword(Request $request)
         Log::info("Login OTP sent to {$user->email}");
 
         return $expiresAt;
+    }
+
+    /**
+     * Get the authenticated admin/guidance profile.
+     */
+    public function getAdminProfile(Request $request)
+    {
+        return response()->json($request->user());
+    }
+
+    /**
+     * Update the admin/guidance profile.
+     */
+    public function updateAdminProfile(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone_number' => 'nullable|string|max:11',
+            'unit' => 'nullable|string|in:Gordon College,Guidance Unit'
+        ]);
+
+        $user->update([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'email' => $request->email,
+            'phone_number' => $request->phone_number,
+            'department' => $request->unit // unit maps to department
+        ]);
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user->fresh()
+        ]);
     }
 
     /**

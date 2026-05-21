@@ -329,7 +329,7 @@ const profileImage = computed(() => {
         const baseURL = axios.defaults.baseURL || 'http://127.0.0.1:8000'
         return `${baseURL}/storage/${profile.value.profile_image_url}`
     }
-    return 'https://via.placeholder.com/100'
+    return 'https://placehold.co/100x100'
 })
 
 // OTP
