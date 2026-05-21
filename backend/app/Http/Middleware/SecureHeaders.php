@@ -47,11 +47,12 @@ class SecureHeaders
         $frontendUrl = config('app.frontend_url', '*');
         $csp = implode('; ', [
             "default-src 'self'",
-            "script-src 'self'",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com",
+            "script-src 'self' https://challenges.cloudflare.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com",
+            "font-src 'self' https://fonts.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: blob:",
             "connect-src 'self' {$frontendUrl}",
+            "frame-src 'self' https://challenges.cloudflare.com",
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",
