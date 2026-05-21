@@ -106,14 +106,17 @@ class VerifyHmac
         Cache::put($nonceKey, true, self::NONCE_TTL_SECONDS);
 
         // Step 3: Verify HMAC signature
-        $hmacKey = config('app.hmac_secret_key');
+        $hmacKeyHex = config('app.hmac_secret_key');
         
-        if (empty($hmacKey)) {
+        if (empty($hmacKeyHex)) {
             Log::channel('security')->error('HMAC_SECRET_KEY is not configured');
             return response()->json([
                 'message' => 'Server security configuration error.'
             ], 500);
         }
+
+        // Convert hex secret key to raw binary bytes to match frontend Web Crypto API import
+        $hmacKey = hex2bin($hmacKeyHex);
 
         // Build the signing string: body content + timestamp + nonce
         $body = $request->getContent();
