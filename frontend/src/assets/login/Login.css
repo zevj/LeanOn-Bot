@@ -175,25 +175,38 @@ input[type="password"]::-webkit-textfield-decoration-container {
   opacity: 0.85;
 }
 
-.login-button {
-    display: block;
-    width: 100%;
-    max-width: 600px;
-    height: 55px;
-    background-color: #0E6008;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    text-align: center;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background-color 0.15s ease-in-out;
-}
+/* ── Button ── */
+    .login-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      height: 46px;
+      background: linear-gradient(180deg, #1a8012 0%, #0d5c07 100%);
+      color: #fff;
+      border: none;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 1px 3px rgba(14, 96, 8, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: transform 0.12s, filter 0.12s, box-shadow 0.15s;
+    }
+ 
+    .login-button:hover {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 12px rgba(14, 96, 8, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+ 
+    .login-button:active {
+      transform: translateY(0);
+      filter: brightness(0.97);
+    }
 
-.login-button:hover {
-    background-color: #0b4706;
-}
 
 .divider {
     display: flex;
