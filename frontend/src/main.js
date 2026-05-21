@@ -50,11 +50,8 @@ axios.interceptors.request.use(async config => {
   const isFormdata = config.data instanceof FormData
   const hasBody = config.data !== undefined && config.data !== null
 
-  if (!isFormdata) {
-    config.headers['X-Encrypted'] = 'true'
-  }
-
   if (hasBody && !isFormdata) {
+    config.headers['X-Encrypted'] = 'true'
     try {
       // Step 1: AES-encrypt the payload
       const encrypted = await encryptPayload(config.data)
