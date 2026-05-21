@@ -205,13 +205,35 @@ I'm here with you. Do you want to talk about what's going on?";
     public function chat(Request $request)
     {
         $request->validate([
-            'message' => 'required|string',
+            'message' => 'required|string|max:2000',
             'conversation_id' => 'required|exists:conversations,id'
         ]);
 
         $userMessage = $request->input('message');
         $userId = $request->user('sanctum') ? $request->user('sanctum')->id : null;
         $conversationId = $request->input('conversation_id');
+
+        // ── Abuse Prevention: Spam Detection ─────────────────────
+        // Reject if user sends the exact same message 3+ times in 5 minutes.
+        // This prevents spamming the AI API (which costs free-tier quota).
+        if ($userId) {
+            $recentDuplicates = ChatMessage::where('user_id', $userId)
+                ->where('message', $userMessage)
+                ->where('created_at', '>=', now()->subMinutes(5))
+                ->count();
+
+            if ($recentDuplicates >= 3) {
+                \Illuminate\Support\Facades\Log::channel('security')->warning('Spam detected — repeated message', [
+                    'user_id' => $userId,
+                    'message_preview' => substr($userMessage, 0, 50),
+                    'count' => $recentDuplicates,
+                ]);
+
+                return response()->json([
+                    'reply' => "It looks like you've sent this message a few times already. Could you try rephrasing what you'd like to talk about?"
+                ]);
+            }
+        }
 
         // Update conversation last message
         $conversation = \App\Models\Conversation::find($conversationId);

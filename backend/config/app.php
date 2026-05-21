@@ -107,6 +107,12 @@ return [
 
     'api_encryption_key' => env('API_ENCRYPTION_KEY'),
 
+    // HMAC secret key for request signature verification (256-bit hex)
+    'hmac_secret_key' => env('HMAC_SECRET_KEY'),
+
+    // Frontend URL for CORS and CSP configuration
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
 
     /*
     |--------------------------------------------------------------------------

@@ -52,7 +52,7 @@ class User extends Authenticatable {
      *
      * @var array
      */
-    protected $appends = ['profile_image_url'];
+    protected $appends = ['profile_image_url', 'unit'];
 
     /**
      * Get the full URL for the profile image.
@@ -62,9 +62,31 @@ class User extends Authenticatable {
     public function getProfileImageUrlAttribute()
     {
         if (!$this->profile_image) {
-            return null;
+            $name = urlencode($this->first_name . ' ' . $this->last_name);
+            return "https://ui-avatars.com/api/?name={$name}&background=random&color=fff&size=128&bold=true";
         }
         return asset('storage/' . $this->profile_image);
+    }
+
+    /**
+     * Get the unit attribute (maps to department).
+     *
+     * @return string|null
+     */
+    public function getUnitAttribute()
+    {
+        return $this->department;
+    }
+
+    /**
+     * Set the unit attribute (maps to department).
+     *
+     * @param string|null $value
+     * @return void
+     */
+    public function setUnitAttribute($value)
+    {
+        $this->attributes['department'] = $value;
     }
 
     /**

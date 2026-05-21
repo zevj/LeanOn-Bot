@@ -26,7 +26,7 @@
             <div class="avatar-section">
               <label for="upload-photo" class="avatar-label hover-glow-img">
                 <img
-                  :src="preview || profile.profile_image_url || 'https://via.placeholder.com/150'"
+                  :src="preview || profile.profile_image_url || 'https://placehold.co/150x150'"
                   class="avatar-img"
                   alt="Profile Photo"
                 />

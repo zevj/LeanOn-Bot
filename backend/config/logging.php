@@ -127,6 +127,25 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        // ── Security Log Channel ─────────────────────────────────
+        // Dedicated channel for security events:
+        // - Failed HMAC signature verification
+        // - Replay attack attempts (reused nonces)
+        // - Rate limit hits
+        // - Oversized payload rejections
+        // - Suspicious chat patterns
+        // - Failed authentication attempts
+        //
+        // Daily rotation with 7-day retention keeps logs manageable
+        // on free-tier hosting while preserving audit trail.
+        'security' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/security.log'),
+            'level'  => 'debug',
+            'days'   => 7,
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];
