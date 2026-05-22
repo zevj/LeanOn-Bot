@@ -45,13 +45,17 @@ axios.interceptors.request.use(async config => {
     config.headers.Authorization = `Bearer ${token}`
   }
 
-  // Check if we should encrypt the request body
-  // We do not encrypt multipart/form-data (FormData) or requests without body
+  // Check if we should request encrypted responses and encrypt request bodies
   const isFormdata = config.data instanceof FormData
+  const isApiRequest = config.url && (config.url.startsWith('/') || config.url.startsWith(axios.defaults.baseURL))
+
+  if (isApiRequest && !isFormdata) {
+    config.headers['X-Encrypted'] = 'true'
+  }
+
   const hasBody = config.data !== undefined && config.data !== null
 
-  if (hasBody && !isFormdata) {
-    config.headers['X-Encrypted'] = 'true'
+  if (hasBody && isApiRequest && !isFormdata) {
     try {
       // Step 1: AES-encrypt the payload
       const encrypted = await encryptPayload(config.data)
