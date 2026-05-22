@@ -16,29 +16,45 @@
                 </div>
 
                 <!-- STATS — order: Severe → Moderate → Low -->
-                <div class="whole-stat-card">
-                    <div class="stat-card-wrap s-severe stagger-1">
-                        <div class="stat-left">
-                            <span class="stat-label">Severe</span>
-                            <span class="stat-number">{{ statsData.severe_count ?? 0 }}</span>
-                        </div>
-                        <div class="stat-icon icon-severe"><i class="bx bxs-bell-ring"></i></div>
-                    </div>
-                    <div class="stat-card-wrap s-moderate stagger-2">
-                        <div class="stat-left">
-                            <span class="stat-label">Moderate</span>
-                            <span class="stat-number">{{ statsData.moderate_count ?? 0 }}</span>
-                        </div>
-                        <div class="stat-icon icon-moderate"><i class="bx bx-info-circle"></i></div>
-                    </div>
-                    <div class="stat-card-wrap s-low stagger-3">
-                        <div class="stat-left">
-                            <span class="stat-label">Low</span>
-                            <span class="stat-number">{{ statsData.low_count ?? 0 }}</span>
-                        </div>
-                        <div class="stat-icon icon-low"><i class="bx bx-check-shield"></i></div>
-                    </div>
-                </div>
+                <!-- STATS — order: Severe → Moderate → Low -->
+<div class="whole-stat-card">
+    <div
+        class="stat-card-wrap s-severe stagger-1"
+        :class="{ 'stat-active': filterPriority === 'severe' }"
+        style="cursor: pointer;"
+        @click="toggleStatFilter('severe')"
+    >
+        <div class="stat-left">
+            <span class="stat-label">Severe</span>
+            <span class="stat-number">{{ statsData.severe_count ?? 0 }}</span>
+        </div>
+        <div class="stat-icon icon-severe"><i class="bx bxs-bell-ring"></i></div>
+    </div>
+    <div
+        class="stat-card-wrap s-moderate stagger-2"
+        :class="{ 'stat-active': filterPriority === 'moderate' }"
+        style="cursor: pointer;"
+        @click="toggleStatFilter('moderate')"
+    >
+        <div class="stat-left">
+            <span class="stat-label">Moderate</span>
+            <span class="stat-number">{{ statsData.moderate_count ?? 0 }}</span>
+        </div>
+        <div class="stat-icon icon-moderate"><i class="bx bx-info-circle"></i></div>
+    </div>
+    <div
+        class="stat-card-wrap s-low stagger-3"
+        :class="{ 'stat-active': filterPriority === 'low' }"
+        style="cursor: pointer;"
+        @click="toggleStatFilter('low')"
+    >
+        <div class="stat-left">
+            <span class="stat-label">Low</span>
+            <span class="stat-number">{{ statsData.low_count ?? 0 }}</span>
+        </div>
+        <div class="stat-icon icon-low"><i class="bx bx-check-shield"></i></div>
+    </div>
+</div>
 
                 <!-- KEYWORD REFERENCE -->
                 <div class="section-card fade-in">
@@ -366,6 +382,52 @@
                                 <span class="email-field-label">Subject</span>
                                 <div class="email-field-value">{{ emailModal.subject }}</div>
                             </div>
+                            <!-- SCHEDULE APPOINTMENT — only for severe / moderate -->
+<div
+    v-if="emailModal.severity === 'severe' || emailModal.severity === 'moderate'"
+    class="email-field-group"
+>
+    <span class="email-field-label">Schedule Appointment</span>
+
+    <label class="schedule-checkbox-label">
+        <input
+            type="checkbox"
+            class="schedule-checkbox"
+            v-model="emailModal.withAppointment"
+        />
+        <span class="schedule-checkbox-text">Include appointment with this email</span>
+    </label>
+
+    <!-- Date & time — only when checked -->
+    <div v-if="emailModal.withAppointment" class="schedule-fields">
+        <div class="schedule-row">
+            <div class="schedule-input-wrap">
+                <i class="bx bx-calendar schedule-icon"></i>
+                <input
+                    type="date"
+                    class="schedule-input"
+                    v-model="emailModal.appointmentDate"
+                    :min="todayDate"
+                />
+            </div>
+            <div class="schedule-input-wrap">
+                <i class="bx bx-time schedule-icon"></i>
+                <input
+                    type="time"
+                    class="schedule-input"
+                    v-model="emailModal.appointmentTime"
+                />
+            </div>
+        </div>
+        <p class="schedule-hint">
+            <i class="bx bx-info-circle"></i>
+            An appointment request will be included in the email sent to the student.
+        </p>
+    </div>
+
+    <!-- When unchecked -->
+    <p v-else class="schedule-none-text">No appointment — email only.</p>
+</div>
                             <div class="email-field-group">
                                 <span class="email-field-label">Severity</span>
                                 <div style="padding: 6px 0;">
@@ -685,12 +747,15 @@ const emailModal = ref({ visible: false, maskedEmail: '', subject: '', severity:
 
 const openEmailModal = (alert) => {
     emailModal.value = {
-        visible:     true,
-        maskedEmail: alert.masked_email,
-        subject:     `Urgent: Crisis Alert — Action Required`,
-        severity:    alert.severity || '',
-        alertId:     alert.id,
-        body:        `Dear Student,`,
+        visible:          true,
+        maskedEmail:      alert.masked_email,
+        subject:          `Urgent: Crisis Alert — Action Required`,
+        severity:         alert.severity || '',
+        alertId:          alert.id,
+        body:             `Dear Student,`,
+        appointmentDate:  '',
+        appointmentTime:  '',
+        withAppointment:  false,   // ← add this
     };
 };
 const closeEmailModal = () => { emailModal.value.visible = false; };
@@ -708,6 +773,17 @@ const sendEmail = async () => {
         toast.error('Failed to send email.');
     }
 };
+
+/* ADD STAT CARD CLICK FILTER*/
+const toggleStatFilter = (level) => {
+    filterPriority.value = filterPriority.value === level ? '' : level;
+    classifiedPage.value = 1;
+    fetchAlerts();
+};
+
+/*ADD APPOINTMENT ON MODAL */
+// Add this computed near the top of your script (alongside other refs)
+const todayDate = computed(() => new Date().toISOString().split('T')[0]);
 </script>
 
 <style scoped src="@/assets/admin/AdminCrisisAlert.css"></style>

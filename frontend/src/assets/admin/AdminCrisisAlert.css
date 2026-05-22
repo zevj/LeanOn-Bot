@@ -485,6 +485,13 @@
 .severity-confirm-btn:active   { transform: translateY(0); }
 .severity-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
+.stat-card-wrap.stat-active {
+    outline: 2px solid currentColor;
+    outline-offset: -2px;
+    opacity: 1;
+    filter: brightness(1.08);
+}
+
 /* ── Action Buttons ── */
 .alert-card-actions {
     display: flex;
@@ -688,6 +695,98 @@
 }
 .modal-fade-leave-active .email-modal {
     animation: modal-pop-out 0.2s ease forwards;
+}
+
+/* ── Schedule Appointment ── */
+.schedule-row {
+    display: flex;
+    gap: 10px;
+}
+
+.schedule-input-wrap {
+    position: relative;
+    flex: 1;
+}
+
+.schedule-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 15px;
+    pointer-events: none;
+}
+
+.schedule-input {
+    width: 100%;
+    padding: 10px 14px 10px 36px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #111827;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+}
+
+.schedule-input:focus {
+    outline: none;
+    border-color: #0E6008;
+    box-shadow: 0 0 0 3px rgba(14, 96, 8, 0.1);
+}
+
+.schedule-hint {
+    font-size: 12px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+}
+
+.schedule-hint i {
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+.schedule-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    width: fit-content;
+}
+
+.schedule-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #0E6008;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.schedule-checkbox-text {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #374151;
+    user-select: none;
+}
+
+.schedule-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.schedule-none-text {
+    font-size: 13px;
+    color: #9ca3af;
+    font-style: italic;
+    margin-top: 4px;
 }
 
 /* ── Pagination ────────────────────────────────────────────── */

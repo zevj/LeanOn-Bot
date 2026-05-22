@@ -9,7 +9,6 @@ import LandingPage from '../views/LandingPage.vue'
 import AdminDashboard from '../views/Admin/adminDashboard.vue'
 import EmotionalTrends from '../views/Admin/EmotionalTrends.vue'
 import AdminCrisisAlerts from '../views/Admin/AdminCrisisAlert.vue'
-import AdminConfig from '../views/Admin/SystemConfiguration.vue'
 import AdminProfile from '../views/Admin/AdminProfile.vue'
 import AdminLogRecords from '../views/Admin/AdminLogRecords.vue'
 import AdminAnalytics from '../views/Admin/AdminAnalytics.vue'
@@ -84,12 +83,6 @@ const routes = [
     path: '/AdminCrisisAlerts',
     name: 'AdminCrisisAlerts',
     component: AdminCrisisAlerts
-  },
-
-  {
-    path: '/AdminConfig',
-    name: 'AdminConfig',
-    component: AdminConfig
   },
 
   {

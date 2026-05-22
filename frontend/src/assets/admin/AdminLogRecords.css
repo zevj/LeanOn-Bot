@@ -589,6 +589,25 @@
   box-shadow: none;
 }
 
+/*ADD EYE ICON*/
+.reveal-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 0 0 0 6px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 16px;
+    vertical-align: middle;
+    transition: color 0.2s ease;
+    line-height: 1;
+}
+
+.reveal-btn:hover {
+    color: #0E6008;
+}
+
 /* ── 📱 ADAPTIVE MOBILE CARDS FOR TABLE (NO HORIZONTAL SCROLL) ── */
 
 @media (max-width: 1024px) {
