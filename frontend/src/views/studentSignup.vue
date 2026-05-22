@@ -141,7 +141,7 @@
           </div>
 
           <!-- GOOGLE -->
-          <button type="button" class="google-signin" ref="googleBtnRef">
+          <button type="button" class="google-signin" ref="googleBtnRef" @click="loginWithGoogle">
             Sign in with Google Account
           </button>
 
@@ -234,6 +234,11 @@ const isLoading = ref(false)
 /* TOGGLE PASSWORD */
 const togglePassword = () => showPassword.value = !showPassword.value
 const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value
+
+const loginWithGoogle = () => {
+  const baseURL = axios.defaults.baseURL || 'http://127.0.0.1:8000'
+  window.location.href = `${baseURL}/api/auth/google/redirect`
+}
 
 const programsMap = {
   CAHS: [
