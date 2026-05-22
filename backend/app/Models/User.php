@@ -61,11 +61,16 @@ class User extends Authenticatable {
      */
     public function getProfileImageUrlAttribute()
     {
-        if (!$this->profile_image) {
-            $name = urlencode($this->first_name . ' ' . $this->last_name);
+        $profileImage = $this->attributes['profile_image'] ?? null;
+
+        if (!$profileImage) {
+            $firstName = $this->attributes['first_name'] ?? '';
+            $lastName = $this->attributes['last_name'] ?? '';
+            $name = urlencode(trim($firstName . ' ' . $lastName));
             return "https://ui-avatars.com/api/?name={$name}&background=random&color=fff&size=128&bold=true";
         }
-        return asset('storage/' . $this->profile_image);
+
+        return asset('storage/' . $profileImage);
     }
 
     /**
@@ -75,7 +80,7 @@ class User extends Authenticatable {
      */
     public function getUnitAttribute()
     {
-        return $this->department;
+        return $this->attributes['department'] ?? null;
     }
 
     /**

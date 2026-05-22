@@ -51,14 +51,20 @@ class LogController extends Controller
 
         // Transform logs to include user info with masked email
         $logs->getCollection()->transform(function ($log) {
-            $data = $log->toArray();
+            $data = [
+                'id' => $log->id,
+                'user_id' => $log->user_id,
+                'session_start' => $log->session_start,
+                'session_end' => $log->session_end,
+                'created_at' => $log->created_at,
+                'updated_at' => $log->updated_at,
+            ];
             if ($log->user) {
                 $data['masked_email'] = \App\Helpers\DataFormatter::maskEmail($log->user->email);
                 $data['user_name']    = 'Anonymous #' . ($log->user->id + 1000); // Anonymized name
                 $data['department']   = $log->user->department ?? '—';
                 $data['program']      = \App\Helpers\DataFormatter::abbreviateProgram($log->user->program);
             }
-            unset($data['user']);
             return $data;
         });
 
