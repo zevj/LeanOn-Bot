@@ -166,7 +166,7 @@
                     <path d="M1 5l3.5 3.5L11 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
                 </span>
-                <span class="check-text">I have read and agree to the <strong>Terms of Use</strong> and <strong>Privacy Policy</strong> of LeanOn Bot.</span>
+                <span class="check-text">I have read and agree to the <strong>Terms of Use</strong> of LeanOn Bot.</span>
               </label>
             </div>
 
