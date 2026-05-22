@@ -11,7 +11,10 @@ class ConversationController extends Controller
         $userId = $request->user('sanctum') ? $request->user('sanctum')->id : null;
         if (!$userId) return response()->json([]);
 
+        $archived = $request->boolean('archived');
+
         $conversations = \App\Models\Conversation::where('user_id', $userId)
+            ->where('is_archived', $archived)
             ->orderBy('updated_at', 'desc')
             ->get();
         return response()->json($conversations);
@@ -28,7 +31,8 @@ class ConversationController extends Controller
             'email' => $email,
             'title' => 'New Chat',
             'last_message' => 'No messages yet',
-            'is_saved' => false
+            'is_saved' => false,
+            'is_archived' => false
         ]);
 
         return response()->json($conversation, 201);
@@ -45,6 +49,7 @@ class ConversationController extends Controller
 
         if ($request->has('title')) $conversation->title = $request->title;
         if ($request->has('is_saved')) $conversation->is_saved = $request->is_saved;
+        if ($request->has('is_archived')) $conversation->is_archived = $request->is_archived;
 
         $conversation->save();
         return response()->json($conversation);

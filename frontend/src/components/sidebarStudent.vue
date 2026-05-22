@@ -129,7 +129,6 @@
           >
             <div class="dropdown-item" @click="saveChat(dropdown.index)"><i class='bx bx-save'></i> Save</div>
             <div class="dropdown-item" @click="archiveChat(dropdown.index)"><i class='bx bx-archive'></i> Archive</div>
-            <div class="dropdown-item delete" @click="deleteChat(dropdown.index)"><i class='bx bx-trash'></i> Delete</div>
           </div>
         </Teleport>
       </nav>
@@ -386,6 +385,18 @@ const closeTermsModal = () => {
   showTermsModal.value = false
 }
 
+const handleConversationError = (error, fallbackMessage) => {
+  if (error.response?.status === 403 && error.response?.data?.status === 'TERMS_REQUIRED') {
+    termsModalMode.value = 'accept'
+    termsModalSection.value = 'terms'
+    showTermsModal.value = true
+    toast.info('Please accept the terms before managing chats.')
+    return
+  }
+
+  toast.error(fallbackMessage)
+}
+
 // ── DEDICATED TERMS OF USE / PRIVACY POLICY MODALS (sidebar menu) ──
 const showTermsOfUse = ref(false)
 const showPrivacyPolicy = ref(false)
@@ -504,9 +515,9 @@ const restoreChat = (index) => {
         const token = localStorage.getItem('token')
         await axios.patch(`/api/conversations/${chat.id}`, { is_archived: false }, { headers: { Authorization: `Bearer ${token}` } })
         archivedChats.value.splice(index, 1)
-        updateConversation(chat.id, { is_archived: false })
+        addConversation({ ...chat, is_archived: false })
         toast.success('Chat restored!')
-      } catch { toast.error('Failed to restore chat') }
+      } catch (error) { handleConversationError(error, 'Failed to restore chat') }
     }
   })
 }
@@ -518,14 +529,14 @@ const deleteArchivedChat = (index) => {
     actionCallback: async () => {
       try {
         const token = localStorage.getItem('token')
-        await axios.delete(`/api/conversations/${chat.id}`, { headers: { Authorization: `Bearer ${token}` } })
+        await axios.delete(`/api/conversations/${chat.id}`, { data: {}, headers: { Authorization: `Bearer ${token}` } })
         archivedChats.value.splice(index, 1)
         removeConversation(chat.id)
         if (route.query.conversation_id == chat.id) {
           router.push('/ChatConvo')
         }
         toast.success('Archived chat deleted!')
-      } catch { toast.error('Failed to delete archived chat') }
+      } catch (error) { handleConversationError(error, 'Failed to delete archived chat') }
     }
   })
 }
@@ -542,14 +553,14 @@ const closeDropdown = () => { dropdown.value.visible = false }
 // ── CHAT ACTIONS ──
 const createNewChat = async () => {
   try {
-    const res = await axios.post('/api/conversations')
+    const res = await axios.post('/api/conversations', {})
     addConversation(res.data)
     emit('select-chat', res.data.id)
     if (isMobile.value) mobileOpen.value = false
     router.currentRoute.value.path !== '/ChatConvo'
       ? router.push({ path: '/ChatConvo', query: { conversation_id: res.data.id } })
       : router.push({ query: { conversation_id: res.data.id } })
-  } catch { toast.error('Failed to create new chat') }
+  } catch (error) { handleConversationError(error, 'Failed to create new chat') }
 }
 
 const selectChat = (id) => {
@@ -581,7 +592,7 @@ const archiveChat = (index) => {
         const token = localStorage.getItem('token')
         await axios.patch(`/api/conversations/${chat.id}`, { is_archived: true }, { headers: { Authorization: `Bearer ${token}` } })
         removeConversation(chat.id); toast.success('Chat archived!'); closeDropdown()
-      } catch { toast.error('Failed to archive chat') }
+      } catch (error) { handleConversationError(error, 'Failed to archive chat') }
     }
   })
 }
@@ -593,7 +604,7 @@ const deleteChat = (index) => {
     title: 'Delete Chat', message: 'Are you sure you want to permanently delete this chat?', confirmText: 'Delete', type: 'danger',
     actionCallback: async () => {
       try {
-        await axios.delete(`/api/conversations/${id}`)
+        await axios.delete(`/api/conversations/${id}`, { data: {} })
         removeConversation(id); 
         closeDropdown();
         if (route.query.conversation_id == id) {

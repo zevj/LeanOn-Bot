@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\CrisisAlertController;
 use App\Http\Controllers\EmotionController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\AnalyticsController;
 
 // ── Public Routes (rate-limited) ──────────────────────────────────
 // These endpoints are accessible without authentication but are
@@ -92,6 +93,13 @@ Route::middleware(['auth:sanctum', 'role:guidance'])->prefix('admin')->group(fun
     Route::get('/profile', [AuthController::class, 'getAdminProfile']);
     Route::put('/profile', [AuthController::class, 'updateAdminProfile']);
     Route::post('/profile/image', [AuthController::class, 'uploadProfileImage']);
+
+    // ── AI Analytics & Insights ───────────────────────────────
+    Route::get('/analytics/dashboard', [AnalyticsController::class, 'dashboard']);
+    Route::get('/analytics/trends', [AnalyticsController::class, 'trends']);
+    Route::get('/analytics/insights', [AnalyticsController::class, 'insights']);
+    Route::get('/analytics/wellness-report', [AnalyticsController::class, 'wellnessReport']);
+    Route::get('/analytics/snapshots', [AnalyticsController::class, 'snapshots']);
 });
 
 // ── Google Auth Routes ────────────────────────────────────────────

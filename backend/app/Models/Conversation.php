@@ -11,7 +11,13 @@ class Conversation extends Model
         'email',
         'title',
         'last_message',
-        'is_saved'
+        'is_saved',
+        'is_archived'
+    ];
+
+    protected $casts = [
+        'is_saved' => 'boolean',
+        'is_archived' => 'boolean',
     ];
 
     public function messages()
