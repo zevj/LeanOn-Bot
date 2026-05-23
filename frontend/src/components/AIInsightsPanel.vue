@@ -16,10 +16,6 @@
           <p class="insights-subtitle" v-else>Awaiting first generation...</p>
         </div>
       </div>
-      <div class="scheduled-badge">
-        <i class='bx bx-calendar-check'></i>
-        <span>Daily scheduled</span>
-      </div>
 
       <!-- Manual Generate Button -->
       <button
@@ -217,16 +213,27 @@ const handleGenerate = async () => {
   generating.value = true
   try {
     const token = localStorage.getItem('token')
-    const res = await axios.post(
+
+    // Step 1: trigger generation
+    await axios.post(
       '/api/admin/analytics/insights/generate?period=weekly&force=1',
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     )
-    // Stamp cooldown
+
+    // Step 2: re-fetch the stored insights from the GET endpoint
+    // This guarantees we display exactly what was saved to the DB,
+    // bypassing any stale cache or response shape mismatch.
+    const res = await axios.get(
+      '/api/admin/analytics/insights?period=weekly',
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+
+    // Stamp cooldown only after confirmed success
     localStorage.setItem(STORAGE_KEY, Date.now().toString())
     generateDisabled.value = true
     updateCooldownLabel(COOLDOWN_MS)
-    // res.data is the flat insights payload (same shape as getLatestInsights)
+
     emit('insights-generated', res.data)
   } catch (err) {
     console.error('Failed to generate insights:', err)
@@ -337,25 +344,6 @@ const getTrendIcon = (direction) => {
   font-size: 12px;
   opacity: 0.8;
   margin: 2px 0 0;
-}
-
-.scheduled-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  backdrop-filter: blur(4px);
-  font-family: 'DM Sans', system-ui, sans-serif;
-}
-
-.scheduled-badge i {
-  font-size: 16px;
 }
 
 /* ── Generate Button ── */
