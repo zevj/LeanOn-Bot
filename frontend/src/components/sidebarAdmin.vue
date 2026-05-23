@@ -139,6 +139,17 @@
           </div>
         </div>
       </transition>
+
+      <ConfirmationModal
+        :visible="confirmModal.visible"
+        :title="confirmModal.title"
+        :message="confirmModal.message"
+        :confirmText="confirmModal.confirmText"
+        :cancelText="confirmModal.cancelText"
+        :type="confirmModal.type"
+        @confirm="executeConfirm"
+        @cancel="cancelConfirm"
+      />
     </Teleport>
 
   </aside>
@@ -148,6 +159,7 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import axios from 'axios'
 import { useSidebarToggle } from '@/composables/useSidebarToggle'
+import ConfirmationModal from '@/components/ConfirmationModal.vue'
 
 const props = defineProps({
   open: Boolean,
@@ -209,16 +221,33 @@ const closeModal = () => {
   showLogoutModal.value = false
 }
 
-const confirmLogout = async () => {
-  showLogoutModal.value = false
-  try {
-    const token = localStorage.getItem('token')
-    await axios.post('/api/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
-  } catch (e) {
-    console.error('Logout API error:', e)
-  }
-  localStorage.removeItem('token')
-  window.location.href = '/login'
+const confirmLogout = () => {
+  closeModal()
+  openConfirmModal({
+    title: 'Logout',
+    message: 'Are you sure you want to logout?',
+    confirmText: 'Logout',
+    type: 'danger',
+    actionCallback: async () => {
+      try {
+        const token = localStorage.getItem('token')
+        await axios.post('/api/logout', {}, { headers: { Authorization: `Bearer ${token}` } })
+      } catch (e) {
+        console.error('Logout API error:', e)
+      }
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+    }
+  })
+}
+
+// ── CONFIRM MODAL ──
+const confirmModal = ref({ visible: false, title: '', message: '', confirmText: '', cancelText: 'Cancel', type: 'primary', actionCallback: null })
+const openConfirmModal = (options) => { confirmModal.value = { ...confirmModal.value, ...options, visible: true } }
+const cancelConfirm = () => { confirmModal.value.visible = false }
+const executeConfirm = async () => {
+  if (confirmModal.value.actionCallback) await confirmModal.value.actionCallback()
+  confirmModal.value.visible = false
 }
 
 onMounted(() => {

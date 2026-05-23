@@ -66,9 +66,9 @@ class GeminiInsightsProvider implements AIProviderInterface
                     ],
                 ],
                 'generationConfig' => [
-                    'temperature'      => 0.2,
+                    'temperature'      => 0.1,
                     'topP'             => 0.8,
-                    'maxOutputTokens'  => (int) config('services.ai_insights.max_output_tokens', 600),
+                    'maxOutputTokens'  => (int) config('services.ai_insights.max_output_tokens', 1200),
                     'responseMimeType' => 'application/json',
                 ],
             ]);
@@ -104,9 +104,13 @@ class GeminiInsightsProvider implements AIProviderInterface
         // Support both the compact new format and the legacy extended format
         $insights = $this->normalizeList($parsed['insights'] ?? $parsed['key_insights'] ?? []);
 
-        $wellnessSummary = is_string($parsed['wellness_summary'] ?? null)
-            ? $parsed['wellness_summary']
-            : (is_string($parsed['summary'] ?? null) ? $parsed['summary'] : '');
+        // Accept both "wellness_summary" (correct) and "summary" (Gemini alias)
+        $wellnessSummary = '';
+        if (is_string($parsed['wellness_summary'] ?? null)) {
+            $wellnessSummary = $parsed['wellness_summary'];
+        } elseif (is_string($parsed['summary'] ?? null)) {
+            $wellnessSummary = $parsed['summary'];
+        }
 
         return [
             'insights'                    => $insights,
@@ -127,21 +131,32 @@ class GeminiInsightsProvider implements AIProviderInterface
 
     private function parseStrictJson(string $text): ?array
     {
-        $candidates = [trim($text)];
+        // Build a list of candidates to try, from most to least specific
+        $candidates = [];
 
-        if (preg_match('/```(?:json)?\s*([\s\S]*?)\s*```/', $text, $matches)) {
+        // 1. Strip markdown code fences
+        if (preg_match('/```(?:json)?\s*([\s\S]*?)\s*```/i', $text, $matches)) {
             $candidates[] = trim($matches[1]);
         }
 
+        // 2. Extract the outermost {...} block
         $firstBrace = strpos($text, '{');
-        $lastBrace = strrpos($text, '}');
+        $lastBrace  = strrpos($text, '}');
         if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
             $candidates[] = substr($text, $firstBrace, $lastBrace - $firstBrace + 1);
         }
 
+        // 3. Raw trimmed text as last resort
+        $candidates[] = trim($text);
+
         foreach ($candidates as $candidate) {
+            // Strip BOM
             $candidate = preg_replace('/^\xEF\xBB\xBF/', '', $candidate);
+            // Remove trailing commas before } or ]
             $candidate = preg_replace('/,\s*([}\]])/', '$1', $candidate);
+            // Remove control characters that break JSON parsing
+            $candidate = preg_replace('/[\x00-\x1F\x7F](?<!["\n\r\t])/', '', $candidate);
+
             $decoded = json_decode($candidate, true);
 
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {

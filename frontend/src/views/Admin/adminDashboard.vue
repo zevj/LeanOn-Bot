@@ -9,21 +9,13 @@
         <main class="main-area">
             <HeaderAdmin @toggle-sidebar="sidebarOpen = !sidebarOpen; localStorage.setItem('adminSidebarOpen', sidebarOpen)" />
 
-            <!-- Attached the ref here so we can target this specific container for the PDF -->
-            <div class="main-container" ref="dashboardRef">
+            <div class="main-container">
 
-                <!-- NEW WRAPPER: Aligns the Title and the Button -->
                 <div class="page-header-wrapper">
                     <div class="header-title">
                         <h1 class="title">Dashboard Overview</h1>
                         <p class="subtext">Usage statistics and interaction analytics</p>
                     </div>
-
-                    <!-- PDF Download Button (Hidden in the actual PDF via html2canvas-ignore) -->
-                    <button class="download-btn" @click="downloadPDF" data-html2canvas-ignore="true">
-                        <i class='bx bx-download'></i>
-                        <span>Download PDF</span>
-                    </button>
                 </div>
 
                 <!-- STATS -->
@@ -85,8 +77,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import { jsPDF } from 'jspdf';             
-import html2canvas from 'html2canvas';     
 import SidebarAdmin from '@/components/sidebarAdmin.vue';
 import HeaderAdmin from '@/components/headerAdmin.vue';
 import DailyInteractionsChart from '@/components/DailyInteractionsChart.vue';
@@ -94,9 +84,6 @@ import MonthlyTrendChart from '@/components/MonthlyTrendChart.vue';
 
 const sidebarOpen = ref(localStorage.getItem('adminSidebarOpen') !== 'false');
 const loading = ref(true); // Start as true to hide charts until fetch completes
-
-// Reference to the dashboard container we want to export
-const dashboardRef = ref(null);
 
 // Reactive state for stats
 const stats = ref({
@@ -134,39 +121,6 @@ const fetchDashboardStats = async () => {
 onMounted(() => {
     fetchDashboardStats();
 });
-
-// PDF Generation Logic utilizing jsPDF + html2canvas for capturing graphs
-const downloadPDF = async () => {
-    const element = dashboardRef.value;
-    
-    try {
-        // 1. Capture the dashboard as a high-res image
-        const canvas = await html2canvas(element, { 
-            scale: 2, 
-            useCORS: true,
-            backgroundColor: '#f7f8fa' // Matches the layout background cleanly
-        });
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
-        
-        // 2. Create the PDF document (Landscape, Points, A4 format)
-        const pdf = new jsPDF('l', 'pt', 'a4');
-        
-        // 3. Calculate width/height to make sure the dashboard scales correctly to the PDF page
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        // 4. Add image to PDF and Download
-        pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
-        
-        const currentDate = new Date().toLocaleDateString('en-PH').replace(/\//g, '-');
-        pdf.save(`Dashboard-Overview-${currentDate}.pdf`);
-        
-    } catch (error) {
-        console.error('Error generating Dashboard PDF:', error);
-        alert("There was an issue generating the PDF. Please check the console.");
-    }
-};
 </script>
 
 <style scoped src="@/assets/admin/adminDashboard.css"></style>
