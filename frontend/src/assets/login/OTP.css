@@ -30,6 +30,7 @@
     border: 1px solid rgba(0, 0, 0, 0.07);
     box-sizing: border-box;
     transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    overflow: hidden;
 }
 
 .login-title {
@@ -69,14 +70,15 @@ span {
 
 /* otp */
 .otp-container {
-    display: flex;
-    gap: 38px;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: clamp(8px, 2vw, 14px);
     margin-bottom: 30px;
     opacity: 0;
     transform: translateY(20px);
     animation: fadeSlideUp 0.5s forwards;
     animation-delay: 0.5s;
-    /* after title/subtitle */
+    width: 100%;
 }
 
 @keyframes fadeSlideUp {
@@ -113,7 +115,9 @@ span {
 
 
 .otp-input {
-    width: 68.5px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     height: 80px;
     text-align: center;
     font-size: 22px;
@@ -121,10 +125,9 @@ span {
     border-radius: 8px;
     outline: none;
     transition: 0.15s ease-in-out all;
+    box-sizing: border-box;
     opacity: 0;
-    /* start hidden */
     transform: translateY(20px);
-    /* start slightly down */
     animation: otpFadeIn 0.4s forwards;
 }
 
@@ -429,4 +432,23 @@ span {
     -webkit-box-shadow: 0 0 0 1000px var(--surface-color) inset !important;
     box-shadow: 0 0 0 1000px var(--surface-color) inset !important;
     -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+@media (max-width: 640px) {
+    .left-container {
+        padding: 6vh 5vw;
+    }
+
+    .login-form {
+        padding: 24px 20px;
+    }
+
+    .otp-container {
+        gap: 8px;
+    }
+
+    .otp-input {
+        height: 64px;
+        font-size: 20px;
+    }
 }

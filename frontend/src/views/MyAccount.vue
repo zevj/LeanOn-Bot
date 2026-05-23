@@ -300,6 +300,7 @@ const showNew = ref(false)
 // UI states
 const preview = ref(null)
 const showOTP = ref(false)
+const fallbackProfileImage = '/leanOnBot.png'
 
 
 
@@ -321,15 +322,17 @@ const form = ref({ ...profile.value })
 // Computed for profile image
 const profileImage = computed(() => {
     if (preview.value) return preview.value
-    if (profile.value.profile_image_url) {
-        // If it's already an absolute URL, return it. Otherwise, prefix with base URL
-        if (profile.value.profile_image_url.startsWith('http')) {
-            return profile.value.profile_image_url
-        }
-        const baseURL = axios.defaults.baseURL || 'http://127.0.0.1:8000'
-        return `${baseURL}/storage/${profile.value.profile_image_url}`
-    }
-    return 'https://placehold.co/100x100'
+    const imageUrl = profile.value.profile_image_url || profile.value.profile_image
+    if (!imageUrl) return fallbackProfileImage
+
+    if (imageUrl.startsWith('http')) return imageUrl
+
+    const baseURL = (axios.defaults.baseURL || 'http://127.0.0.1:8000').replace(/\/$/, '')
+    const path = imageUrl.startsWith('storage/')
+        ? imageUrl
+        : `storage/${imageUrl.replace(/^\//, '')}`
+
+    return `${baseURL}/${path}`
 })
 
 // OTP
@@ -387,6 +390,7 @@ async function handleUpload(event) {
         })
         toast.success("Profile image updated!")
         profile.value.profile_image_url = response.data.user.profile_image_url
+        preview.value = null
     } catch (error) {
         toast.error(error.response?.data?.message || "Failed to upload image")
     }

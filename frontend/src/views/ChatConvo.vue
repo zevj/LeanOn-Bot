@@ -118,7 +118,7 @@ const handleSend = async (text) => {
     if (!conversationId) {
         isAutoCreating.value = true;
         try {
-            const res = await axios.post('/api/conversations');
+            const res = await axios.post('/api/conversations', {});
             conversationId = res.data.id;
             addConversation(res.data);
             await router.replace({ query: { conversation_id: conversationId } });

@@ -42,6 +42,10 @@
         <i class='bx bx-line-chart'></i>
       </router-link>
 
+      <router-link to="/AdminAnalytics" class="rail-btn" title="AI Analytics" @click.stop>
+        <i class='bx bx-brain'></i>
+      </router-link>
+
       <router-link to="/AdminLogRecords" class="rail-btn" title="Log Records" @click.stop>
         <i class='bx bx-file'></i>
       </router-link>
@@ -86,6 +90,11 @@
         <router-link to="/EmotionalTrends" class="menu-item" active-class="active" @click="handleNavClick">
           <i class='bx bx-line-chart'></i>
           <span>Emotional Trends</span>
+        </router-link>
+
+        <router-link to="/AdminAnalytics" class="menu-item" active-class="active" @click="handleNavClick">
+          <i class='bx bx-brain'></i>
+          <span>AI Analytics</span>
         </router-link>
 
         <router-link to="/AdminLogRecords" class="menu-item" active-class="active" @click="handleNavClick">

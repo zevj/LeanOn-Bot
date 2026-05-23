@@ -15,30 +15,57 @@
                     <p class="subtext">Flagged conversations requiring attention</p>
                 </div>
 
-                <!-- STATS — order: Severe → Moderate → Low -->
-                <div class="whole-stat-card">
-                    <div class="stat-card-wrap s-severe stagger-1">
-                        <div class="stat-left">
-                            <span class="stat-label">Severe</span>
-                            <span class="stat-number">{{ statsData.severe_count ?? 0 }}</span>
-                        </div>
-                        <div class="stat-icon icon-severe"><i class="bx bxs-bell-ring"></i></div>
-                    </div>
-                    <div class="stat-card-wrap s-moderate stagger-2">
-                        <div class="stat-left">
-                            <span class="stat-label">Moderate</span>
-                            <span class="stat-number">{{ statsData.moderate_count ?? 0 }}</span>
-                        </div>
-                        <div class="stat-icon icon-moderate"><i class="bx bx-info-circle"></i></div>
-                    </div>
-                    <div class="stat-card-wrap s-low stagger-3">
-                        <div class="stat-left">
-                            <span class="stat-label">Low</span>
-                            <span class="stat-number">{{ statsData.low_count ?? 0 }}</span>
-                        </div>
-                        <div class="stat-icon icon-low"><i class="bx bx-check-shield"></i></div>
-                    </div>
-                </div>
+                <!-- STATS — order: Severe → Moderate → Low → Awaiting -->
+<div class="whole-stat-card">
+    <div
+        class="stat-card-wrap s-severe stagger-1"
+        :class="{ 'stat-active': filterPriority === 'severe' }"
+        style="cursor: pointer;"
+        @click="toggleStatFilter('severe')"
+    >
+        <div class="stat-left">
+            <span class="stat-label">Severe</span>
+            <span class="stat-number">{{ statsData.severe_count ?? 0 }}</span>
+        </div>
+        <div class="stat-icon icon-severe"><i class="bx bxs-bell-ring"></i></div>
+    </div>
+    <div
+        class="stat-card-wrap s-moderate stagger-2"
+        :class="{ 'stat-active': filterPriority === 'moderate' }"
+        style="cursor: pointer;"
+        @click="toggleStatFilter('moderate')"
+    >
+        <div class="stat-left">
+            <span class="stat-label">Moderate</span>
+            <span class="stat-number">{{ statsData.moderate_count ?? 0 }}</span>
+        </div>
+        <div class="stat-icon icon-moderate"><i class="bx bx-info-circle"></i></div>
+    </div>
+    <div
+        class="stat-card-wrap s-low stagger-3"
+        :class="{ 'stat-active': filterPriority === 'low' }"
+        style="cursor: pointer;"
+        @click="toggleStatFilter('low')"
+    >
+        <div class="stat-left">
+            <span class="stat-label">Low</span>
+            <span class="stat-number">{{ statsData.low_count ?? 0 }}</span>
+        </div>
+        <div class="stat-icon icon-low"><i class="bx bx-check-shield"></i></div>
+    </div>
+    <div
+        class="stat-card-wrap s-pending stagger-4"
+        :class="{ 'stat-active': showOnlyUnclassified }"
+        style="cursor: pointer;"
+        @click="toggleUnclassifiedFilter"
+    >
+        <div class="stat-left">
+            <span class="stat-label">Awaiting Review</span>
+            <span class="stat-number">{{ statsData.unclassified_count ?? unclassifiedAlerts.length }}</span>
+        </div>
+        <div class="stat-icon icon-pending"><i class="bx bx-time-five"></i></div>
+    </div>
+</div>
 
                 <!-- KEYWORD REFERENCE -->
                 <div class="section-card fade-in">
@@ -62,7 +89,7 @@
                 </div>
 
                 <!-- ── AWAITING CLASSIFICATION ── -->
-                <div class="alert-section fade-in" v-if="unclassifiedAlerts.length > 0">
+                <div class="alert-section fade-in" ref="unclassifiedSectionRef" v-if="unclassifiedAlerts.length > 0 || showOnlyUnclassified">
                     <div class="alert-section-header">
                         <div class="alert-section-label-group">
                             <span class="alert-section-dot dot-pending"></span>
@@ -96,6 +123,12 @@
                                         :key="kw"
                                         class="alert-keyword-tag keyword--plain"
                                     >{{ kw }}</span>
+                                </div>
+
+                                <!-- Flag reason badge -->
+                                <div v-if="alert.flag_reason" class="alert-flag-reason">
+                                    <i class="bx bx-flag"></i>
+                                    <span>{{ alert.flag_reason }}</span>
                                 </div>
 
                                 <p class="alert-user">{{ alert.user_display }} · {{ alert.masked_email }}</p>
@@ -139,15 +172,7 @@
                             </div>
 
                             <div class="alert-card-actions">
-                                <button class="action-btn action-btn--email" @click="openEmailModal(alert)">
-                                    <i class="bx bx-send"></i> Email
-                                </button>
-                                <button class="action-btn action-btn--review" @click="updateStatus(alert, 'reviewed')">
-                                    <i class="bx bx-search-alt"></i> Review
-                                </button>
-                                <button class="action-btn action-btn--resolve" @click="openResolveModal(alert)">
-                                    <i class="bx bx-check"></i> Resolve
-                                </button>
+                                <!-- No actions on unclassified cards — admin must assign severity first -->
                             </div>
                         </div>
                     </div>
@@ -366,6 +391,52 @@
                                 <span class="email-field-label">Subject</span>
                                 <div class="email-field-value">{{ emailModal.subject }}</div>
                             </div>
+                            <!-- SCHEDULE APPOINTMENT — only for severe / moderate -->
+<div
+    v-if="emailModal.severity === 'severe' || emailModal.severity === 'moderate'"
+    class="email-field-group"
+>
+    <span class="email-field-label">Schedule Appointment</span>
+
+    <label class="schedule-checkbox-label">
+        <input
+            type="checkbox"
+            class="schedule-checkbox"
+            v-model="emailModal.withAppointment"
+        />
+        <span class="schedule-checkbox-text">Include appointment with this email</span>
+    </label>
+
+    <!-- Date & time — only when checked -->
+    <div v-if="emailModal.withAppointment" class="schedule-fields">
+        <div class="schedule-row">
+            <div class="schedule-input-wrap">
+                <i class="bx bx-calendar schedule-icon"></i>
+                <input
+                    type="date"
+                    class="schedule-input"
+                    v-model="emailModal.appointmentDate"
+                    :min="todayDate"
+                />
+            </div>
+            <div class="schedule-input-wrap">
+                <i class="bx bx-time schedule-icon"></i>
+                <input
+                    type="time"
+                    class="schedule-input"
+                    v-model="emailModal.appointmentTime"
+                />
+            </div>
+        </div>
+        <p class="schedule-hint">
+            <i class="bx bx-info-circle"></i>
+            An appointment request will be included in the email sent to the student.
+        </p>
+    </div>
+
+    <!-- When unchecked -->
+    <p v-else class="schedule-none-text">No appointment — email only.</p>
+</div>
                             <div class="email-field-group">
                                 <span class="email-field-label">Severity</span>
                                 <div style="padding: 6px 0;">
@@ -431,7 +502,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 import { useToast } from 'vue-toastification';
 import SidebarAdmin from '@/components/sidebarAdmin.vue';
@@ -441,13 +512,27 @@ const toast = useToast();
 const sidebarOpen = ref(localStorage.getItem('adminSidebarOpen') !== 'false');
 const loading = ref(false);
 
-// ── Pagination ─────────────────────────────────────────────────
-const PAGE_SIZE = 3; // show 3 per page so pagination is always visible
+// ── Alert Data (declared first — used by pagination computeds below) ──
+const alerts = ref([]);
+const unclassifiedAlerts = ref([]);
+const statsData = ref({ severe_count: 0, moderate_count: 0, low_count: 0, unclassified_count: 0 });
 
-// Helper: generates [1, 2, 3, ...n]
+// ── Awaiting Review filter / scroll ───────────────────────────
+const showOnlyUnclassified = ref(false);
+const unclassifiedSectionRef = ref(null);
+
+const toggleUnclassifiedFilter = async () => {
+    showOnlyUnclassified.value = !showOnlyUnclassified.value;
+    if (showOnlyUnclassified.value) {
+        await nextTick();
+        unclassifiedSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
+
+// ── Pagination ─────────────────────────────────────────────────
+const PAGE_SIZE = 3;
 const pageRange = (n) => Array.from({ length: n }, (_, i) => i + 1);
 
-// Awaiting classification pagination
 const unclassifiedPage = ref(1);
 const totalUnclassifiedPages = computed(() =>
     Math.max(1, Math.ceil(unclassifiedAlerts.value.length / PAGE_SIZE))
@@ -457,7 +542,6 @@ const pagedUnclassified = computed(() => {
     return unclassifiedAlerts.value.slice(start, start + PAGE_SIZE);
 });
 
-// Classified pagination
 const classifiedPage = ref(1);
 const totalClassifiedPages = computed(() =>
     Math.max(1, Math.ceil(sortedClassifiedAlerts.value.length / PAGE_SIZE))
@@ -492,58 +576,12 @@ const currentKeywords = computed(() => keywordMap[activeSeverity.value] ?? []);
 const filterPriority = ref('');
 const filterStatus   = ref('');
 
-// ── Alert Data ─────────────────────────────────────────────────
-const alerts = ref([]);
-const statsData = ref({ severe_count: 0, moderate_count: 0, low_count: 0 });
-
-// ── Static Pending Alerts (for demo — no backend yet) ──────────
-const staticPendingAlerts = ref([
-    {
-        id: 'static-1',
-        message: "I just feel so hopeless lately, I don't think things will ever get better.",
-        detected_keywords: ['hopeless'],
-        user_display: 'Anonymous #1001',
-        masked_email: '2023*****@gordoncollege.edu.ph',
-        created_at: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-        severity: null,
-        status: 'new',
-        _isStatic: true,
-    },
-    {
-        id: 'static-2',
-        message: "No one understands what I'm going through. I feel completely alone and I'm breaking down.",
-        detected_keywords: ['no one understands', 'alone', 'breaking down'],
-        user_display: 'Anonymous #1001',
-        masked_email: '2023*****@gordoncollege.edu.ph',
-        created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-        severity: null,
-        status: 'new',
-        _isStatic: true,
-    },
-    {
-        id: 'static-3',
-        message: "I've been so overwhelmed with everything, I can't sleep and I can't cope anymore.",
-        detected_keywords: ['overwhelmed', "can't cope"],
-        user_display: 'Anonymous #1001',
-        masked_email: '2023*****@gordoncollege.edu.ph',
-        created_at: new Date(Date.now() - 1000 * 60 * 72).toISOString(),
-        severity: null,
-        status: 'new',
-        _isStatic: true,
-    },
-]);
-
 // Severity sort order: severe first, moderate second, low third
 const SEVERITY_ORDER = { severe: 0, moderate: 1, low: 2 };
 
-const unclassifiedAlerts = computed(() => [
-    ...staticPendingAlerts.value,
-    ...alerts.value.filter(a => !a.severity || a.severity === 'unclassified'),
-]);
-
 // Classified alerts sorted by severity hierarchy (severe → moderate → low)
 const sortedClassifiedAlerts = computed(() =>
-    [...alerts.value.filter(a => a.severity && a.severity !== 'unclassified')]
+    [...alerts.value]
         .sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 99) - (SEVERITY_ORDER[b.severity] ?? 99))
 );
 
@@ -560,8 +598,10 @@ const fetchAlerts = async () => {
             params,
         });
 
-        alerts.value    = res.data.alerts.data;
-        statsData.value = res.data.stats;
+        // New API returns both unclassified and classified separately
+        unclassifiedAlerts.value = res.data.unclassified?.data ?? [];
+        alerts.value             = res.data.alerts?.data       ?? [];
+        statsData.value          = res.data.stats              ?? { severe_count: 0, moderate_count: 0, low_count: 0, unclassified_count: 0 };
     } catch (err) {
         console.error('Failed to fetch crisis alerts:', err);
         toast.error('Failed to load crisis alerts.');
@@ -624,34 +664,11 @@ const confirmSeverity = async (alert) => {
     if (!chosen) return;
     assigningId.value = alert.id;
 
-    // Static alert: handle locally
-    if (alert._isStatic) {
-        const idx = staticPendingAlerts.value.findIndex(a => a.id === alert.id);
-        if (idx !== -1) {
-            const moved = { ...staticPendingAlerts.value[idx], severity: chosen, status: 'new' };
-            delete moved._isStatic;
-            staticPendingAlerts.value.splice(idx, 1);
-            alerts.value.unshift(moved);
-            // Reset unclassified page if current page is now out of range
-            if (unclassifiedPage.value > totalUnclassifiedPages.value) {
-                unclassifiedPage.value = Math.max(1, totalUnclassifiedPages.value);
-            }
-        }
-        const copy = { ...pendingSeverity.value };
-        delete copy[alert.id];
-        pendingSeverity.value = copy;
-        assigningId.value = null;
-        toast.success(`Alert classified as ${capitalize(chosen)}.`, { timeout: 3000 });
-        return;
-    }
-
-    // Backend alert: PATCH as normal
     try {
         const token = localStorage.getItem('token');
         await axios.patch(`/api/admin/crisis-alerts/${alert.id}`, { severity: chosen }, {
             headers: { Authorization: `Bearer ${token}` },
         });
-        alert.severity = chosen;
         const copy = { ...pendingSeverity.value };
         delete copy[alert.id];
         pendingSeverity.value = copy;
@@ -684,13 +701,19 @@ const confirmResolve = async () => {
 const emailModal = ref({ visible: false, maskedEmail: '', subject: '', severity: '', body: '', alertId: null });
 
 const openEmailModal = (alert) => {
+    const severityLabel = alert.severity ? capitalize(alert.severity) : 'Unclassified';
+    const defaultBody = `Dear Student,\n\nOur system has detected that you may be going through a difficult time. We want you to know that support is available and you are not alone.\n\nPlease don't hesitate to reach out to our guidance counselors or visit the wellness center at your earliest convenience.\n\nTake care of yourself.\n\nLeanOn Bot Support Team`;
+
     emailModal.value = {
-        visible:     true,
-        maskedEmail: alert.masked_email,
-        subject:     `Urgent: Crisis Alert — Action Required`,
-        severity:    alert.severity || '',
-        alertId:     alert.id,
-        body:        `Dear Student,`,
+        visible:         true,
+        maskedEmail:     alert.masked_email,
+        subject:         `Wellness Support — LeanOn Bot`,
+        severity:        alert.severity || '',
+        alertId:         alert.id,
+        body:            defaultBody,
+        appointmentDate: '',
+        appointmentTime: '',
+        withAppointment: false,
     };
 };
 const closeEmailModal = () => { emailModal.value.visible = false; };
@@ -698,7 +721,12 @@ const closeEmailModal = () => { emailModal.value.visible = false; };
 const sendEmail = async () => {
     try {
         const token = localStorage.getItem('token');
-        await axios.post(`/api/admin/crisis-alerts/${emailModal.value.alertId}/send-email`, {}, {
+        await axios.post(`/api/admin/crisis-alerts/${emailModal.value.alertId}/send-email`, {
+            subject:          emailModal.value.subject,
+            body:             emailModal.value.body,
+            appointment_date: emailModal.value.withAppointment ? emailModal.value.appointmentDate : null,
+            appointment_time: emailModal.value.withAppointment ? emailModal.value.appointmentTime : null,
+        }, {
             headers: { Authorization: `Bearer ${token}` },
         });
         toast.success('Email sent successfully.', { timeout: 3000 });
@@ -708,6 +736,17 @@ const sendEmail = async () => {
         toast.error('Failed to send email.');
     }
 };
+
+/* ADD STAT CARD CLICK FILTER*/
+const toggleStatFilter = (level) => {
+    filterPriority.value = filterPriority.value === level ? '' : level;
+    classifiedPage.value = 1;
+    fetchAlerts();
+};
+
+/*ADD APPOINTMENT ON MODAL */
+// Add this computed near the top of your script (alongside other refs)
+const todayDate = computed(() => new Date().toISOString().split('T')[0]);
 </script>
 
 <style scoped src="@/assets/admin/AdminCrisisAlert.css"></style>

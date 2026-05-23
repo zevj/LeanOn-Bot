@@ -1,13 +1,16 @@
 <template>
   <router-view />
-  <ThemeToggleFAB />
+  <ThemeToggleFAB v-if="!hideThemeToggle" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useTheme } from '@/composables/useTheme'
 import ThemeToggleFAB from '@/components/ThemeToggleFAB.vue'
 
+const route = useRoute()
+const hideThemeToggle = computed(() => route.meta.hideThemeToggle === true)
 const { initTheme } = useTheme()
 
 onMounted(() => {

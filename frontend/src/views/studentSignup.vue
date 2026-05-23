@@ -236,7 +236,7 @@ const togglePassword = () => showPassword.value = !showPassword.value
 const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value
 
 const loginWithGoogle = () => {
-  const baseURL = axios.defaults.baseURL || 'http://127.0.0.1:8000'
+  const baseURL = axios.defaults.baseURL || import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001'
   window.location.href = `${baseURL}/api/auth/google/redirect`
 }
 

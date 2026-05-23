@@ -45,4 +45,19 @@ return [
         'secret' => env('TURNSTILE_SECRET_KEY'),
     ],
 
+    // ── AI Analytics & Insights ───────────────────────────────
+    'ai_insights' => [
+        'provider'              => env('AI_INSIGHTS_PROVIDER', 'gemini'),
+        // Key #2: dedicated analytics key — separate quota from chat bot
+        'gemini_key'            => env('AI_INSIGHTS_GEMINI_KEY'),
+        // Key #3: fallback analytics key — used only when Key #2 hits quota
+        'gemini_fallback_key'   => env('AI_INSIGHTS_GEMINI_FALLBACK_KEY'),
+        'gemini_model'          => env('AI_INSIGHTS_GEMINI_MODEL', 'gemini-2.5-flash'),
+        'cache_ttl'             => env('AI_INSIGHTS_CACHE_TTL', 86400),    // 24 hours
+        'cooldown_ttl'          => env('AI_INSIGHTS_COOLDOWN_TTL', 21600), // 6 hours
+        'max_retries'           => env('AI_INSIGHTS_MAX_RETRIES', 1),
+        'timeout'               => env('AI_INSIGHTS_TIMEOUT', 25),
+        'max_output_tokens'     => env('AI_INSIGHTS_MAX_OUTPUT_TOKENS', 600),
+    ],
+
 ];

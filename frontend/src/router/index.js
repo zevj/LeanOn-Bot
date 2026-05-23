@@ -9,9 +9,9 @@ import LandingPage from '../views/LandingPage.vue'
 import AdminDashboard from '../views/Admin/adminDashboard.vue'
 import EmotionalTrends from '../views/Admin/EmotionalTrends.vue'
 import AdminCrisisAlerts from '../views/Admin/AdminCrisisAlert.vue'
-import AdminConfig from '../views/Admin/SystemConfiguration.vue'
 import AdminProfile from '../views/Admin/AdminProfile.vue'
 import AdminLogRecords from '../views/Admin/AdminLogRecords.vue'
+import AdminAnalytics from '../views/Admin/AdminAnalytics.vue'
 import GoogleCallback from '../views/GoogleCallback.vue'
 
 const routes = [
@@ -70,37 +70,42 @@ const routes = [
     path: '/adminDashboard',
     name: 'adminDashboard',
     component: AdminDashboard,
-    meta: { requiresAuth: true, role: 'guidance' }
+    meta: { requiresAuth: true, role: 'guidance', hideThemeToggle: true }
   },
 
   {
     path: '/EmotionalTrends',
     name: 'EmotionalTrends',
-    component: EmotionalTrends
+    component: EmotionalTrends,
+    meta: { hideThemeToggle: true }
   },
 
   {
     path: '/AdminCrisisAlerts',
     name: 'AdminCrisisAlerts',
-    component: AdminCrisisAlerts
-  },
-
-  {
-    path: '/AdminConfig',
-    name: 'AdminConfig',
-    component: AdminConfig
+    component: AdminCrisisAlerts,
+    meta: { hideThemeToggle: true }
   },
 
   {
     path: '/AdminProfile',
     name: 'AdminProfile',
-    component: AdminProfile
+    component: AdminProfile,
+    meta: { hideThemeToggle: true }
   },
 
   {
     path: '/AdminLogRecords',
     name: 'AdminLogRecords',
-    component: AdminLogRecords
+    component: AdminLogRecords,
+    meta: { hideThemeToggle: true }
+  },
+
+  {
+    path: '/AdminAnalytics',
+    name: 'AdminAnalytics',
+    component: AdminAnalytics,
+    meta: { requiresAuth: true, role: 'guidance', hideThemeToggle: true }
   },
 
   /* GOOGLE AUTH CALLBACK */

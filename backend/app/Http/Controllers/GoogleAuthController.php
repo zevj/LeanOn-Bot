@@ -35,7 +35,12 @@ class GoogleAuthController extends Controller
             $driver->setHttpClient(new Client(['verify' => false]));
         }
 
-        return $driver->stateless()->redirect();
+        return $driver
+            ->stateless()
+            ->with([
+                'prompt' => 'select_account',
+            ])
+            ->redirect();
     }
 
     /**

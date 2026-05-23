@@ -1,4 +1,4 @@
-<template>
+<template>  
     <div class="layout">
         <!-- Sidebar -->
         <SidebarAdmin
@@ -140,11 +140,20 @@
                                         </span>
                                     </td>
                                     <td data-label="User Details">
-                                        <div class="user-cell">
-                                            <span class="log-email">{{ r.masked_email }}</span>
-                                            <span class="program-text">{{ r.program }}</span>
-                                        </div>
-                                    </td>
+    <div class="user-cell">
+        <span class="log-email">
+            {{ revealedEmails.has(r.id) ? r.masked_email.replace(/\*/g, '') : r.masked_email }}
+            <button
+                class="reveal-btn"
+                @click="toggleEmail(r.id)"
+                :title="revealedEmails.has(r.id) ? 'Hide' : 'Show full email'"
+            >
+                <i :class="revealedEmails.has(r.id) ? 'bx bx-hide' : 'bx bx-show'"></i>
+            </button>
+        </span>
+        <span class="program-text">{{ r.program }}</span>
+    </div>
+</td>
                                     <td data-label="Department">
                                         <span class="dept-badge" :class="'dept-' + (r.department || '').toLowerCase()">
                                             {{ r.department }}
@@ -363,6 +372,15 @@ const downloadPDF = () => {
 onMounted(() => {
     fetchLogs();
 });
+
+/* ADD EYE ICON*/
+const revealedEmails = ref(new Set());
+
+const toggleEmail = (id) => {
+    const updated = new Set(revealedEmails.value);
+    updated.has(id) ? updated.delete(id) : updated.add(id);
+    revealedEmails.value = updated;
+};
 </script>
 
 <style scoped src="@/assets/admin/AdminLogRecords.css"></style>
