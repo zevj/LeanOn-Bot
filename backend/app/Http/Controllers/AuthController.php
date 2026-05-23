@@ -32,12 +32,12 @@ class AuthController extends Controller
         $request->validate([
             'email' => [
                 'required',
-                'regex:/^[0-9]{9}@gordoncollege\.edu\.ph$/'
+                'regex:/^[a-zA-Z0-9._%+\-]+@gordoncollege\.edu\.ph$/'
             ],
             'password' => 'required|min:6',
             'turnstile_token' => 'required|string'
         ], [
-            'email.regex' => 'Only Gordon College emails with 9-digit ID are allowed.',
+            'email.regex' => 'Only Gordon College email addresses are allowed.',
             'turnstile_token.required' => 'Security check is required.'
         ]);
 
