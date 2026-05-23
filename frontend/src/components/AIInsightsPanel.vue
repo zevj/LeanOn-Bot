@@ -226,8 +226,8 @@ const handleGenerate = async () => {
     localStorage.setItem(STORAGE_KEY, Date.now().toString())
     generateDisabled.value = true
     updateCooldownLabel(COOLDOWN_MS)
-    // Bubble fresh data up to parent
-    emit('insights-generated', res.data.insights ?? res.data)
+    // res.data is the flat insights payload (same shape as getLatestInsights)
+    emit('insights-generated', res.data)
   } catch (err) {
     console.error('Failed to generate insights:', err)
     alert('Failed to generate insights. Please try again.')

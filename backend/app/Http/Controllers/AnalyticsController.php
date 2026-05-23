@@ -130,15 +130,7 @@ class AnalyticsController extends Controller
 
             $insights = $this->aiInsights->generateInsights($period, $force);
 
-            return response()->json([
-                'message'      => 'Insights generated successfully.',
-                'period'       => $period,
-                'generated_at' => $insights['generated_at'] ?? now()->toIso8601String(),
-                'ai_provider'  => $insights['ai_provider'] ?? null,
-                'is_fallback'  => $insights['is_fallback'] ?? false,
-                'is_stale'     => $insights['is_stale'] ?? false,
-                'insights'     => $insights,
-            ]);
+            return response()->json($insights);
         } catch (\Exception $e) {
             Log::error('Manual AI insights generation failed: ' . $e->getMessage());
             return response()->json([
