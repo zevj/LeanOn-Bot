@@ -155,6 +155,20 @@ class VerifyHmac
             return true;
         }
 
+        // Admin action endpoints with no sensitive body — already protected by
+        // auth:sanctum + role:guidance, HMAC signing adds no value here and
+        // breaks when Cloudflare/Render proxies modify the request in transit.
+        $hmacExemptPaths = [
+            'api/admin/analytics/insights/generate',
+            'api/admin/crisis-alerts',
+        ];
+
+        foreach ($hmacExemptPaths as $path) {
+            if (str_contains($request->path(), $path)) {
+                return true;
+            }
+        }
+
         return false;
     }
 }

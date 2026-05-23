@@ -25,10 +25,13 @@
             <!-- Avatar -->
             <div class="avatar-section">
               <label for="upload-photo" class="avatar-label hover-glow-img">
-                <img
-                  :src="preview || profile.profile_image_url || 'https://placehold.co/150x150'"
-                  class="avatar-img"
-                  alt="Profile Photo"
+                <UserAvatar
+                  :src="adminAvatarSrc"
+                  :name="profile.first_name + ' ' + profile.last_name"
+                  :size="110"
+                  border-color="#ffffff"
+                  :border-width="4"
+                  class="admin-avatar"
                 />
                 <div class="avatar-overlay">
                   <i class='bx bx-camera'></i>
@@ -282,7 +285,8 @@
 <script setup>
 import SidebarAdmin from '@/components/sidebarAdmin.vue'
 import HeaderAdmin from '@/components/headerAdmin.vue'
-import { ref, onMounted } from 'vue'
+import UserAvatar from '@/components/UserAvatar.vue'
+import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
 
@@ -293,6 +297,20 @@ const isSaving = ref(false)
 const isSavingPassword = ref(false)
 const preview = ref(null)
 const showOTP = ref(false)
+
+// Computed avatar src — null triggers initials fallback in UserAvatar
+const adminAvatarSrc = computed(() => {
+  if (preview.value) return preview.value
+  const imageUrl = profile.value.profile_image_url
+  if (!imageUrl) return null
+  if (imageUrl.includes('ui-avatars.com')) return null
+  if (imageUrl.startsWith('http')) return imageUrl
+  const baseURL = (axios.defaults.baseURL || '').replace(/\/$/, '')
+  const path = imageUrl.startsWith('storage/')
+    ? imageUrl
+    : `storage/${imageUrl.replace(/^\//, '')}`
+  return baseURL ? `${baseURL}/${path}` : `/${path}`
+})
 const otpTimer = ref(0)
 let timerInterval = null
 const sidebarOpen = ref(false)

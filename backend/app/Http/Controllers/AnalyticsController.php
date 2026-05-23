@@ -193,21 +193,47 @@ class AnalyticsController extends Controller
     /**
      * GET /api/admin/analytics/export
      *
-     * Returns a structured JSON payload for PDF report generation on the frontend.
-     * Supports filtering by sections and period.
+     * Returns a structured JSON payload for PDF/CSV report generation on the frontend.
+     * Supports filtering by sections, preset period, or a custom date range.
      *
      * Query params:
-     *   period      = 1d|7d|14d|30d|90d  (default: 7d)
+     *   period      = 1d|7d|14d|30d|90d  (default: 7d) — ignored when start_date/end_date are set
+     *   start_date  = YYYY-MM-DD          (optional, custom range start)
+     *   end_date    = YYYY-MM-DD          (optional, custom range end)
      *   sections[]  = dashboard|trends|insights|snapshots  (default: all)
      */
     public function export(Request $request)
     {
-        $period = $request->query('period', '7d');
-        $allowedPeriods = ['1d', '7d', '14d', '30d', '90d'];
-        if (!in_array($period, $allowedPeriods)) {
-            $period = '7d';
+        // ── Date range resolution ──────────────────────────────────────────
+        $startDate = $request->query('start_date');
+        $endDate   = $request->query('end_date');
+        $isCustomRange = $startDate && $endDate;
+
+        if ($isCustomRange) {
+            // Validate date format
+            try {
+                $start = \Carbon\Carbon::createFromFormat('Y-m-d', $startDate)->startOfDay();
+                $end   = \Carbon\Carbon::createFromFormat('Y-m-d', $endDate)->endOfDay();
+                if ($start->gt($end)) {
+                    return response()->json(['error' => 'start_date must be before end_date.'], 422);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Invalid date format. Use YYYY-MM-DD.'], 422);
+            }
+            $period = null; // not used in custom mode
+            $periodLabel = $startDate . ' to ' . $endDate;
+        } else {
+            $period = $request->query('period', '7d');
+            $allowedPeriods = ['1d', '7d', '14d', '30d', '90d'];
+            if (!in_array($period, $allowedPeriods)) {
+                $period = '7d';
+            }
+            $periodLabel = $period;
+            $start = null;
+            $end   = null;
         }
 
+        // ── Sections ──────────────────────────────────────────────────────
         $requestedSections = $request->query('sections', ['dashboard', 'trends', 'insights']);
         if (is_string($requestedSections)) {
             $requestedSections = explode(',', $requestedSections);
@@ -220,46 +246,61 @@ class AnalyticsController extends Controller
 
         $payload = [
             'generated_at' => now()->toIso8601String(),
-            'period'       => $period,
+            'period'       => $periodLabel,
             'sections'     => array_values($sections),
         ];
 
         try {
             if (in_array('dashboard', $sections)) {
-                $payload['dashboard'] = $this->analytics->getDashboardStats($period);
+                if ($isCustomRange) {
+                    $payload['dashboard'] = $this->analytics->getDashboardStatsByRange($start, $end);
+                } else {
+                    $payload['dashboard'] = $this->analytics->getDashboardStats($period);
+                }
             }
 
             if (in_array('trends', $sections)) {
-                $trendPeriod = $period === '1d' ? '7d' : $period;
-                $payload['trends'] = $this->analytics->getTrends($trendPeriod);
+                if ($isCustomRange) {
+                    $payload['trends'] = $this->analytics->getTrendsByRange($start, $end);
+                } else {
+                    $trendPeriod = $period === '1d' ? '7d' : $period;
+                    $payload['trends'] = $this->analytics->getTrends($trendPeriod);
+                }
             }
 
             if (in_array('insights', $sections)) {
-                // Map dashboard period to insight period
-                $insightPeriod = match (true) {
-                    in_array($period, ['1d', '7d', '14d']) => 'weekly',
-                    $period === '30d'                      => 'monthly',
-                    $period === '90d'                      => 'monthly',
-                    default                                => 'weekly',
-                };
+                // Insights are AI-generated summaries — always use latest cached version
+                $insightPeriod = 'weekly';
+                if (!$isCustomRange) {
+                    $insightPeriod = match (true) {
+                        in_array($period, ['1d', '7d', '14d']) => 'weekly',
+                        $period === '30d'                      => 'monthly',
+                        $period === '90d'                      => 'monthly',
+                        default                                => 'weekly',
+                    };
+                }
                 $payload['insights'] = $this->aiInsights->getLatestInsights($insightPeriod);
             }
 
             if (in_array('snapshots', $sections)) {
-                $days = match ($period) {
-                    '1d'  => 7,
-                    '7d'  => 7,
-                    '14d' => 14,
-                    '30d' => 30,
-                    '90d' => 90,
-                    default => 30,
-                };
-                $payload['snapshots'] = $this->analytics->getSnapshots($days);
+                if ($isCustomRange) {
+                    $payload['snapshots'] = $this->analytics->getSnapshotsByRange($start, $end);
+                } else {
+                    $days = match ($period) {
+                        '1d'  => 7,
+                        '7d'  => 7,
+                        '14d' => 14,
+                        '30d' => 30,
+                        '90d' => 90,
+                        default => 30,
+                    };
+                    $payload['snapshots'] = $this->analytics->getSnapshots($days);
+                }
             }
 
             // Record export notification for admin panel
             try {
-                \App\Models\AdminNotification::reportExported($period, array_values($sections));
+                \App\Models\AdminNotification::reportExported($periodLabel, array_values($sections));
             } catch (\Exception $e) {
                 Log::warning('Failed to create export notification: ' . $e->getMessage());
             }

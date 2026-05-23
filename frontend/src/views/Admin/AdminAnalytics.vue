@@ -50,19 +50,7 @@
         <div v-else>
           <!-- Stat Cards Grid -->
           <div class="stat-cards-grid">
-            <!-- Card 1: Department With Most Users -->
-            <div class="stat-card blue">
-              <div class="stat-card-content">
-                <h4 class="stat-label">Dept. With Most Users</h4>
-                <p class="stat-value dept-value">{{ stats.top_department_users || 'N/A' }}</p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">
-                  {{ stats.top_department_users_count || 0 }} registered students
-                </span>
-              </div>
-              <div class="stat-icon-wrapper icon-blue"><i class="bx bx-buildings"></i></div>
-            </div>
-
-            <!-- Card 2: Department With Most Crisis Alerts -->
+            <!-- Card 1: Department With Most Crisis Alerts -->
             <div class="stat-card red">
               <div class="stat-card-content">
                 <h4 class="stat-label">Dept. With Most Alerts</h4>
@@ -76,19 +64,7 @@
               <div class="stat-icon-wrapper icon-red"><i class="bx bx-shield-alt-2"></i></div>
             </div>
 
-            <!-- Card 3: Gender That Uses System Most -->
-            <div class="stat-card purple">
-              <div class="stat-card-content">
-                <h4 class="stat-label">Top Gender Using System</h4>
-                <p class="stat-value">{{ formatGender(stats.top_gender) }}</p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">
-                  {{ stats.top_gender_count || 0 }} students
-                </span>
-              </div>
-              <div class="stat-icon-wrapper icon-purple"><i class="bx bx-user-circle"></i></div>
-            </div>
-
-            <!-- Card 4: Total Conversations (kept) -->
+            <!-- Card 2: Total Conversations -->
             <div class="stat-card green">
               <div class="stat-card-content">
                 <h4 class="stat-label">Total Conversations</h4>
@@ -101,7 +77,7 @@
               <div class="stat-icon-wrapper icon-green"><i class="bx bx-chat"></i></div>
             </div>
 
-            <!-- Card 5: Peak Usage Hour (kept) -->
+            <!-- Card 3: Peak Usage Hour -->
             <div class="stat-card cyan">
               <div class="stat-card-content">
                 <h4 class="stat-label">Peak Usage Hour</h4>
@@ -111,7 +87,7 @@
               <div class="stat-icon-wrapper icon-cyan"><i class="bx bx-bell"></i></div>
             </div>
 
-            <!-- Card 6: Crisis Alerts (kept) -->
+            <!-- Card 4: Crisis Alerts -->
             <div class="stat-card amber">
               <div class="stat-card-content">
                 <h4 class="stat-label">Crisis Alerts</h4>
@@ -191,11 +167,11 @@
           <div class="export-modal-header">
             <div class="export-modal-header-left">
               <div class="export-modal-icon">
-                <i class="bx bxs-file-pdf"></i>
+                <i class="bx bxs-file-export"></i>
               </div>
               <div>
                 <h3 class="export-modal-title">Export Analytics Report</h3>
-                <p class="export-modal-subtitle">Choose what to include in your PDF report</p>
+                <p class="export-modal-subtitle">Choose format, date range, and sections to include</p>
               </div>
             </div>
             <button class="export-modal-close" @click="closeExportModal">
@@ -204,10 +180,45 @@
           </div>
 
           <div class="export-modal-body">
-            <!-- Period -->
+            <!-- Export Format -->
             <div class="export-field-group">
-              <label class="export-field-label">Reporting Period</label>
-              <div class="export-period-tabs">
+              <label class="export-field-label">Export Format</label>
+              <div class="export-format-tabs">
+                <button
+                  class="export-format-tab"
+                  :class="{ active: exportOptions.format === 'pdf' }"
+                  @click="exportOptions.format = 'pdf'"
+                >
+                  <i class="bx bxs-file-pdf"></i> PDF
+                </button>
+                <button
+                  class="export-format-tab"
+                  :class="{ active: exportOptions.format === 'csv' }"
+                  @click="exportOptions.format = 'csv'"
+                >
+                  <i class="bx bxs-file-txt"></i> CSV
+                </button>
+              </div>
+            </div>
+
+            <!-- Date Range -->
+            <div class="export-field-group">
+              <label class="export-field-label">Date Range</label>
+              <div class="export-date-mode-tabs">
+                <button
+                  class="export-period-tab"
+                  :class="{ active: exportOptions.dateMode === 'preset' }"
+                  @click="exportOptions.dateMode = 'preset'"
+                >Preset Period</button>
+                <button
+                  class="export-period-tab"
+                  :class="{ active: exportOptions.dateMode === 'custom' }"
+                  @click="exportOptions.dateMode = 'custom'"
+                >Custom Range</button>
+              </div>
+
+              <!-- Preset period tabs -->
+              <div v-if="exportOptions.dateMode === 'preset'" class="export-period-tabs" style="margin-top:8px;">
                 <button
                   v-for="p in periods"
                   :key="p.value"
@@ -218,10 +229,22 @@
                   {{ p.label }}
                 </button>
               </div>
+
+              <!-- Custom date inputs -->
+              <div v-if="exportOptions.dateMode === 'custom'" class="export-date-range" style="margin-top:8px;">
+                <div class="export-date-field">
+                  <label class="export-date-label">From</label>
+                  <input type="date" v-model="exportOptions.startDate" class="export-date-input" :max="exportOptions.endDate || today" />
+                </div>
+                <div class="export-date-field">
+                  <label class="export-date-label">To</label>
+                  <input type="date" v-model="exportOptions.endDate" class="export-date-input" :min="exportOptions.startDate" :max="today" />
+                </div>
+              </div>
             </div>
 
-            <!-- Sections -->
-            <div class="export-field-group">
+            <!-- Sections (PDF only) -->
+            <div class="export-field-group" v-if="exportOptions.format === 'pdf'">
               <label class="export-field-label">Include Sections</label>
               <div class="export-sections">
                 <label v-for="s in exportSections" :key="s.value" class="export-section-item">
@@ -242,12 +265,12 @@
             <button class="export-cancel-btn" @click="closeExportModal">Cancel</button>
             <button
               class="export-confirm-btn"
-              @click="generatePDF"
-              :disabled="exportLoading || exportOptions.sections.length === 0"
+              @click="exportOptions.format === 'csv' ? generateCSV() : generatePDF()"
+              :disabled="exportLoading || (exportOptions.format === 'pdf' && exportOptions.sections.length === 0) || (exportOptions.dateMode === 'custom' && (!exportOptions.startDate || !exportOptions.endDate))"
             >
               <span v-if="exportLoading" class="btn-spinner"></span>
-              <i v-else class="bx bx-download"></i>
-              {{ exportLoading ? 'Generating...' : 'Download PDF' }}
+              <i v-else :class="exportOptions.format === 'csv' ? 'bx bx-spreadsheet' : 'bx bx-download'"></i>
+              {{ exportLoading ? 'Generating...' : (exportOptions.format === 'csv' ? 'Download CSV' : 'Download PDF') }}
             </button>
           </div>
         </div>
@@ -294,9 +317,14 @@ const fetchingInsights = ref(false)
 // Export modal state
 const showExportModal = ref(false)
 const exportLoading = ref(false)
+const today = new Date().toISOString().slice(0, 10)
 const exportOptions = ref({
   period: '7d',
   sections: ['dashboard', 'trends', 'insights'],
+  format: 'pdf',
+  dateMode: 'preset',
+  startDate: '',
+  endDate: today,
 })
 
 const stats = ref({
@@ -391,6 +419,10 @@ const fetchInsights = async () => {
 
 const openExportModal = () => {
   exportOptions.value.period = selectedPeriod.value
+  exportOptions.value.format = 'pdf'
+  exportOptions.value.dateMode = 'preset'
+  exportOptions.value.startDate = ''
+  exportOptions.value.endDate = today
   showExportModal.value = true
 }
 
@@ -402,13 +434,28 @@ const closeExportModal = () => {
   if (!exportLoading.value) showExportModal.value = false
 }
 
+// ── Build export query params ──────────────────────────────────
+const buildExportParams = () => {
+  const opts = exportOptions.value
+  const params = new URLSearchParams()
+  if (opts.dateMode === 'custom' && opts.startDate && opts.endDate) {
+    params.set('start_date', opts.startDate)
+    params.set('end_date', opts.endDate)
+  } else {
+    params.set('period', opts.period)
+  }
+  return params
+}
+
 // ── PDF Generation ──────────────────────────────────────────────
 const generatePDF = async () => {
   exportLoading.value = true
   try {
+    const params = buildExportParams()
     const sections = exportOptions.value.sections.join(',')
+    params.set('sections', sections)
     const res = await axios.get(
-      `/api/admin/analytics/export?period=${exportOptions.value.period}&sections=${sections}`,
+      `/api/admin/analytics/export?${params.toString()}`,
       authConfig()
     )
     const data = res.data
@@ -417,6 +464,93 @@ const generatePDF = async () => {
   } catch (err) {
     console.error('Export failed:', err)
     alert('Failed to generate report. Please try again.')
+  } finally {
+    exportLoading.value = false
+  }
+}
+
+// ── CSV Generation ──────────────────────────────────────────────
+const generateCSV = async () => {
+  exportLoading.value = true
+  try {
+    const params = buildExportParams()
+    params.set('sections', 'dashboard,trends,snapshots')
+    const res = await axios.get(
+      `/api/admin/analytics/export?${params.toString()}`,
+      authConfig()
+    )
+    const data = res.data
+
+    const rows = []
+    const periodLabel = data.period
+      ? (periods.find(p => p.value === data.period)?.label || data.period)
+      : `${exportOptions.value.startDate} to ${exportOptions.value.endDate}`
+
+    rows.push(['LeanOn Bot — Analytics Report'])
+    rows.push([`Period: ${periodLabel}`])
+    rows.push([`Generated: ${new Date(data.generated_at).toLocaleString('en-PH')}`])
+    rows.push([])
+
+    if (data.dashboard) {
+      const d = data.dashboard
+      rows.push(['=== Dashboard Statistics ==='])
+      rows.push(['Metric', 'Value'])
+      rows.push(['Dept. With Most Crisis Alerts', d.top_department_alerts ?? 'N/A'])
+      rows.push(['Alerts in Top Dept.', d.top_department_alerts_count ?? 0])
+      rows.push(['Total Conversations', d.total_conversations ?? 0])
+      rows.push(['Peak Usage Hour', d.peak_hour !== null ? formatPeakHour(d.peak_hour) : 'N/A'])
+      rows.push(['Crisis Alerts (Period)', d.crisis_alert_count ?? 0])
+      rows.push(['Off-topic Fallbacks', d.fallback_count ?? 0])
+      rows.push(['Total Registered Students', d.total_registered_users ?? 0])
+      rows.push([])
+    }
+
+    if (data.trends?.emotion_distribution && Object.keys(data.trends.emotion_distribution).length > 0) {
+      rows.push(['=== Emotion Distribution ==='])
+      rows.push(['Emotion', 'Count', 'Percentage'])
+      const total = Object.values(data.trends.emotion_distribution).reduce((a, b) => a + b, 0)
+      Object.entries(data.trends.emotion_distribution).forEach(([emotion, count]) => {
+        rows.push([
+          emotion.charAt(0).toUpperCase() + emotion.slice(1),
+          count,
+          total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%',
+        ])
+      })
+      rows.push([])
+    }
+
+    if (data.trends?.sentiment_over_time?.length > 0) {
+      rows.push(['=== Sentiment Over Time ==='])
+      rows.push(['Week Starting', 'Positive', 'Neutral', 'Negative'])
+      data.trends.sentiment_over_time.forEach((w, i) => {
+        rows.push([w.week_start || `Week ${i + 1}`, w.positive ?? 0, w.neutral ?? 0, w.negative ?? 0])
+      })
+      rows.push([])
+    }
+
+    if (data.snapshots?.length > 0) {
+      rows.push(['=== Historical Daily Snapshots ==='])
+      rows.push(['Date', 'Active Users', 'Conversations', 'Messages', 'Avg Session (min)', 'Crisis Alerts'])
+      data.snapshots.forEach(s => {
+        rows.push([s.snapshot_date || '', s.daily_active_users ?? 0, s.total_conversations ?? 0, s.total_messages ?? 0, s.avg_session_minutes ?? 0, s.crisis_alert_count ?? 0])
+      })
+    }
+
+    const csvContent = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    const dateSuffix = exportOptions.value.dateMode === 'custom'
+      ? `${exportOptions.value.startDate}_${exportOptions.value.endDate}`
+      : exportOptions.value.period
+    link.download = `leanon-analytics-${dateSuffix}-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    closeExportModal()
+  } catch (err) {
+    console.error('CSV export failed:', err)
+    alert('Failed to generate CSV. Please try again.')
   } finally {
     exportLoading.value = false
   }
@@ -437,7 +571,9 @@ const buildPDF = (data) => {
   doc.text('LeanOn Bot — Analytics Report', margin, 12)
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
-  const periodLabel = periods.find(p => p.value === data.period)?.label || data.period
+  const periodLabel = data.period
+    ? (periods.find(p => p.value === data.period)?.label || data.period)
+    : `${exportOptions.value.startDate} to ${exportOptions.value.endDate}`
   doc.text(`Period: ${periodLabel}   |   Generated: ${new Date(data.generated_at).toLocaleString('en-PH')}`, margin, 20)
   doc.text('All data is anonymized. No student PII is included.', margin, 25)
   y = 36
@@ -456,12 +592,8 @@ const buildPDF = (data) => {
       startY: y,
       head: [['Metric', 'Value']],
       body: [
-        ['Dept. With Most Users',        d.top_department_users        ?? 'N/A'],
-        ['Users in Top Dept.',           String(d.top_department_users_count ?? 0)],
         ['Dept. With Most Crisis Alerts', d.top_department_alerts      ?? 'N/A'],
         ['Alerts in Top Dept.',          String(d.top_department_alerts_count ?? 0)],
-        ['Top Gender Using System',      d.top_gender                  ?? 'N/A'],
-        ['Students (Top Gender)',        String(d.top_gender_count     ?? 0)],
         ['Total Conversations',          String(d.total_conversations  ?? 0)],
         ['Peak Usage Hour',              d.peak_hour !== null ? formatPeakHour(d.peak_hour) : 'N/A'],
         ['Crisis Alerts (Period)',        String(d.crisis_alert_count  ?? 0)],
@@ -670,6 +802,85 @@ onMounted(() => {
 <style src="@/assets/admin/admin-layout.css"></style>
 
 <style scoped>
+/* ── Export Format Tabs ── */
+.export-format-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.export-format-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  transition: all 0.18s ease;
+}
+
+.export-format-tab:hover:not(.active) { background: #e5e7eb; color: #374151; }
+
+.export-format-tab.active {
+  background: linear-gradient(135deg, #0E6008 0%, #16a34a 100%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(14, 96, 8, 0.25);
+}
+
+.export-format-tab i { font-size: 16px; }
+
+/* ── Date Mode Tabs ── */
+.export-date-mode-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+/* ── Custom Date Range ── */
+.export-date-range {
+  display: flex;
+  gap: 12px;
+}
+
+.export-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.export-date-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.export-date-input {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #111827;
+  background: #fff;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  transition: border-color 0.18s;
+  width: 100%;
+}
+
+.export-date-input:focus {
+  outline: none;
+  border-color: #0E6008;
+  box-shadow: 0 0 0 3px rgba(14, 96, 8, 0.1);
+}
+
 /* ── Header Actions Row ── */
 .header-actions {
   display: flex;

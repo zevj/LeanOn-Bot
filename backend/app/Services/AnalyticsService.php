@@ -277,6 +277,76 @@ class AnalyticsService
         return [$start, $end];
     }
 
+    /**
+     * Get dashboard stats for a custom date range (used by export endpoint).
+     */
+    public function getDashboardStatsByRange(Carbon $start, Carbon $end): array
+    {
+        $currentConversations = Conversation::whereBetween('created_at', [$start, $end])->count();
+        $crisisCount = CrisisAlert::whereBetween('created_at', [$start, $end])->count();
+        $fallbackCount = $this->getFallbackCount($start, $end);
+
+        $peakHours = $this->getPeakUsageHours($start, $end);
+        $peakHour = !empty($peakHours) ? $peakHours[0]['hour'] : null;
+
+        $crisisBySeverity = CrisisAlert::whereBetween('created_at', [$start, $end])
+            ->where('is_classified', true)
+            ->selectRaw('severity, COUNT(*) as count')
+            ->groupBy('severity')
+            ->pluck('count', 'severity')
+            ->toArray();
+
+        $totalUsers = User::where('role', 'student')->count();
+
+        $topDeptAlerts = CrisisAlert::where('is_classified', true)
+            ->whereNotNull('department')
+            ->selectRaw('department, COUNT(*) as count')
+            ->groupBy('department')
+            ->orderByDesc('count')
+            ->first();
+
+        return [
+            'total_conversations'        => $currentConversations,
+            'conversation_growth'        => 0,
+            'peak_hour'                  => $peakHour,
+            'peak_usage_hours'           => $peakHours,
+            'crisis_alert_count'         => $crisisCount,
+            'crisis_by_severity'         => $crisisBySeverity,
+            'fallback_count'             => $fallbackCount,
+            'total_registered_users'     => $totalUsers,
+            'period_start'               => $start->toDateString(),
+            'period_end'                 => $end->toDateString(),
+            'top_department_alerts'      => $topDeptAlerts?->department ?? 'N/A',
+            'top_department_alerts_count'=> (int) ($topDeptAlerts?->count ?? 0),
+        ];
+    }
+
+    /**
+     * Get trend data for a custom date range (used by export endpoint).
+     */
+    public function getTrendsByRange(Carbon $start, Carbon $end): array
+    {
+        return [
+            'emotion_distribution' => $this->getEmotionDistribution($start, $end),
+            'sentiment_over_time'  => $this->getSentimentOverTime($start, $end),
+            'peak_usage_hours'     => $this->getPeakUsageHours($start, $end),
+            'weekly_comparison'    => $this->getWeeklyComparison(),
+            'period_start'         => $start->toDateString(),
+            'period_end'           => $end->toDateString(),
+        ];
+    }
+
+    /**
+     * Get historical snapshots for a custom date range (used by export endpoint).
+     */
+    public function getSnapshotsByRange(Carbon $start, Carbon $end): array
+    {
+        return AnalyticsSnapshot::whereBetween('snapshot_date', [$start->toDateString(), $end->toDateString()])
+            ->orderBy('snapshot_date')
+            ->get()
+            ->toArray();
+    }
+
     // ─── Private Helper Methods ──────────────────────────────
 
     private function getDailyActiveUsers(Carbon $start, Carbon $end): int

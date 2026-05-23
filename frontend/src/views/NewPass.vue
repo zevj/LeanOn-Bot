@@ -163,8 +163,21 @@ const handleResetPassword = async () => {
     return
   }
 
-  if (password.value.length < 6) {
-    toast.error('Password must be at least 6 characters!')
+  const pw = password.value
+  if (pw.length < 12) {
+    toast.error('Password must be at least 12 characters!')
+    return
+  }
+  if (!/[a-zA-Z]/.test(pw)) {
+    toast.error('Password must contain at least one letter.')
+    return
+  }
+  if (!/[0-9]/.test(pw)) {
+    toast.error('Password must contain at least one number.')
+    return
+  }
+  if (!/[^a-zA-Z0-9]/.test(pw)) {
+    toast.error('Password must contain at least one special character.')
     return
   }
 

@@ -324,7 +324,7 @@ const downloadPDF = () => {
         logs.value.forEach(r => {
             const logData = [
                 `LOG-${String(r.id).padStart(8, '0')}`,
-                r.masked_email || 'N/A',
+                r.real_email || r.masked_email || 'N/A',
                 r.department || 'N/A',
                 r.program || 'N/A',
                 fmt(r.session_start).date || 'N/A',

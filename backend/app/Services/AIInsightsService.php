@@ -275,25 +275,17 @@ class AIInsightsService
 You are a mental health analytics advisor for a university student wellness chatbot called LeanOn Bot.
 Analyze the following ANONYMIZED aggregate statistics and generate school-wide wellness insights.
 
-RULES:
-- Never reference individual students.
-- Use only the aggregate statistics below.
-- Keep all text SHORT and concise.
-- Maximum 3 insights, 2 recommendations.
+CRITICAL RULES:
+1. Output ONLY a single valid JSON object. No markdown, no code fences, no text before or after the JSON.
+2. Keep ALL string values SHORT — maximum 15 words per string. Do not write long sentences.
+3. Maximum 2 insights, 1 recommendation. No trends, no anomalies.
+4. The entire JSON response must be under 400 tokens.
 
 ANONYMIZED STATISTICS:
 {$statsJson}
 
-Return STRICT VALID JSON ONLY. No markdown. No text outside JSON.
-Required format:
-{"summary":"","insights":[],"top_department":"","top_gender":"","department_with_most_alerts":""}
-
-Where:
-- summary: 1-2 sentence overall wellness assessment
-- insights: array of max 3 objects with keys: category (usage|emotional|crisis|engagement), title (short), text (1 sentence), severity (info|warning|critical)
-- top_department: department with most users
-- top_gender: gender that uses system most
-- department_with_most_alerts: department with most crisis alerts
+OUTPUT (fill in values, keep strings very short):
+{"wellness_summary":"short summary here","insights":[{"category":"usage","title":"short title","text":"short observation","severity":"info"},{"category":"emotional","title":"short title","text":"short observation","severity":"info"}],"recommendations":[{"priority":"medium","text":"short recommendation"}],"trends":[],"anomalies":[],"top_department":"dept or N/A","top_gender":"gender or N/A","department_with_most_alerts":"dept or N/A"}
 PROMPT;
     }
 
