@@ -61,6 +61,7 @@ class LogController extends Controller
             ];
             if ($log->user) {
                 $data['masked_email'] = \App\Helpers\DataFormatter::maskEmail($log->user->email);
+                $data['real_email']   = $log->user->email; // Only revealed on admin toggle
                 $data['user_name']    = 'Anonymous #' . ($log->user->id + 1000); // Anonymized name
                 $data['department']   = $log->user->department ?? '—';
                 $data['program']      = \App\Helpers\DataFormatter::abbreviateProgram($log->user->program);

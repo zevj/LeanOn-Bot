@@ -215,6 +215,10 @@
                                                 @click="showNew = !showNew"
                                                 ></i>
                                             </div>
+                                            <p class="password-hint">
+                                                <i class='bx bx-info-circle'></i>
+                                                At least 10 characters with letters and numbers.
+                                            </p>
                                         </div>
 
                                       <div class="password-right-side" style="display: none;"></div>
@@ -468,6 +472,22 @@ async function submitPassword() {
         toast.error("Complete all fields!")
         return
     }
+
+    // Strict password policy: min 10 chars, must contain letters AND numbers
+    const pw = passwords.value.new
+    if (pw.length < 10) {
+        toast.error("New password must be at least 10 characters.")
+        return
+    }
+    if (!/[a-zA-Z]/.test(pw)) {
+        toast.error("New password must contain at least one letter.")
+        return
+    }
+    if (!/[0-9]/.test(pw)) {
+        toast.error("New password must contain at least one number.")
+        return
+    }
+
     if (passwords.value.new !== passwords.value.confirm) {
         toast.error("Passwords do not match!")
         return
@@ -510,3 +530,18 @@ async function finalizePasswordChange() {
 </script>
 
 <style scoped src="../assets/users/MyAccount.css"></style>
+
+<style scoped>
+.password-hint {
+    font-size: 11.5px;
+    color: #6b7280;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.password-hint i {
+    font-size: 13px;
+    color: #9ca3af;
+}
+</style>

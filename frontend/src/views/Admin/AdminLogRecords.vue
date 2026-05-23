@@ -142,11 +142,11 @@
                                     <td data-label="User Details">
     <div class="user-cell">
         <span class="log-email">
-            {{ revealedEmails.has(r.id) ? r.masked_email.replace(/\*/g, '') : r.masked_email }}
+            {{ revealedEmails.has(r.id) ? r.real_email : r.masked_email }}
             <button
                 class="reveal-btn"
                 @click="toggleEmail(r.id)"
-                :title="revealedEmails.has(r.id) ? 'Hide' : 'Show full email'"
+                :title="revealedEmails.has(r.id) ? 'Hide email' : 'Show full email'"
             >
                 <i :class="revealedEmails.has(r.id) ? 'bx bx-hide' : 'bx bx-show'"></i>
             </button>

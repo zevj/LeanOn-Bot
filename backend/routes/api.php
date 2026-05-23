@@ -59,6 +59,38 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/verify-otp-password', [AuthController::class, 'verifyChangePasswordOtp']);
         });
         Route::post('/change-password', [AuthController::class, 'changePassword']);
+
+        // ── Admin email notification check ────────────────────────
+        // Returns the most recent unseen admin email sent to this student.
+        // The frontend polls this and marks it seen by passing the alert id.
+        Route::get('/user/admin-email-notification', function (Request $request) {
+            $userId = $request->user()->id;
+
+            $alert = \App\Models\CrisisAlert::where('user_id', $userId)
+                ->whereNotNull('admin_email_sent_at')
+                ->where('admin_email_notified', false)
+                ->orderByDesc('admin_email_sent_at')
+                ->first();
+
+            if (!$alert) {
+                return response()->json(['notification' => null]);
+            }
+
+            return response()->json([
+                'notification' => [
+                    'alert_id'   => $alert->id,
+                    'sent_at'    => $alert->admin_email_sent_at->toIso8601String(),
+                ],
+            ]);
+        });
+
+        Route::post('/user/admin-email-notification/{alertId}/dismiss', function (Request $request, int $alertId) {
+            \App\Models\CrisisAlert::where('id', $alertId)
+                ->where('user_id', $request->user()->id)
+                ->update(['admin_email_notified' => true]);
+
+            return response()->json(['ok' => true]);
+        });
     });
 
     Route::post('/logout', [AuthController::class, 'logout']);

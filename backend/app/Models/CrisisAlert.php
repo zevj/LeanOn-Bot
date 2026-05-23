@@ -17,11 +17,15 @@ class CrisisAlert extends Model
         'flag_reason',
         'status',
         'is_classified',
+        'admin_email_sent_at',
+        'admin_email_notified',
     ];
 
     protected $casts = [
-        'detected_keywords' => 'array',
-        'is_classified'     => 'boolean',
+        'detected_keywords'    => 'array',
+        'is_classified'        => 'boolean',
+        'admin_email_sent_at'  => 'datetime',
+        'admin_email_notified' => 'boolean',
     ];
 
     public function user()
