@@ -115,6 +115,14 @@ class AIInsightsService
             return $this->markFallback($this->getLatestInsights($period), 'AI quota cooldown is active. Showing the latest stored report.');
         }
 
+        // When force=true (manual trigger), clear stale locks and cooldowns
+        // so a previous failed attempt never blocks the admin
+        if ($force) {
+            Cache::forget($lockKey);
+            Cache::forget($cooldownKey);
+            Cache::forget($dailyKey);
+        }
+
         $lock = Cache::lock($lockKey, 300);
 
         if (!$lock->get()) {
@@ -200,7 +208,16 @@ class AIInsightsService
         }
 
         [$startDate, $end] = $this->analytics->getPeriodBounds($period);
-        $snapshot = $this->analytics->computeDailySnapshot(now()->subDay());
+
+        // Snapshot is best-effort — don't let it block report storage
+        try {
+            $snapshot = $this->analytics->computeDailySnapshot(now()->subDay());
+            $snapshotId = $snapshot->id;
+        } catch (\Throwable $e) {
+            Log::warning('Snapshot computation failed inside performGeneration (non-fatal): ' . $e->getMessage());
+            $snapshotId = null;
+        }
+
         $cacheExpiresAt = now()->addSeconds($this->cacheTtl);
 
         $report = AiInsightReport::updateOrCreate(
@@ -209,7 +226,7 @@ class AIInsightsService
                 'period_end' => $end->toDateString(),
             ],
             [
-                'analytics_snapshot_id' => $snapshot->id,
+                'analytics_snapshot_id' => $snapshotId,
                 'period_start' => $startDate->toDateString(),
                 'analytics_snapshot' => $this->compactSnapshotForStorage($stats),
                 'insights' => $result['insights'] ?? [],
