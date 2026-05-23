@@ -189,6 +189,10 @@ class CrisisAlertController extends Controller
 
             if ($response->successful()) {
                 Log::info("Crisis alert email sent via Brevo to: {$studentEmail}");
+
+                // Stamp the alert so the student's chat can show a notification
+                $alert->update(['admin_email_sent_at' => now()]);
+
                 return response()->json(['message' => 'Email sent successfully.']);
             }
 

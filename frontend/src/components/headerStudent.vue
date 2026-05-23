@@ -30,8 +30,8 @@
 
 <script setup>
 import { ref } from 'vue'
-import NotificationPanel from '../components/NotificationPanel.vue'
-import { useSidebarToggle } from '@/composables/useSidebarToggle'  // ← add
+import NotificationPanel from '../components/StudentNotificationPanel.vue'
+import { useSidebarToggle } from '@/composables/useSidebarToggle'
 
 const { triggerMobileToggle } = useSidebarToggle()  // ← add
 

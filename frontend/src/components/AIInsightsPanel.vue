@@ -20,6 +20,19 @@
         <i class='bx bx-calendar-check'></i>
         <span>Daily scheduled</span>
       </div>
+
+      <!-- Manual Generate Button -->
+      <button
+        class="generate-btn"
+        :class="{ 'is-loading': generating, 'is-disabled': generateDisabled }"
+        :disabled="generating || generateDisabled"
+        @click="handleGenerate"
+        :title="generateDisabled ? 'Available again in ' + cooldownLabel : 'Generate fresh AI insights now'"
+      >
+        <span v-if="generating" class="gen-spinner"></span>
+        <i v-else class="bx bx-refresh"></i>
+        <span>{{ generating ? 'Generating...' : generateDisabled ? 'Generated ✓' : 'Generate Insights' }}</span>
+      </button>
     </div>
 
     <!-- Loading State -->
@@ -150,7 +163,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
+import axios from 'axios'
 
 const props = defineProps({
   insights:        { type: Array, default: () => [] },
@@ -165,6 +179,67 @@ const props = defineProps({
   staleMessage:    { type: String, default: '' },
 })
 
+const emit = defineEmits(['insights-generated'])
+
+// ── Generate button state ──────────────────────────────────────
+const STORAGE_KEY = 'ai_insights_generated_at'
+const COOLDOWN_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+const generating = ref(false)
+const generateDisabled = ref(false)
+const cooldownLabel = ref('')
+let cooldownTimer = null
+
+const checkCooldown = () => {
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (!stored) { generateDisabled.value = false; return }
+  const elapsed = Date.now() - parseInt(stored, 10)
+  if (elapsed < COOLDOWN_MS) {
+    generateDisabled.value = true
+    updateCooldownLabel(COOLDOWN_MS - elapsed)
+  } else {
+    generateDisabled.value = false
+    localStorage.removeItem(STORAGE_KEY)
+  }
+}
+
+const updateCooldownLabel = (remainingMs) => {
+  const h = Math.floor(remainingMs / 3600000)
+  const m = Math.floor((remainingMs % 3600000) / 60000)
+  cooldownLabel.value = h > 0 ? `${h}h ${m}m` : `${m}m`
+  cooldownTimer = setTimeout(() => {
+    checkCooldown()
+  }, 60000) // re-check every minute
+}
+
+const handleGenerate = async () => {
+  if (generating.value || generateDisabled.value) return
+  generating.value = true
+  try {
+    const token = localStorage.getItem('token')
+    const res = await axios.post(
+      '/api/admin/analytics/insights/generate?period=weekly&force=1',
+      {},
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    // Stamp cooldown
+    localStorage.setItem(STORAGE_KEY, Date.now().toString())
+    generateDisabled.value = true
+    updateCooldownLabel(COOLDOWN_MS)
+    // Bubble fresh data up to parent
+    emit('insights-generated', res.data.insights ?? res.data)
+  } catch (err) {
+    console.error('Failed to generate insights:', err)
+    alert('Failed to generate insights. Please try again.')
+  } finally {
+    generating.value = false
+  }
+}
+
+onMounted(checkCooldown)
+onUnmounted(() => { if (cooldownTimer) clearTimeout(cooldownTimer) })
+
+// ── Existing helpers ───────────────────────────────────────────
 const hasContent = computed(() => {
   return props.insights.length > 0 ||
     props.recommendations.length > 0 ||
@@ -282,6 +357,53 @@ const getTrendIcon = (direction) => {
 .scheduled-badge i {
   font-size: 16px;
 }
+
+/* ── Generate Button ── */
+.generate-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  transition: all 0.22s ease;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+
+.generate-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+}
+
+.generate-btn.is-disabled,
+.generate-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.generate-btn i { font-size: 16px; }
+
+.gen-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: gen-spin 0.7s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes gen-spin { to { transform: rotate(360deg); } }
 
 /* ── Loading Skeleton ── */
 .insights-loading {

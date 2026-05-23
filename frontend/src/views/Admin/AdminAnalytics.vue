@@ -177,6 +177,7 @@
               :isStale="insightsData.is_stale"
               :isFallback="insightsData.is_fallback"
               :staleMessage="insightsData.stale_message"
+              @insights-generated="onInsightsGenerated"
             />
           </div>
         </div>
@@ -391,6 +392,10 @@ const fetchInsights = async () => {
 const openExportModal = () => {
   exportOptions.value.period = selectedPeriod.value
   showExportModal.value = true
+}
+
+const onInsightsGenerated = (freshData) => {
+  insightsData.value = freshData
 }
 
 const closeExportModal = () => {
