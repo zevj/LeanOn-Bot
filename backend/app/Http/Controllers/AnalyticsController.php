@@ -98,6 +98,57 @@ class AnalyticsController extends Controller
     }
 
     /**
+     * POST /api/admin/analytics/insights/generate
+     *
+     * Manually trigger AI insight generation without shell access.
+     * Useful for Render free-tier deployments where cron/shell is unavailable.
+     *
+     * Query params:
+     *   period = daily|weekly|monthly  (default: weekly)
+     *   force  = 1                     (bypass once-per-day guard)
+     */
+    public function generateInsights(Request $request)
+    {
+        $period = $request->query('period', 'weekly');
+        $allowed = ['daily', 'weekly', 'monthly'];
+
+        if (!in_array($period, $allowed)) {
+            $period = 'weekly';
+        }
+
+        $force = filter_var($request->query('force', false), FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            Log::info('Manual AI insights generation triggered via API', [
+                'period'     => $period,
+                'force'      => $force,
+                'triggered_by' => $request->user()?->id,
+            ]);
+
+            // Also compute a fresh analytics snapshot
+            $this->analytics->computeDailySnapshot(now()->subDay());
+
+            $insights = $this->aiInsights->generateInsights($period, $force);
+
+            return response()->json([
+                'message'      => 'Insights generated successfully.',
+                'period'       => $period,
+                'generated_at' => $insights['generated_at'] ?? now()->toIso8601String(),
+                'ai_provider'  => $insights['ai_provider'] ?? null,
+                'is_fallback'  => $insights['is_fallback'] ?? false,
+                'is_stale'     => $insights['is_stale'] ?? false,
+                'insights'     => $insights,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Manual AI insights generation failed: ' . $e->getMessage());
+            return response()->json([
+                'error'   => 'Insight generation failed: ' . $e->getMessage(),
+                'period'  => $period,
+            ], 500);
+        }
+    }
+
+    /**
      * GET /api/admin/analytics/wellness-report
      *
      * Wellness summary report for a given period.

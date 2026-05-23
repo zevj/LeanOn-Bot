@@ -107,6 +107,7 @@ Route::middleware(['auth:sanctum', 'role:guidance'])->prefix('admin')->group(fun
     Route::get('/analytics/dashboard', [AnalyticsController::class, 'dashboard']);
     Route::get('/analytics/trends', [AnalyticsController::class, 'trends']);
     Route::get('/analytics/insights', [AnalyticsController::class, 'insights']);
+    Route::post('/analytics/insights/generate', [AnalyticsController::class, 'generateInsights']);
     Route::get('/analytics/wellness-report', [AnalyticsController::class, 'wellnessReport']);
     Route::get('/analytics/snapshots', [AnalyticsController::class, 'snapshots']);
     Route::get('/analytics/export', [AnalyticsController::class, 'export']);
