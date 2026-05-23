@@ -12,23 +12,43 @@
             <span v-if="isStale || isFallback">Last available: </span>
             <span v-else>Generated: </span>
             {{ formatDate(generatedAt) }}
+            <span class="window-badge">{{ selectedDays === 60 ? 'Last 60 Days' : 'Last 7 Days' }}</span>
           </p>
-          <p class="insights-subtitle" v-else>Awaiting first generation...</p>
+          <p class="insights-subtitle" v-else>
+            Awaiting first generation...
+            <span class="window-badge">{{ selectedDays === 60 ? 'Last 60 Days' : 'Last 7 Days' }}</span>
+          </p>
         </div>
       </div>
 
-      <!-- Manual Generate Button -->
-      <button
-        class="generate-btn"
-        :class="{ 'is-loading': generating, 'is-disabled': generateDisabled }"
-        :disabled="generating || generateDisabled"
-        @click="handleGenerate"
-        :title="generateDisabled ? 'Available again in ' + cooldownLabel : 'Generate fresh AI insights now'"
-      >
-        <span v-if="generating" class="gen-spinner"></span>
-        <i v-else class="bx bx-refresh"></i>
-        <span>{{ generating ? 'Generating...' : generateDisabled ? 'Generated ✓' : 'Generate Insights' }}</span>
-      </button>
+      <div class="insights-header-right">
+        <!-- Days Window Selector -->
+        <div class="days-selector">
+          <button
+            v-for="opt in daysOptions"
+            :key="opt.value"
+            class="days-tab"
+            :class="{ active: selectedDays === opt.value }"
+            @click="changeDays(opt.value)"
+            :disabled="generating"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+
+        <!-- Manual Generate Button -->
+        <button
+          class="generate-btn"
+          :class="{ 'is-loading': generating, 'is-disabled': generateDisabled }"
+          :disabled="generating || generateDisabled"
+          @click="handleGenerate"
+          :title="generateDisabled ? 'Available again in ' + cooldownLabel : 'Generate fresh AI insights now'"
+        >
+          <span v-if="generating" class="gen-spinner"></span>
+          <i v-else class="bx bx-refresh"></i>
+          <span>{{ generating ? 'Generating...' : generateDisabled ? 'Generated ✓' : 'Generate Insights' }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- Loading State -->
@@ -177,8 +197,37 @@ const props = defineProps({
 
 const emit = defineEmits(['insights-generated'])
 
+// ── Days window selector ───────────────────────────────────────
+const daysOptions = [
+  { label: 'Last 7 Days',  value: 7  },
+  { label: 'Last 60 Days', value: 60 },
+]
+const selectedDays = ref(7)
+
+const changeDays = async (days) => {
+  if (days === selectedDays.value || generating.value) return
+  selectedDays.value = days
+  // Reset cooldown check for the new window
+  checkCooldown()
+  // Fetch existing insights for the new window (no generation)
+  await fetchInsightsForWindow(days)
+}
+
+const fetchInsightsForWindow = async (days) => {
+  try {
+    const token = localStorage.getItem('token')
+    const res = await axios.get(
+      `/api/admin/analytics/insights?period=weekly&days=${days}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    emit('insights-generated', res.data)
+  } catch (err) {
+    console.error('Failed to fetch insights for window:', err)
+  }
+}
+
 // ── Generate button state ──────────────────────────────────────
-const STORAGE_KEY = 'ai_insights_generated_at'
+const STORAGE_KEY_PREFIX = 'ai_insights_generated_at'
 const COOLDOWN_MS = 24 * 60 * 60 * 1000 // 24 hours
 
 const generating = ref(false)
@@ -186,8 +235,10 @@ const generateDisabled = ref(false)
 const cooldownLabel = ref('')
 let cooldownTimer = null
 
+const storageKey = () => `${STORAGE_KEY_PREFIX}_${selectedDays.value}d`
+
 const checkCooldown = () => {
-  const stored = localStorage.getItem(STORAGE_KEY)
+  const stored = localStorage.getItem(storageKey())
   if (!stored) { generateDisabled.value = false; return }
   const elapsed = Date.now() - parseInt(stored, 10)
   if (elapsed < COOLDOWN_MS) {
@@ -195,7 +246,7 @@ const checkCooldown = () => {
     updateCooldownLabel(COOLDOWN_MS - elapsed)
   } else {
     generateDisabled.value = false
-    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(storageKey())
   }
 }
 
@@ -213,24 +264,23 @@ const handleGenerate = async () => {
   generating.value = true
   try {
     const token = localStorage.getItem('token')
+    const days = selectedDays.value
 
-    // Step 1: trigger generation
+    // Step 1: trigger generation with the selected days window
     await axios.post(
-      '/api/admin/analytics/insights/generate?period=weekly&force=1',
+      `/api/admin/analytics/insights/generate?period=weekly&force=1&days=${days}`,
       {},
       { headers: { Authorization: `Bearer ${token}` } }
     )
 
     // Step 2: re-fetch the stored insights from the GET endpoint
-    // This guarantees we display exactly what was saved to the DB,
-    // bypassing any stale cache or response shape mismatch.
     const res = await axios.get(
-      '/api/admin/analytics/insights?period=weekly',
+      `/api/admin/analytics/insights?period=weekly&days=${days}`,
       { headers: { Authorization: `Bearer ${token}` } }
     )
 
     // Stamp cooldown only after confirmed success
-    localStorage.setItem(STORAGE_KEY, Date.now().toString())
+    localStorage.setItem(storageKey(), Date.now().toString())
     generateDisabled.value = true
     updateCooldownLabel(COOLDOWN_MS)
 
@@ -322,6 +372,52 @@ const getTrendIcon = (direction) => {
   gap: 14px;
 }
 
+.insights-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Days Window Selector ── */
+.days-selector {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.days-tab {
+  padding: 6px 13px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.75);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.days-tab:hover:not(.active):not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.days-tab.active {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.days-tab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .insights-icon-wrapper {
   width: 42px;
   height: 42px;
@@ -344,6 +440,23 @@ const getTrendIcon = (direction) => {
   font-size: 12px;
   opacity: 0.8;
   margin: 2px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.window-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 1;
 }
 
 /* ── Generate Button ── */
@@ -786,6 +899,11 @@ const getTrendIcon = (direction) => {
 @media (max-width: 768px) {
   .insights-header {
     padding: 1rem 1.25rem;
+  }
+
+  .insights-header-right {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .insights-content {

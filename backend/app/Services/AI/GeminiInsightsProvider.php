@@ -66,10 +66,11 @@ class GeminiInsightsProvider implements AIProviderInterface
                     ],
                 ],
                 'generationConfig' => [
-                    'temperature'      => 0.1,
-                    'topP'             => 0.8,
-                    'maxOutputTokens'  => (int) config('services.ai_insights.max_output_tokens', 1200),
-                    'responseMimeType' => 'application/json',
+                    'temperature'     => 0.1,
+                    'topP'            => 0.8,
+                    'maxOutputTokens' => (int) config('services.ai_insights.max_output_tokens', 2048),
+                    // Do NOT set responseMimeType — it causes gemini-2.5-flash to truncate
+                    // mid-JSON. We parse the JSON ourselves from the plain text response.
                 ],
             ]);
 
@@ -131,6 +132,17 @@ class GeminiInsightsProvider implements AIProviderInterface
 
     private function parseStrictJson(string $text): ?array
     {
+        // Detect truncation early: valid JSON must end with } or ]
+        $trimmed = rtrim($text);
+        $lastChar = substr($trimmed, -1);
+        if ($lastChar !== '}' && $lastChar !== ']') {
+            Log::warning('Gemini insights response appears truncated (does not end with } or ])', [
+                'last_chars' => substr($trimmed, -30),
+                'length'     => strlen($trimmed),
+            ]);
+            // Still attempt repair below — don't give up yet
+        }
+
         // Build a list of candidates to try, from most to least specific
         $candidates = [];
 

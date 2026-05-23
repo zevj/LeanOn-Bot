@@ -407,7 +407,7 @@ const fetchInsights = async () => {
   fetchingInsights.value = true
   loadingInsights.value = true
   try {
-    const res = await axios.get('/api/admin/analytics/insights?period=weekly', authConfig())
+    const res = await axios.get('/api/admin/analytics/insights?period=weekly&days=7', authConfig())
     insightsData.value = res.data
   } catch (err) {
     console.error('Error fetching AI insights:', err)

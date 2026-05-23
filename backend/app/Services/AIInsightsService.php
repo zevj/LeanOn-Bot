@@ -44,12 +44,15 @@ class AIInsightsService
     /**
      * Get latest insights from Laravel cache, durable DB cache, report DB, or fallback.
      * This method NEVER calls Gemini.
+     *
+     * @param  string $period  weekly|daily|monthly
+     * @param  int    $days    0 = use period default; 7 or 60 = explicit window
      */
-    public function getLatestInsights(string $period = 'weekly'): array
+    public function getLatestInsights(string $period = 'weekly', int $days = 0): array
     {
-        $cacheKey = $this->cacheKey($period);
+        $cacheKey = $this->cacheKey($period, $days);
 
-        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($period, $cacheKey) {
+        return Cache::remember($cacheKey, $this->cacheTtl, function () use ($period, $days, $cacheKey) {
             $durable = CachedAnalyticsSummary::where('cache_key', $cacheKey)
                 ->where(function ($query) {
                     $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
@@ -59,13 +62,17 @@ class AIInsightsService
             if ($durable) {
                 Log::info('AI insights served from durable cache', [
                     'period' => $period,
+                    'days' => $days,
                     'cache_key' => $cacheKey,
                 ]);
 
                 return $durable->payload;
             }
 
-            $report = $this->latestReport($period);
+            // For non-default windows, look for a report tagged with the days window
+            $report = $days > 0
+                ? $this->latestReportByDays($period, $days)
+                : $this->latestReport($period);
 
             if ($report) {
                 $payload = $this->formatReport($report);
@@ -73,6 +80,7 @@ class AIInsightsService
 
                 Log::info('AI insights served from database report', [
                     'period' => $period,
+                    'days' => $days,
                     'report_id' => $report->id,
                 ]);
 
@@ -81,6 +89,7 @@ class AIInsightsService
 
             Log::info('AI insights served from static fallback; no generated report exists', [
                 'period' => $period,
+                'days' => $days,
             ]);
 
             return $this->getFallbackInsights($period);
@@ -89,21 +98,27 @@ class AIInsightsService
 
     /**
      * Generate fresh AI insights. Intended for scheduler/Artisan only.
+     *
+     * @param  string $period  weekly|daily|monthly
+     * @param  bool   $force   Bypass once-per-day guard
+     * @param  int    $days    0 = use period default; 7 or 60 = explicit window
      */
-    public function generateInsights(string $period = 'weekly', bool $force = false): array
+    public function generateInsights(string $period = 'weekly', bool $force = false, int $days = 0): array
     {
         $today = now()->toDateString();
-        $dailyKey = "ai_insights:generated:{$period}:{$today}";
-        $lockKey = "ai_insights:lock:{$period}:{$today}";
+        $windowTag = $days > 0 ? "_{$days}d" : '';
+        $dailyKey = "ai_insights:generated:{$period}{$windowTag}:{$today}";
+        $lockKey = "ai_insights:lock:{$period}{$windowTag}:{$today}";
         $cooldownKey = 'ai_insights:cooldown';
 
         if (!$force && Cache::has($dailyKey)) {
             Log::info('AI insights generation skipped; daily generation already completed', [
                 'period' => $period,
+                'days' => $days,
                 'date' => $today,
             ]);
 
-            return $this->getLatestInsights($period);
+            return $this->getLatestInsights($period, $days);
         }
 
         if (!$force && Cache::has($cooldownKey)) {
@@ -112,7 +127,7 @@ class AIInsightsService
                 'cooldown_until' => Cache::get($cooldownKey),
             ]);
 
-            return $this->markFallback($this->getLatestInsights($period), 'AI quota cooldown is active. Showing the latest stored report.');
+            return $this->markFallback($this->getLatestInsights($period, $days), 'AI quota cooldown is active. Showing the latest stored report.');
         }
 
         // When force=true (manual trigger), clear stale locks and cooldowns
@@ -128,29 +143,32 @@ class AIInsightsService
         if (!$lock->get()) {
             Log::info('AI insights generation skipped; another generation is already running', [
                 'period' => $period,
+                'days' => $days,
                 'date' => $today,
             ]);
 
-            return $this->getLatestInsights($period);
+            return $this->getLatestInsights($period, $days);
         }
 
         try {
-            if (!$force && $this->reportExistsForToday($period)) {
+            if (!$force && $this->reportExistsForToday($period, $days)) {
                 Cache::put($dailyKey, true, $this->cacheTtl);
-                return $this->getLatestInsights($period);
+                return $this->getLatestInsights($period, $days);
             }
 
-            return $this->performGeneration($period, $dailyKey);
+            return $this->performGeneration($period, $dailyKey, $days);
         } finally {
             optional($lock)->release();
         }
     }
 
-    public function warmInsightCache(string $period = 'weekly'): array
+    public function warmInsightCache(string $period = 'weekly', int $days = 0): array
     {
-        $report = $this->latestReport($period);
+        $report = $days > 0
+            ? $this->latestReportByDays($period, $days)
+            : $this->latestReport($period);
         $payload = $report ? $this->formatReport($report) : $this->getFallbackInsights($period);
-        $cacheKey = $this->cacheKey($period);
+        $cacheKey = $this->cacheKey($period, $days);
 
         Cache::put($cacheKey, $payload, $this->cacheTtl);
         $this->storeDurableCache($cacheKey, 'ai_insights', $payload);
@@ -158,10 +176,10 @@ class AIInsightsService
         return $payload;
     }
 
-    private function performGeneration(string $period, string $dailyKey): array
+    private function performGeneration(string $period, string $dailyKey, int $days = 0): array
     {
-        $stats = $this->analytics->buildAnonymizedStatsForAI($period);
-        $prompt = $this->buildInsightsPrompt($stats);
+        $stats = $this->analytics->buildAnonymizedStatsForAI($period, $days);
+        $prompt = $this->buildInsightsPrompt($stats, $days);
         $maxRetries = max(1, (int) config('services.ai_insights.max_retries', 2));
         $result = null;
         $lastError = null;
@@ -209,6 +227,12 @@ class AIInsightsService
 
         [$startDate, $end] = $this->analytics->getPeriodBounds($period);
 
+        // If an explicit days window was given, recalculate the bounds
+        if ($days > 0) {
+            $end = now();
+            $startDate = $end->copy()->subDays($days);
+        }
+
         // Snapshot is best-effort — don't let it block report storage
         try {
             $snapshot = $this->analytics->computeDailySnapshot(now()->subDay());
@@ -220,10 +244,14 @@ class AIInsightsService
 
         $cacheExpiresAt = now()->addSeconds($this->cacheTtl);
 
+        // Use a unique period_end per days-window so different windows don't overwrite each other
+        $periodEndKey = $days > 0 ? $end->toDateString() . "_d{$days}" : $end->toDateString();
+
         $report = AiInsightReport::updateOrCreate(
             [
                 'report_type' => $period,
                 'period_end' => $end->toDateString(),
+                // Differentiate 7d vs 60d reports via metadata days_window
             ],
             [
                 'analytics_snapshot_id' => $snapshotId,
@@ -244,6 +272,7 @@ class AIInsightsService
                     'model' => config('services.ai_insights.gemini_model', 'gemini-2.5-flash'),
                     'privacy' => 'aggregated_anonymized_stats_only',
                     'prompt_bytes' => strlen($prompt),
+                    'days_window'                 => $days > 0 ? $days : null,
                     'top_department'              => $result['top_department'] ?? null,
                     'top_gender'                  => $result['top_gender'] ?? null,
                     'department_with_most_alerts' => $result['department_with_most_alerts'] ?? null,
@@ -252,7 +281,7 @@ class AIInsightsService
         );
 
         $payload = $this->formatReport($report);
-        $cacheKey = $this->cacheKey($period);
+        $cacheKey = $this->cacheKey($period, $days);
         Cache::put($cacheKey, $payload, $this->cacheTtl);
         Cache::put($dailyKey, true, $this->cacheTtl);
         $this->storeDurableCache($cacheKey, 'ai_insights', $payload);
@@ -267,25 +296,49 @@ class AIInsightsService
         return $payload;
     }
 
-    private function buildInsightsPrompt(array $stats): string
+    private function buildInsightsPrompt(array $stats, int $days = 0): string
     {
-        $statsJson = json_encode($stats, JSON_PRETTY_PRINT);
+        $windowLabel = $days > 0 ? "Last {$days} Days" : ucfirst($stats['report_type'] ?? 'weekly');
+
+        // Only send the fields Gemini actually needs — drop verbose nested arrays
+        $compact = [
+            'period'                      => $stats['period'] ?? '',
+            'days_window'                 => $stats['days_window'] ?? 7,
+            'total_conversations'         => $stats['total_conversations'] ?? 0,
+            'active_users_in_period'      => $stats['active_users_in_period'] ?? 0,
+            'avg_session_minutes'         => $stats['avg_session_minutes'] ?? 0,
+            'peak_hour'                   => $stats['peak_hour'] ?? null,
+            'total_registered_students'   => $stats['total_registered_students'] ?? 0,
+            'top_department'              => $stats['top_department'] ?? 'N/A',
+            'top_gender'                  => $stats['top_gender'] ?? 'N/A',
+            'department_with_most_alerts' => $stats['department_with_most_alerts'] ?? 'N/A',
+            'total_flagged_alerts'        => $stats['total_flagged_alerts'] ?? 0,
+            'total_classified_alerts'     => $stats['total_classified_alerts'] ?? 0,
+            'crisis_by_severity'          => $stats['crisis_by_severity'] ?? [],
+            'top_emotions'                => $stats['top_emotions'] ?? [],
+            'sentiment_scores'            => $stats['sentiment_scores'] ?? [],
+            'avg_emotion_breakdown'       => $stats['avg_emotion_breakdown'] ?? [],
+            'total_emotion_logs_in_period'=> $stats['total_emotion_logs_in_period'] ?? 0,
+        ];
+
+        $statsJson = json_encode($compact, JSON_PRETTY_PRINT);
 
         return <<<PROMPT
 You are a mental health analytics advisor for a university student wellness chatbot called LeanOn Bot.
-Analyze the following ANONYMIZED aggregate statistics and generate school-wide wellness insights.
+Analyze the ANONYMIZED statistics below ({$windowLabel}) and return a SINGLE valid JSON object.
 
-CRITICAL RULES:
-1. Output ONLY a single valid JSON object. No markdown, no code fences, no text before or after the JSON.
-2. Keep ALL string values SHORT — maximum 15 words per string. Do not write long sentences.
-3. Maximum 2 insights, 1 recommendation. No trends, no anomalies.
-4. The entire JSON response must be under 400 tokens.
+RULES (follow exactly):
+1. Output ONLY raw JSON — no markdown, no code fences, no explanation text.
+2. Every string value must be 15 words or fewer.
+3. Include exactly: 2 insights, 1 recommendation, 1 trend, 0 anomalies.
+4. Reference actual numbers from the data in your text values.
+5. You MUST close every array and object. Incomplete JSON is not acceptable.
 
-ANONYMIZED STATISTICS:
+DATA:
 {$statsJson}
 
-OUTPUT (fill in values, keep strings very short):
-{"wellness_summary":"short summary here","insights":[{"category":"usage","title":"short title","text":"short observation","severity":"info"},{"category":"emotional","title":"short title","text":"short observation","severity":"info"}],"recommendations":[{"priority":"medium","text":"short recommendation"}],"trends":[],"anomalies":[],"top_department":"dept or N/A","top_gender":"gender or N/A","department_with_most_alerts":"dept or N/A"}
+REQUIRED JSON STRUCTURE (replace placeholder values):
+{"wellness_summary":"one sentence summary","insights":[{"category":"usage","title":"title here","text":"observation with numbers","severity":"info"},{"category":"emotional","title":"title here","text":"observation with numbers","severity":"info"}],"recommendations":[{"priority":"medium","text":"actionable step"}],"trends":[{"metric":"metric name","direction":"stable","description":"short description"}],"anomalies":[],"top_department":"N/A","top_gender":"N/A","department_with_most_alerts":"N/A"}
 PROMPT;
     }
 
@@ -308,6 +361,7 @@ PROMPT;
             'cache_expires_at' => $report->cache_expires_at?->toIso8601String(),
             'metadata' => $meta,
             // Compact fields surfaced for dashboard display
+            'days_window'                 => $meta['days_window'] ?? null,
             'top_department'              => $meta['top_department'] ?? null,
             'top_gender'                  => $meta['top_gender'] ?? null,
             'department_with_most_alerts' => $meta['department_with_most_alerts'] ?? null,
@@ -362,12 +416,28 @@ PROMPT;
             ->first();
     }
 
-    private function reportExistsForToday(string $period): bool
+    private function latestReportByDays(string $period, int $days): ?AiInsightReport
     {
+        // Look for a report generated with this specific days window
         return AiInsightReport::where('report_type', $period)
             ->where('status', 'completed')
-            ->whereDate('generated_at', now()->toDateString())
-            ->exists();
+            ->whereJsonContains('metadata->days_window', $days)
+            ->orderByDesc('generated_at')
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
+    private function reportExistsForToday(string $period, int $days = 0): bool
+    {
+        $query = AiInsightReport::where('report_type', $period)
+            ->where('status', 'completed')
+            ->whereDate('generated_at', now()->toDateString());
+
+        if ($days > 0) {
+            $query->whereJsonContains('metadata->days_window', $days);
+        }
+
+        return $query->exists();
     }
 
     private function storeDurableCache(string $cacheKey, string $summaryType, array $payload): void
@@ -419,9 +489,10 @@ PROMPT;
         ];
     }
 
-    private function cacheKey(string $period): string
+    private function cacheKey(string $period, int $days = 0): string
     {
-        return "ai_insights:latest:{$period}";
+        $suffix = $days > 0 ? ":{$days}d" : '';
+        return "ai_insights:latest:{$period}{$suffix}";
     }
 
     private function resolveProvider(string $name): AIProviderInterface
