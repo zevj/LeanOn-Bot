@@ -105,7 +105,7 @@
 
       <div class="logout" @click="showLogoutModal = true">
         <div class="picture-info-separation">
-          <img :src="adminUser.profile_image_url || '/leanOnBot.png'" class="logo-icon" />
+          <img src="/leanOnBot.png" class="logo-icon" />
           <div class="title-footer">
             <span class="logo-text">{{ adminName }}</span>
             <p class="subtext">{{ adminEmail }}</p>
