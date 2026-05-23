@@ -75,6 +75,10 @@ class AnalyticsController extends Controller
      * GET /api/admin/analytics/insights
      *
      * Latest AI-generated insights (from cache/DB, no real-time AI call).
+     *
+     * Query params:
+     *   period = daily|weekly|monthly  (default: weekly)
+     *   days   = 7|60                  (optional explicit window; overrides period for data range)
      */
     public function insights(Request $request)
     {
@@ -85,8 +89,13 @@ class AnalyticsController extends Controller
             $period = 'weekly';
         }
 
+        $days = (int) $request->query('days', 0);
+        if (!in_array($days, [0, 7, 60])) {
+            $days = 0;
+        }
+
         try {
-            $insights = $this->aiInsights->getLatestInsights($period);
+            $insights = $this->aiInsights->getLatestInsights($period, $days);
             return response()->json($insights);
         } catch (\Exception $e) {
             Log::error('AI Insights retrieval error: ' . $e->getMessage());
@@ -106,6 +115,7 @@ class AnalyticsController extends Controller
      * Query params:
      *   period = daily|weekly|monthly  (default: weekly)
      *   force  = 1                     (bypass once-per-day guard)
+     *   days   = 7|60                  (optional explicit window; 7 = Last 7 Days, 60 = Last 60 Days)
      */
     public function generateInsights(Request $request)
     {
@@ -118,9 +128,15 @@ class AnalyticsController extends Controller
 
         $force = filter_var($request->query('force', false), FILTER_VALIDATE_BOOLEAN);
 
+        $days = (int) $request->query('days', 0);
+        if (!in_array($days, [0, 7, 60])) {
+            $days = 0;
+        }
+
         try {
             Log::info('Manual AI insights generation triggered via API', [
                 'period'       => $period,
+                'days'         => $days,
                 'force'        => $force,
                 'triggered_by' => $request->user()?->id,
             ]);
@@ -133,7 +149,7 @@ class AnalyticsController extends Controller
             }
 
             // Always force=true from the UI so cache guards never block it
-            $insights = $this->aiInsights->generateInsights($period, true);
+            $insights = $this->aiInsights->generateInsights($period, true, $days);
 
             return response()->json($insights);
 

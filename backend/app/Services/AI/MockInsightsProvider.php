@@ -17,24 +17,28 @@ class MockInsightsProvider implements AIProviderInterface
         // Simulate minor API latency (500ms)
         usleep(500000);
 
+        // Extract days window from prompt for context-aware mock data
+        $is60Days = str_contains($prompt, 'Last 60 Days');
+        $windowLabel = $is60Days ? '60-day' : '7-day';
+
         return [
             'insights' => [
                 [
                     'category' => 'usage',
                     'title' => 'Mid-Day Interaction Peak',
-                    'text' => 'Student interactions show a 24% increase between 12:00 PM and 2:00 PM, suggesting students use the bot during lunch breaks.',
+                    'text' => "Student interactions show a 24% increase between 12–2 PM in the {$windowLabel} window, suggesting lunch-break usage.",
                     'severity' => 'info',
                 ],
                 [
                     'category' => 'emotional',
                     'title' => 'Academic Stress Elevation',
-                    'text' => 'Aggregated sentiment logs show a 12% rise in stress and anxiety levels compared to last week, likely due to upcoming exam weeks.',
+                    'text' => "Aggregated sentiment logs show a 12% rise in stress and anxiety levels over the {$windowLabel} period.",
                     'severity' => 'warning',
                 ],
                 [
                     'category' => 'crisis',
                     'title' => 'Crisis Triggers Stable',
-                    'text' => 'Crisis alerts have decreased by 40% this period. No critical student wellness triggers require immediate intervention.',
+                    'text' => 'Crisis alerts have decreased by 40% this period. No critical wellness triggers require immediate intervention.',
                     'severity' => 'info',
                 ],
             ],
@@ -45,7 +49,7 @@ class MockInsightsProvider implements AIProviderInterface
                 ],
                 [
                     'priority' => 'medium',
-                    'text' => 'Deploy targeted stress management resources and tips through the bot for upcoming exams.',
+                    'text' => 'Deploy targeted stress management resources through the bot for upcoming academic milestones.',
                 ],
             ],
             'trends' => [
@@ -60,7 +64,7 @@ class MockInsightsProvider implements AIProviderInterface
                     'description' => 'The ratio of anxious expressions has stabilized, indicating positive student coping mechanisms.',
                 ],
             ],
-            'wellness_summary' => 'The student population shows solid coping indicators overall. There is a mild rise in academic anxiety due to calendar milestones, but crisis indicators remain low.',
+            'wellness_summary' => "The student population shows solid coping indicators over the {$windowLabel} window. Mild academic anxiety is present but crisis indicators remain low.",
             'anomalies' => [
                 [
                     'type' => 'spike',

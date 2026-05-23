@@ -193,28 +193,45 @@ class AnalyticsService
      *
      * IMPORTANT: Keep this payload COMPACT to minimize Gemini token usage.
      * No raw messages, no names, no emails, no full conversations.
+     *
+     * @param  string $period  Legacy period label (weekly/monthly/daily) — kept for backward compat.
+     * @param  int    $days    Explicit day window: 7 or 60. Overrides $period when provided.
      */
-    public function buildAnonymizedStatsForAI(string $period = 'weekly'): array
+    public function buildAnonymizedStatsForAI(string $period = 'weekly', int $days = 0): array
     {
         $end = Carbon::now();
 
-        switch ($period) {
-            case 'daily':
-                $start = $end->copy()->subDay();
-                break;
-            case 'monthly':
-                $start = $end->copy()->subMonth();
-                break;
-            case 'weekly':
-            default:
-                $start = $end->copy()->subWeek();
-                break;
+        // If an explicit day window is given, use it; otherwise fall back to period string.
+        if ($days > 0) {
+            $start = $end->copy()->subDays($days);
+        } else {
+            switch ($period) {
+                case 'daily':
+                    $start = $end->copy()->subDay();
+                    break;
+                case 'monthly':
+                    $start = $end->copy()->subMonth();
+                    break;
+                case 'weekly':
+                default:
+                    $start = $end->copy()->subWeek();
+                    break;
+            }
         }
 
-        $emotionDist = $this->getEmotionDistribution($start, $end);
+        $emotionDist    = $this->getEmotionDistribution($start, $end);
         $sentimentScores = $this->getSentimentScores($start, $end);
 
-        // Department with most users
+        // ── Dashboard-level stats ──────────────────────────────────────────
+        $totalConversations = Conversation::whereBetween('created_at', [$start, $end])->count();
+        $fallbackCount      = $this->getFallbackCount($start, $end);
+        $peakHours          = $this->getPeakUsageHours($start, $end);
+        $peakHour           = !empty($peakHours) ? $peakHours[0]['hour'] : null;
+        $avgSessionMinutes  = $this->getAvgSessionMinutes($start, $end);
+        $activeUsers        = SessionLog::whereBetween('session_start', [$start, $end])
+                                ->distinct('user_id')->count('user_id');
+
+        // ── Department / gender breakdowns ────────────────────────────────
         $topDeptUsers = User::where('role', 'student')
             ->whereNotNull('department')
             ->selectRaw('department, COUNT(*) as count')
@@ -222,7 +239,6 @@ class AnalyticsService
             ->orderByDesc('count')
             ->first();
 
-        // Department with most crisis alerts
         $topDeptAlerts = CrisisAlert::where('is_classified', true)
             ->whereNotNull('department')
             ->selectRaw('department, COUNT(*) as count')
@@ -230,7 +246,6 @@ class AnalyticsService
             ->orderByDesc('count')
             ->first();
 
-        // Gender that uses system most
         $topGender = User::where('role', 'student')
             ->whereNotNull('gender')
             ->selectRaw('gender, COUNT(*) as count')
@@ -238,29 +253,89 @@ class AnalyticsService
             ->orderByDesc('count')
             ->first();
 
-        $totalFlagged = CrisisAlert::whereBetween('created_at', [$start, $end])->count();
+        // ── Crisis counts ─────────────────────────────────────────────────
+        $totalFlagged    = CrisisAlert::whereBetween('created_at', [$start, $end])->count();
         $totalClassified = CrisisAlert::whereBetween('created_at', [$start, $end])
             ->where('is_classified', true)->count();
 
-        // ── COMPACT payload — only aggregated numbers, no PII ──
+        $crisisBySeverity = CrisisAlert::where('is_classified', true)
+            ->whereBetween('created_at', [$start, $end])
+            ->selectRaw('severity, COUNT(*) as count')
+            ->groupBy('severity')
+            ->pluck('count', 'severity')
+            ->toArray();
+
+        // ── Emotional Trends: summarized (not raw per-week rows) ─────────────
+        $emotionTypes = ['positive', 'sad', 'anxious', 'stressed'];
+        $weeksToShow = min(6, (int) ceil(($days > 0 ? $days : 7) / 7));
+        $emotionTotals = array_fill_keys($emotionTypes, 0);
+        $weekCount = 0;
+
+        for ($i = $weeksToShow - 1; $i >= 0; $i--) {
+            $wStart = Carbon::now()->subWeeks($i)->startOfWeek(\Carbon\CarbonInterface::MONDAY);
+            $wEnd   = Carbon::now()->subWeeks($i)->endOfWeek(\Carbon\CarbonInterface::SUNDAY);
+
+            if ($wStart->lt($start)) $wStart = $start->copy();
+            if ($wEnd->gt($end))     $wEnd   = $end->copy();
+
+            $wCounts = EmotionLog::whereBetween('created_at', [$wStart, $wEnd])
+                ->selectRaw('emotion, COUNT(*) as count')
+                ->groupBy('emotion')
+                ->pluck('count', 'emotion')
+                ->toArray();
+
+            $wTotal = array_sum($wCounts);
+            if ($wTotal > 0) {
+                foreach ($emotionTypes as $emo) {
+                    $emotionTotals[$emo] += round((($wCounts[$emo] ?? 0) / $wTotal) * 100, 1);
+                }
+                $weekCount++;
+            }
+        }
+
+        // Average % across weeks
+        $avgEmotionBreakdown = [];
+        foreach ($emotionTypes as $emo) {
+            $avgEmotionBreakdown[$emo] = $weekCount > 0 ? round($emotionTotals[$emo] / $weekCount, 1) : 0;
+        }
+
+        // ── Referral-style emotion totals ─────────────────────────────────
+        $totalEmotionLogs  = EmotionLog::whereBetween('created_at', [$start, $end])->count();
+        $thisWeekEmotions  = EmotionLog::whereBetween('created_at', [
+            Carbon::now()->startOfWeek(\Carbon\CarbonInterface::MONDAY),
+            Carbon::now()->endOfWeek(\Carbon\CarbonInterface::SUNDAY),
+        ])->count();
+
+        // ── COMPACT payload — only aggregated numbers, no PII ─────────────
         return [
             'period'                      => $start->toDateString() . ' to ' . $end->toDateString(),
+            'days_window'                 => $days > 0 ? $days : ($period === 'monthly' ? 30 : 7),
             'report_type'                 => $period,
+
+            // Dashboard stats
+            'total_conversations'         => $totalConversations,
+            'active_users_in_period'      => $activeUsers,
+            'avg_session_minutes'         => $avgSessionMinutes,
+            'peak_hour'                   => $peakHour,
+            'fallback_count'              => $fallbackCount,
+            'total_registered_students'   => User::where('role', 'student')->count(),
+
+            // Department / gender
             'top_department'              => $topDeptUsers?->department  ?? 'N/A',
             'top_gender'                  => $topGender?->gender          ?? 'N/A',
             'department_with_most_alerts' => $topDeptAlerts?->department ?? 'N/A',
+
+            // Crisis
             'total_flagged_alerts'        => $totalFlagged,
             'total_classified_alerts'     => $totalClassified,
-            'total_conversations'         => Conversation::whereBetween('created_at', [$start, $end])->count(),
-            'total_registered_students'   => User::where('role', 'student')->count(),
+            'crisis_by_severity'          => $crisisBySeverity,
+
+            // Emotional trends (averaged, not raw per-week rows)
             'top_emotions'                => array_slice($emotionDist, 0, 5, true),
             'sentiment_scores'            => $sentimentScores,
-            'crisis_by_severity'          => CrisisAlert::where('is_classified', true)
-                                                ->whereBetween('created_at', [$start, $end])
-                                                ->selectRaw('severity, COUNT(*) as count')
-                                                ->groupBy('severity')
-                                                ->pluck('count', 'severity')
-                                                ->toArray(),
+            'avg_emotion_breakdown'       => $avgEmotionBreakdown,
+            'total_emotion_logs_in_period'=> $totalEmotionLogs,
+            'emotion_logs_this_week'      => $thisWeekEmotions,
         ];
     }
 
