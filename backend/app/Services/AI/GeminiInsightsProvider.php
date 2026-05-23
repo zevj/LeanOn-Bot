@@ -17,25 +17,48 @@ use Illuminate\Support\Facades\Log;
 class GeminiInsightsProvider implements AIProviderInterface
 {
     private string $apiKey;
+    private string $fallbackKey;
     private string $model;
 
     public function __construct()
     {
-        $this->apiKey = (string) (config('services.ai_insights.gemini_key') ?? env('GEMINI_API_KEY', ''));
-        $this->model = (string) config('services.ai_insights.gemini_model', 'gemini-2.5-flash');
+        // Key #2: dedicated analytics key — separate quota from chat bot's GEMINI_API_KEY
+        $this->apiKey      = (string) (config('services.ai_insights.gemini_key') ?? '');
+        // Key #3: optional fallback key — used only when Key #2 hits quota
+        $this->fallbackKey = (string) (config('services.ai_insights.gemini_fallback_key') ?? '');
+        $this->model       = (string) config('services.ai_insights.gemini_model', 'gemini-2.5-flash');
     }
 
     public function generateInsights(string $prompt): array
     {
         if (empty($this->apiKey)) {
-            throw new \Exception('Gemini API key is not configured for insights generation.');
+            throw new \Exception('AI_INSIGHTS_GEMINI_KEY is not configured. Set a dedicated Gemini API key for analytics in your .env file.');
         }
 
+        try {
+            return $this->callGemini($this->apiKey, $prompt);
+        } catch (\Exception $e) {
+            // If quota error and fallback key is configured, try fallback once
+            $isQuota = str_contains(strtolower($e->getMessage()), 'quota')
+                || str_contains(strtolower($e->getMessage()), 'resource exhausted')
+                || str_contains(strtolower($e->getMessage()), '429');
+
+            if ($isQuota && !empty($this->fallbackKey)) {
+                Log::info('Gemini primary key quota hit — trying fallback key');
+                return $this->callGemini($this->fallbackKey, $prompt);
+            }
+
+            throw $e;
+        }
+    }
+
+    private function callGemini(string $key, string $prompt): array
+    {
         $response = Http::withoutVerifying()
             ->connectTimeout(8)
             ->timeout((int) config('services.ai_insights.timeout', 25))
             ->withHeaders(['Content-Type' => 'application/json'])
-            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key=" . $this->apiKey, [
+            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$key}", [
                 'contents' => [
                     [
                         'role' => 'user',
@@ -43,9 +66,9 @@ class GeminiInsightsProvider implements AIProviderInterface
                     ],
                 ],
                 'generationConfig' => [
-                    'temperature' => 0.2,
-                    'topP' => 0.8,
-                    'maxOutputTokens' => (int) config('services.ai_insights.max_output_tokens', 1200),
+                    'temperature'      => 0.2,
+                    'topP'             => 0.8,
+                    'maxOutputTokens'  => (int) config('services.ai_insights.max_output_tokens', 600),
                     'responseMimeType' => 'application/json',
                 ],
             ]);
@@ -55,7 +78,7 @@ class GeminiInsightsProvider implements AIProviderInterface
             $status = $response->status();
 
             Log::warning('Gemini Insights API error', [
-                'status' => $status,
+                'status'  => $status,
                 'message' => $errorMessage,
             ]);
 
@@ -78,12 +101,22 @@ class GeminiInsightsProvider implements AIProviderInterface
             throw new \Exception('Gemini returned malformed JSON for insights.');
         }
 
+        // Support both the compact new format and the legacy extended format
+        $insights = $this->normalizeList($parsed['insights'] ?? $parsed['key_insights'] ?? []);
+
+        $wellnessSummary = is_string($parsed['wellness_summary'] ?? null)
+            ? $parsed['wellness_summary']
+            : (is_string($parsed['summary'] ?? null) ? $parsed['summary'] : '');
+
         return [
-            'insights' => $this->normalizeList($parsed['insights'] ?? $parsed['key_insights'] ?? []),
-            'recommendations' => $this->normalizeList($parsed['recommendations'] ?? []),
-            'trends' => $this->normalizeList($parsed['trends'] ?? []),
-            'wellness_summary' => is_string($parsed['wellness_summary'] ?? null) ? $parsed['wellness_summary'] : '',
-            'anomalies' => $this->normalizeList($parsed['anomalies'] ?? []),
+            'insights'                    => $insights,
+            'recommendations'             => $this->normalizeList($parsed['recommendations'] ?? []),
+            'trends'                      => $this->normalizeList($parsed['trends'] ?? []),
+            'wellness_summary'            => $wellnessSummary,
+            'anomalies'                   => $this->normalizeList($parsed['anomalies'] ?? []),
+            'top_department'              => $parsed['top_department'] ?? null,
+            'top_gender'                  => $parsed['top_gender'] ?? null,
+            'department_with_most_alerts' => $parsed['department_with_most_alerts'] ?? null,
         ];
     }
 

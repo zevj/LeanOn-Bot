@@ -246,17 +246,37 @@ I'm here with you. Do you want to talk about what's going on?";
                 'is_crisis' => true,
             ]);
 
-            // Auto-create crisis alert
+            // ── Crisis Alert: AI/local detection FLAGS the message only.
+            // Severity is intentionally left null (unclassified).
+            // The ADMIN is responsible for manually assigning Low / Moderate / Severe.
             $matchedKeywords = $this->getMatchedKeywords($userMessage);
-            $severity = $this->classifySeverity($userMessage);
+            $flagReason      = $this->buildFlagReason($matchedKeywords);
+
+            // Capture department/gender for analytics (anonymized — no name/email stored)
+            $alertUser = $userId ? \App\Models\User::find($userId) : null;
+
             CrisisAlert::create([
                 'user_id'           => $userId,
                 'chat_message_id'   => $chatMsg->id,
+                'department'        => $alertUser?->department,
+                'gender'            => $alertUser?->gender,
                 'message'           => $userMessage,
-                'severity'          => $severity,
+                'severity'          => null,   // Admin classifies manually
                 'detected_keywords' => $matchedKeywords,
+                'flag_reason'       => $flagReason,
                 'status'            => 'new',
+                'is_classified'     => false,
             ]);
+
+            // Notify admin panel — non-critical, silently fail if it errors
+            try {
+                $newAlert = \App\Models\CrisisAlert::where('chat_message_id', $chatMsg->id)->first();
+                if ($newAlert) {
+                    \App\Models\AdminNotification::crisisFlagged($newAlert);
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to create admin notification: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'reply' => $this->safeResponse,
@@ -712,6 +732,34 @@ I'm here with you. Do you want to talk about what's going on?";
 
     return $isMentalHealth;
 }
+
+    /**
+     * Build a short human-readable flag reason from matched keywords.
+     * Used to give admins context without exposing the full message.
+     */
+    private function buildFlagReason(array $keywords): string
+    {
+        if (empty($keywords)) {
+            return 'Negative emotional pattern detected';
+        }
+
+        $selfHarm   = ['suicide', 'kill myself', 'self harm', 'cut myself', 'end my life',
+                        'magpakamatay', 'saktan ang sarili'];
+        $hopeless   = ['hopeless', 'worthless', 'no reason to live', 'better off dead',
+                        'wala nang kwenta', 'i wish i was gone', 'disappear'];
+        $crisis     = ["i'm done", 'give up', "don't want to live", 'want to die',
+                        'ayoko na', 'gusto ko nang mawala'];
+        $burnout    = ['pagod na ako', 'hindi ko na kaya'];
+
+        foreach ($keywords as $kw) {
+            if (in_array($kw, $selfHarm))  return 'Self-harm or suicidal mention';
+            if (in_array($kw, $hopeless))  return 'Hopelessness or worthlessness';
+            if (in_array($kw, $crisis))    return 'Emotional crisis expression';
+            if (in_array($kw, $burnout))   return 'Severe burnout or exhaustion';
+        }
+
+        return 'Negative emotional pattern detected';
+    }
 
     /**
      * Get all crisis keywords that matched in the message.

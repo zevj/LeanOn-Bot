@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\AnalyticsService;
 use App\Services\AIInsightsService;
+use App\Models\AiInsightReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -137,6 +138,87 @@ class AnalyticsController extends Controller
         } catch (\Exception $e) {
             Log::error('Analytics snapshots error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to load snapshots.'], 500);
+        }
+    }
+
+    /**
+     * GET /api/admin/analytics/export
+     *
+     * Returns a structured JSON payload for PDF report generation on the frontend.
+     * Supports filtering by sections and period.
+     *
+     * Query params:
+     *   period      = 1d|7d|14d|30d|90d  (default: 7d)
+     *   sections[]  = dashboard|trends|insights|snapshots  (default: all)
+     */
+    public function export(Request $request)
+    {
+        $period = $request->query('period', '7d');
+        $allowedPeriods = ['1d', '7d', '14d', '30d', '90d'];
+        if (!in_array($period, $allowedPeriods)) {
+            $period = '7d';
+        }
+
+        $requestedSections = $request->query('sections', ['dashboard', 'trends', 'insights']);
+        if (is_string($requestedSections)) {
+            $requestedSections = explode(',', $requestedSections);
+        }
+        $allowedSections = ['dashboard', 'trends', 'insights', 'snapshots'];
+        $sections = array_intersect($requestedSections, $allowedSections);
+        if (empty($sections)) {
+            $sections = ['dashboard', 'trends', 'insights'];
+        }
+
+        $payload = [
+            'generated_at' => now()->toIso8601String(),
+            'period'       => $period,
+            'sections'     => array_values($sections),
+        ];
+
+        try {
+            if (in_array('dashboard', $sections)) {
+                $payload['dashboard'] = $this->analytics->getDashboardStats($period);
+            }
+
+            if (in_array('trends', $sections)) {
+                $trendPeriod = $period === '1d' ? '7d' : $period;
+                $payload['trends'] = $this->analytics->getTrends($trendPeriod);
+            }
+
+            if (in_array('insights', $sections)) {
+                // Map dashboard period to insight period
+                $insightPeriod = match (true) {
+                    in_array($period, ['1d', '7d', '14d']) => 'weekly',
+                    $period === '30d'                      => 'monthly',
+                    $period === '90d'                      => 'monthly',
+                    default                                => 'weekly',
+                };
+                $payload['insights'] = $this->aiInsights->getLatestInsights($insightPeriod);
+            }
+
+            if (in_array('snapshots', $sections)) {
+                $days = match ($period) {
+                    '1d'  => 7,
+                    '7d'  => 7,
+                    '14d' => 14,
+                    '30d' => 30,
+                    '90d' => 90,
+                    default => 30,
+                };
+                $payload['snapshots'] = $this->analytics->getSnapshots($days);
+            }
+
+            // Record export notification for admin panel
+            try {
+                \App\Models\AdminNotification::reportExported($period, array_values($sections));
+            } catch (\Exception $e) {
+                Log::warning('Failed to create export notification: ' . $e->getMessage());
+            }
+
+            return response()->json($payload);
+        } catch (\Exception $e) {
+            Log::error('Analytics export error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to generate export data.'], 500);
         }
     }
 }

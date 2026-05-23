@@ -161,6 +161,17 @@
   font-size: 20px;
 }
 
+/* Department name cards — smaller font to fit longer strings */
+.stat-value.dept-value {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
 .stat-growth {
   display: inline-flex;
   align-items: center;

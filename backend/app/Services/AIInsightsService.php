@@ -227,6 +227,9 @@ class AIInsightsService
                     'model' => config('services.ai_insights.gemini_model', 'gemini-2.5-flash'),
                     'privacy' => 'aggregated_anonymized_stats_only',
                     'prompt_bytes' => strlen($prompt),
+                    'top_department'              => $result['top_department'] ?? null,
+                    'top_gender'                  => $result['top_gender'] ?? null,
+                    'department_with_most_alerts' => $result['department_with_most_alerts'] ?? null,
                 ],
             ]
         );
@@ -255,57 +258,32 @@ class AIInsightsService
 You are a mental health analytics advisor for a university student wellness chatbot called LeanOn Bot.
 Analyze the following ANONYMIZED aggregate statistics and generate school-wide wellness insights.
 
-PRIVACY AND SAFETY RULES:
-- Never reference or attempt to identify individual students.
-- Never infer personal identities.
-- Use only the aggregate statistics provided below.
-- Do not ask for raw conversations, names, emails, IDs, or personal details.
-- Focus on wellness summaries, engagement observations, usage trends, recommendations, anomaly detection, and emotional trend summaries.
+RULES:
+- Never reference individual students.
+- Use only the aggregate statistics below.
+- Keep all text SHORT and concise.
+- Maximum 3 insights, 2 recommendations.
 
 ANONYMIZED STATISTICS:
 {$statsJson}
 
-Return STRICT VALID JSON ONLY.
-Do not include markdown, code fences, prose, comments, or text outside JSON.
-Use this exact JSON shape:
-{
-  "insights": [
-    {
-      "category": "usage|emotional|crisis|engagement|academic",
-      "title": "Brief insight title",
-      "text": "Detailed observation with specific numbers",
-      "severity": "info|warning|critical"
-    }
-  ],
-  "recommendations": [
-    {
-      "priority": "high|medium|low",
-      "text": "Actionable recommendation for counselors or administrators"
-    }
-  ],
-  "trends": [
-    {
-      "metric": "Name of the metric",
-      "direction": "increasing|decreasing|stable",
-      "description": "What this trend means in context"
-    }
-  ],
-  "wellness_summary": "A 2-3 sentence overall wellness assessment of the student population based on the data.",
-  "anomalies": [
-    {
-      "type": "spike|drop|unusual_pattern",
-      "description": "Description of the anomaly",
-      "severity": "info|warning|critical"
-    }
-  ]
-}
+Return STRICT VALID JSON ONLY. No markdown. No text outside JSON.
+Required format:
+{"summary":"","insights":[],"top_department":"","top_gender":"","department_with_most_alerts":""}
 
-Generate 3-5 insights, 2-4 recommendations, and 2-3 trends. Include anomalies only when the data shows unusual patterns.
+Where:
+- summary: 1-2 sentence overall wellness assessment
+- insights: array of max 3 objects with keys: category (usage|emotional|crisis|engagement), title (short), text (1 sentence), severity (info|warning|critical)
+- top_department: department with most users
+- top_gender: gender that uses system most
+- department_with_most_alerts: department with most crisis alerts
 PROMPT;
     }
 
     private function formatReport(AiInsightReport $report): array
     {
+        $meta = $report->metadata ?? [];
+
         return [
             'id' => $report->id,
             'report_type' => $report->report_type,
@@ -319,7 +297,11 @@ PROMPT;
             'ai_provider' => $report->ai_provider,
             'generated_at' => ($report->generated_at ?? $report->created_at)->toIso8601String(),
             'cache_expires_at' => $report->cache_expires_at?->toIso8601String(),
-            'metadata' => $report->metadata ?? [],
+            'metadata' => $meta,
+            // Compact fields surfaced for dashboard display
+            'top_department'              => $meta['top_department'] ?? null,
+            'top_gender'                  => $meta['top_gender'] ?? null,
+            'department_with_most_alerts' => $meta['department_with_most_alerts'] ?? null,
         ];
     }
 
@@ -338,27 +320,27 @@ PROMPT;
         }
 
         return [
-            'report_type' => $period,
-            'insights' => [
+            'report_type'     => $period,
+            'insights'        => [
                 [
                     'category' => 'general',
-                    'title' => 'Analytics Ready',
-                    'text' => 'The analytics system is active and collecting anonymized data. Scheduled AI insights will appear after the next daily generation run.',
+                    'title'    => 'Analytics Ready',
+                    'text'     => 'The analytics system is active and collecting anonymized data. Scheduled AI insights will appear after the next daily generation run.',
                     'severity' => 'info',
                 ],
             ],
             'recommendations' => [
                 [
                     'priority' => 'medium',
-                    'text' => 'Continue monitoring aggregate usage and emotional trends while the scheduled report is prepared.',
+                    'text'     => 'Continue monitoring aggregate usage and emotional trends while the scheduled report is prepared.',
                 ],
             ],
-            'trends' => [],
+            'trends'          => [],
             'wellness_summary' => 'The wellness analytics system is initializing. Insights will improve as more anonymized data is collected and the scheduled daily report runs.',
-            'anomalies' => [],
-            'ai_provider' => 'fallback',
-            'generated_at' => now()->toIso8601String(),
-            'is_fallback' => true,
+            'anomalies'       => [],
+            'ai_provider'     => 'fallback',
+            'generated_at'    => null,   // null = no real report exists yet; frontend shows "Awaiting first generation"
+            'is_fallback'     => true,
         ];
     }
 
@@ -413,17 +395,18 @@ PROMPT;
     private function compactSnapshotForStorage(array $stats): array
     {
         return [
-            'period' => $stats['period'] ?? null,
-            'report_type' => $stats['report_type'] ?? null,
-            'daily_active_users_avg' => $stats['daily_active_users_avg'] ?? 0,
-            'total_conversations' => $stats['total_conversations'] ?? 0,
-            'total_messages' => $stats['total_messages'] ?? 0,
-            'avg_session_minutes' => $stats['avg_session_minutes'] ?? 0,
-            'emotion_distribution' => $stats['emotion_distribution'] ?? [],
-            'peak_usage_hours' => $stats['peak_usage_hours'] ?? [],
-            'crisis_alerts_total' => $stats['crisis_alerts_total'] ?? 0,
-            'sentiment_scores' => $stats['sentiment_scores'] ?? [],
-            'trend_metrics' => $stats['trend_metrics'] ?? [],
+            'period'                      => $stats['period'] ?? null,
+            'report_type'                 => $stats['report_type'] ?? null,
+            'top_department'              => $stats['top_department'] ?? null,
+            'top_gender'                  => $stats['top_gender'] ?? null,
+            'department_with_most_alerts' => $stats['department_with_most_alerts'] ?? null,
+            'total_flagged_alerts'        => $stats['total_flagged_alerts'] ?? 0,
+            'total_classified_alerts'     => $stats['total_classified_alerts'] ?? 0,
+            'total_conversations'         => $stats['total_conversations'] ?? 0,
+            'total_registered_students'   => $stats['total_registered_students'] ?? 0,
+            'top_emotions'                => $stats['top_emotions'] ?? [],
+            'sentiment_scores'            => $stats['sentiment_scores'] ?? [],
+            'crisis_by_severity'          => $stats['crisis_by_severity'] ?? [],
         ];
     }
 

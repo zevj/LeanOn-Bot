@@ -70,38 +70,42 @@ const routes = [
     path: '/adminDashboard',
     name: 'adminDashboard',
     component: AdminDashboard,
-    meta: { requiresAuth: true, role: 'guidance' }
+    meta: { requiresAuth: true, role: 'guidance', hideThemeToggle: true }
   },
 
   {
     path: '/EmotionalTrends',
     name: 'EmotionalTrends',
-    component: EmotionalTrends
+    component: EmotionalTrends,
+    meta: { hideThemeToggle: true }
   },
 
   {
     path: '/AdminCrisisAlerts',
     name: 'AdminCrisisAlerts',
-    component: AdminCrisisAlerts
+    component: AdminCrisisAlerts,
+    meta: { hideThemeToggle: true }
   },
 
   {
     path: '/AdminProfile',
     name: 'AdminProfile',
-    component: AdminProfile
+    component: AdminProfile,
+    meta: { hideThemeToggle: true }
   },
 
   {
     path: '/AdminLogRecords',
     name: 'AdminLogRecords',
-    component: AdminLogRecords
+    component: AdminLogRecords,
+    meta: { hideThemeToggle: true }
   },
 
   {
     path: '/AdminAnalytics',
     name: 'AdminAnalytics',
     component: AdminAnalytics,
-    meta: { requiresAuth: true, role: 'guidance' }
+    meta: { requiresAuth: true, role: 'guidance', hideThemeToggle: true }
   },
 
   /* GOOGLE AUTH CALLBACK */

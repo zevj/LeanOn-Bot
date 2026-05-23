@@ -13,6 +13,8 @@ use App\Http\Controllers\EmotionController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\AnalyticsController;
 
+use App\Http\Controllers\AdminNotificationController;
+
 // ── Public Routes (rate-limited) ──────────────────────────────────
 // These endpoints are accessible without authentication but are
 // protected by per-endpoint rate limiting to prevent abuse.
@@ -84,8 +86,15 @@ Route::middleware('throttle:password-reset')->group(function () {
 // ── Admin Panel API Routes ────────────────────────────────────────
 Route::middleware(['auth:sanctum', 'role:guidance'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index']);
+    Route::get('/crisis-alerts/department-stats', [CrisisAlertController::class, 'departmentStats']);
     Route::get('/crisis-alerts', [CrisisAlertController::class, 'index']);
     Route::patch('/crisis-alerts/{id}', [CrisisAlertController::class, 'update']);
+    Route::post('/crisis-alerts/{id}/send-email', [CrisisAlertController::class, 'sendEmail']);
+
+    // ── Admin Notifications ───────────────────────────────────
+    Route::get('/notifications', [AdminNotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [AdminNotificationController::class, 'markRead']);
+    Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead']);
     Route::get('/emotional-trends', [EmotionController::class, 'index']);
     Route::get('/logs', [LogController::class, 'index']);
 
@@ -100,6 +109,7 @@ Route::middleware(['auth:sanctum', 'role:guidance'])->prefix('admin')->group(fun
     Route::get('/analytics/insights', [AnalyticsController::class, 'insights']);
     Route::get('/analytics/wellness-report', [AnalyticsController::class, 'wellnessReport']);
     Route::get('/analytics/snapshots', [AnalyticsController::class, 'snapshots']);
+    Route::get('/analytics/export', [AnalyticsController::class, 'export']);
 });
 
 // ── Google Auth Routes ────────────────────────────────────────────

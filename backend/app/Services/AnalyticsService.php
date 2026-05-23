@@ -38,29 +38,23 @@ class AnalyticsService
             $prevStart = $this->periodToStart($period, $start);
 
             // Current period metrics
-            $currentDau = $this->getDailyActiveUsers($start, $end);
             $currentConversations = Conversation::whereBetween('created_at', [$start, $end])->count();
-            $currentMessages = ChatMessage::whereBetween('created_at', [$start, $end])->count();
-            $avgSession = $this->getAvgSessionMinutes($start, $end);
             $crisisCount = CrisisAlert::whereBetween('created_at', [$start, $end])->count();
             $fallbackCount = $this->getFallbackCount($start, $end);
 
             // Previous period for comparison
-            $prevDau = $this->getDailyActiveUsers($prevStart, $start);
             $prevConversations = Conversation::whereBetween('created_at', [$prevStart, $start])->count();
-            $prevMessages = ChatMessage::whereBetween('created_at', [$prevStart, $start])->count();
 
             // Growth calculations
-            $dauGrowth = $prevDau > 0 ? round((($currentDau - $prevDau) / $prevDau) * 100, 1) : 0;
             $convGrowth = $prevConversations > 0 ? round((($currentConversations - $prevConversations) / $prevConversations) * 100, 1) : 0;
-            $msgGrowth = $prevMessages > 0 ? round((($currentMessages - $prevMessages) / $prevMessages) * 100, 1) : 0;
 
             // Peak usage hour
             $peakHours = $this->getPeakUsageHours($start, $end);
             $peakHour = !empty($peakHours) ? $peakHours[0]['hour'] : null;
 
-            // Crisis by severity
+            // Crisis by severity (classified only)
             $crisisBySeverity = CrisisAlert::whereBetween('created_at', [$start, $end])
+                ->where('is_classified', true)
                 ->selectRaw('severity, COUNT(*) as count')
                 ->groupBy('severity')
                 ->pluck('count', 'severity')
@@ -69,14 +63,36 @@ class AnalyticsService
             // Total registered users
             $totalUsers = User::where('role', 'student')->count();
 
+            // ── NEW: Three replacement stat cards ──────────────────
+            // 1. Department with most users
+            $topDeptUsers = User::where('role', 'student')
+                ->whereNotNull('department')
+                ->selectRaw('department, COUNT(*) as count')
+                ->groupBy('department')
+                ->orderByDesc('count')
+                ->first();
+
+            // 2. Department with most crisis alerts (all time, not period-limited,
+            //    so the card always shows meaningful data even in short periods)
+            $topDeptAlerts = CrisisAlert::where('is_classified', true)
+                ->whereNotNull('department')
+                ->selectRaw('department, COUNT(*) as count')
+                ->groupBy('department')
+                ->orderByDesc('count')
+                ->first();
+
+            // 3. Gender that uses the system most
+            $topGender = User::where('role', 'student')
+                ->whereNotNull('gender')
+                ->selectRaw('gender, COUNT(*) as count')
+                ->groupBy('gender')
+                ->orderByDesc('count')
+                ->first();
+
             return [
-                'daily_active_users'    => $currentDau,
-                'dau_growth'            => $dauGrowth,
+                // Kept for backward compat (charts, export, etc.)
                 'total_conversations'   => $currentConversations,
                 'conversation_growth'   => $convGrowth,
-                'total_messages'        => $currentMessages,
-                'message_growth'        => $msgGrowth,
-                'avg_session_minutes'   => $avgSession,
                 'peak_hour'             => $peakHour,
                 'peak_usage_hours'      => $peakHours,
                 'crisis_alert_count'    => $crisisCount,
@@ -86,6 +102,14 @@ class AnalyticsService
                 'period'                => $period,
                 'period_start'          => $start->toDateString(),
                 'period_end'            => $end->toDateString(),
+
+                // ── New replacement cards ──
+                'top_department_users'  => $topDeptUsers?->department  ?? 'N/A',
+                'top_department_users_count' => (int) ($topDeptUsers?->count ?? 0),
+                'top_department_alerts' => $topDeptAlerts?->department ?? 'N/A',
+                'top_department_alerts_count' => (int) ($topDeptAlerts?->count ?? 0),
+                'top_gender'            => $topGender?->gender          ?? 'N/A',
+                'top_gender_count'      => (int) ($topGender?->count    ?? 0),
             ];
         });
     }
@@ -166,6 +190,9 @@ class AnalyticsService
     /**
      * Build anonymized stats payload for AI insights prompt.
      * This is the ONLY data that ever reaches the AI provider.
+     *
+     * IMPORTANT: Keep this payload COMPACT to minimize Gemini token usage.
+     * No raw messages, no names, no emails, no full conversations.
      */
     public function buildAnonymizedStatsForAI(string $period = 'weekly'): array
     {
@@ -184,56 +211,56 @@ class AnalyticsService
                 break;
         }
 
-        $prevEnd = $start->copy();
-        $prevStart = $this->periodToStart($period === 'daily' ? '1d' : ($period === 'monthly' ? '30d' : '7d'), $prevEnd);
-
-        $currentDau = $this->getDailyActiveUsers($start, $end);
-        $prevDau = $this->getDailyActiveUsers($prevStart, $prevEnd);
-        $currentConv = Conversation::whereBetween('created_at', [$start, $end])->count();
-        $prevConv = Conversation::whereBetween('created_at', [$prevStart, $prevEnd])->count();
-
         $emotionDist = $this->getEmotionDistribution($start, $end);
-        $prevEmotionDist = $this->getEmotionDistribution($prevStart, $prevEnd);
+        $sentimentScores = $this->getSentimentScores($start, $end);
 
-        // Calculate emotion changes
-        $emotionChanges = [];
-        foreach ($emotionDist as $emotion => $count) {
-            $prevCount = $prevEmotionDist[$emotion] ?? 0;
-            $change = $prevCount > 0 ? round((($count - $prevCount) / $prevCount) * 100, 1) : 0;
-            $emotionChanges[$emotion] = [
-                'current' => $count,
-                'previous' => $prevCount,
-                'change_percent' => $change,
-            ];
-        }
+        // Department with most users
+        $topDeptUsers = User::where('role', 'student')
+            ->whereNotNull('department')
+            ->selectRaw('department, COUNT(*) as count')
+            ->groupBy('department')
+            ->orderByDesc('count')
+            ->first();
 
-        $peakHours = $this->getPeakUsageHours($start, $end);
-        $topPeakHours = array_slice(array_column($peakHours, 'hour'), 0, 5);
+        // Department with most crisis alerts
+        $topDeptAlerts = CrisisAlert::where('is_classified', true)
+            ->whereNotNull('department')
+            ->selectRaw('department, COUNT(*) as count')
+            ->groupBy('department')
+            ->orderByDesc('count')
+            ->first();
 
-        $trendMetrics = $this->getTrendMetrics($start, $end);
+        // Gender that uses system most
+        $topGender = User::where('role', 'student')
+            ->whereNotNull('gender')
+            ->selectRaw('gender, COUNT(*) as count')
+            ->groupBy('gender')
+            ->orderByDesc('count')
+            ->first();
 
+        $totalFlagged = CrisisAlert::whereBetween('created_at', [$start, $end])->count();
+        $totalClassified = CrisisAlert::whereBetween('created_at', [$start, $end])
+            ->where('is_classified', true)->count();
+
+        // ── COMPACT payload — only aggregated numbers, no PII ──
         return [
             'period'                      => $start->toDateString() . ' to ' . $end->toDateString(),
             'report_type'                 => $period,
-            'daily_active_users_avg'      => $currentDau,
-            'dau_change'                  => $prevDau > 0 ? round((($currentDau - $prevDau) / $prevDau) * 100, 1) . '%' : 'N/A',
-            'total_conversations'         => $currentConv,
-            'conversation_change'         => $prevConv > 0 ? round((($currentConv - $prevConv) / $prevConv) * 100, 1) . '%' : 'N/A',
-            'total_messages'              => ChatMessage::whereBetween('created_at', [$start, $end])->count(),
-            'avg_session_minutes'         => $this->getAvgSessionMinutes($start, $end),
-            'emotion_distribution'        => $emotionDist,
-            'emotion_changes'             => $emotionChanges,
-            'peak_usage_hours'            => $topPeakHours,
-            'crisis_alerts_total'         => CrisisAlert::whereBetween('created_at', [$start, $end])->count(),
-            'crisis_by_severity'          => CrisisAlert::whereBetween('created_at', [$start, $end])
+            'top_department'              => $topDeptUsers?->department  ?? 'N/A',
+            'top_gender'                  => $topGender?->gender          ?? 'N/A',
+            'department_with_most_alerts' => $topDeptAlerts?->department ?? 'N/A',
+            'total_flagged_alerts'        => $totalFlagged,
+            'total_classified_alerts'     => $totalClassified,
+            'total_conversations'         => Conversation::whereBetween('created_at', [$start, $end])->count(),
+            'total_registered_students'   => User::where('role', 'student')->count(),
+            'top_emotions'                => array_slice($emotionDist, 0, 5, true),
+            'sentiment_scores'            => $sentimentScores,
+            'crisis_by_severity'          => CrisisAlert::where('is_classified', true)
+                                                ->whereBetween('created_at', [$start, $end])
                                                 ->selectRaw('severity, COUNT(*) as count')
                                                 ->groupBy('severity')
                                                 ->pluck('count', 'severity')
                                                 ->toArray(),
-            'fallback_rate'               => $this->getFallbackCount($start, $end),
-            'sentiment_scores'            => $this->getSentimentScores($start, $end),
-            'total_registered_students'   => User::where('role', 'student')->count(),
-            'trend_metrics'               => $trendMetrics,
         ];
     }
 

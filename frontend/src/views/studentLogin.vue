@@ -114,7 +114,12 @@
             <span></span>
           </div>
  
-          <button class="google-signin">
+          <button
+            type="button"
+            class="google-signin"
+            ref="googleBtnRef"
+            @click="loginWithGoogle"
+          >
             <div class="btn-inner">
               <div class="g-logo">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
@@ -282,7 +287,7 @@ const onOtpVerified = (data) => {
    GOOGLE LOGIN
 ========================= */
 const loginWithGoogle = () => {
-  const baseURL = axios.defaults.baseURL || 'http://127.0.0.1:8000'
+  const baseURL = axios.defaults.baseURL || import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001'
   window.location.href = `${baseURL}/api/auth/google/redirect`
 }
  

@@ -9,9 +9,11 @@
         <div>
           <h2 class="insights-title">AI Insights</h2>
           <p class="insights-subtitle" v-if="generatedAt">
-            Last updated: {{ formatDate(generatedAt) }}
+            <span v-if="isStale || isFallback">Last available: </span>
+            <span v-else>Generated: </span>
+            {{ formatDate(generatedAt) }}
           </p>
-          <p class="insights-subtitle" v-else>Generating insights...</p>
+          <p class="insights-subtitle" v-else>Awaiting first generation...</p>
         </div>
       </div>
       <div class="scheduled-badge">
@@ -174,9 +176,14 @@ const hasContent = computed(() => {
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
   const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
   return d.toLocaleDateString('en-PH', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
   })
 }
 
@@ -379,7 +386,7 @@ const getTrendIcon = (direction) => {
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary, #374151);
+  color: #374151;
   margin: 0 0 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -405,7 +412,7 @@ const getTrendIcon = (direction) => {
   padding: 1rem 1.25rem;
   border-radius: 12px;
   border: 1px solid #e5e7eb;
-  background: var(--card-bg-light, #fafafa);
+  background: #fafafa;
   transition: all 0.25s ease;
 }
 
@@ -472,14 +479,14 @@ const getTrendIcon = (direction) => {
 .insight-card-title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text-primary, #111827);
+  color: #111827;
   margin: 0 0 6px;
 }
 
 .insight-card-text {
   font-size: 13px;
   line-height: 1.55;
-  color: var(--text-secondary, #6b7280);
+  color: #4b5563;
   margin: 0;
 }
 
@@ -496,7 +503,7 @@ const getTrendIcon = (direction) => {
   gap: 12px;
   padding: 12px 14px;
   border-radius: 10px;
-  background: var(--card-bg-light, #fafafa);
+  background: #fafafa;
   border: 1px solid #e5e7eb;
 }
 
@@ -529,13 +536,13 @@ const getTrendIcon = (direction) => {
 .trend-metric {
   font-size: 13px;
   font-weight: 600;
-  color: var(--text-primary, #111827);
+  color: #111827;
 }
 
 .trend-desc {
   font-size: 12.5px;
   line-height: 1.5;
-  color: var(--text-secondary, #6b7280);
+  color: #6b7280;
   margin: 4px 0 0;
 }
 
@@ -552,7 +559,7 @@ const getTrendIcon = (direction) => {
   gap: 14px;
   padding: 14px 16px;
   border-radius: 10px;
-  background: var(--card-bg-light, #fafafa);
+  background: #fafafa;
   border: 1px solid #e5e7eb;
 }
 
@@ -591,7 +598,7 @@ const getTrendIcon = (direction) => {
 .rec-text {
   font-size: 13px;
   line-height: 1.55;
-  color: var(--text-secondary, #4b5563);
+  color: #4b5563;
   margin: 0;
 }
 
@@ -654,7 +661,7 @@ const getTrendIcon = (direction) => {
 
 .insights-empty h3 {
   font-size: 16px;
-  color: var(--text-primary, #6b7280);
+  color: #6b7280;
   margin: 12px 0 6px;
 }
 
