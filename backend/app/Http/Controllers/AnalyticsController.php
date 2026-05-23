@@ -120,22 +120,28 @@ class AnalyticsController extends Controller
 
         try {
             Log::info('Manual AI insights generation triggered via API', [
-                'period'     => $period,
-                'force'      => $force,
+                'period'       => $period,
+                'force'        => $force,
                 'triggered_by' => $request->user()?->id,
             ]);
 
-            // Also compute a fresh analytics snapshot
-            $this->analytics->computeDailySnapshot(now()->subDay());
+            // Snapshot computation is best-effort — don't let it block generation
+            try {
+                $this->analytics->computeDailySnapshot(now()->subDay());
+            } catch (\Throwable $e) {
+                Log::warning('Snapshot computation failed (non-fatal): ' . $e->getMessage());
+            }
 
-            $insights = $this->aiInsights->generateInsights($period, $force);
+            // Always force=true from the UI so cache guards never block it
+            $insights = $this->aiInsights->generateInsights($period, true);
 
             return response()->json($insights);
+
         } catch (\Exception $e) {
             Log::error('Manual AI insights generation failed: ' . $e->getMessage());
             return response()->json([
-                'error'   => 'Insight generation failed: ' . $e->getMessage(),
-                'period'  => $period,
+                'error'  => 'Insight generation failed: ' . $e->getMessage(),
+                'period' => $period,
             ], 500);
         }
     }
