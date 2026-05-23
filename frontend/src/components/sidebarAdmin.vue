@@ -105,10 +105,10 @@
 
       <div class="logout" @click="showLogoutModal = true">
         <div class="picture-info-separation">
-          <img src="/leanOnBot.png" class="logo-icon" />
+          <img :src="adminUser.profile_image_url || '/leanOnBot.png'" class="logo-icon" />
           <div class="title-footer">
-            <span class="logo-text">Test User</span>
-            <p class="subtext">123456789@gordoncollege.edu.ph</p>
+            <span class="logo-text">{{ adminName }}</span>
+            <p class="subtext">{{ adminEmail }}</p>
           </div>
         </div>
       </div>
@@ -127,10 +127,6 @@
             <div class="modal-item">
               <i class='bx bx-user'></i>
               <router-link to="/AdminProfile" class="my-account">My Account</router-link>
-            </div>
-            <div class="modal-item">
-              <i class='bx bx-cog'></i>
-              <router-link to="/AdminConfig" class="my-account">Configuration</router-link>
             </div>
             <div class="modal-item logout-item" @click="confirmLogout">
               <i class='bx bx-log-out'></i>
@@ -156,7 +152,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import axios from 'axios'
 import { useSidebarToggle } from '@/composables/useSidebarToggle'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
@@ -167,6 +163,17 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['toggle'])
+
+// ── ADMIN USER INFO ──
+const adminUser = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+
+const adminName = computed(() => {
+  const u = adminUser.value
+  const full = [u.first_name, u.last_name].filter(Boolean).join(' ')
+  return full || u.name || 'Admin'
+})
+
+const adminEmail = computed(() => adminUser.value.email || '')
 
 // ── MOBILE DETECTION ──
 const MOBILE_BREAKPOINT = 768
