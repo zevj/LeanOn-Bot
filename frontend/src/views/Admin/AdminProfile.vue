@@ -205,6 +205,37 @@
                   </div>
                 </div>
 
+                <!-- Password Checklist -->
+                <div class="pw-checklist" v-if="passwords.new">
+                  <p class="pw-checklist-title">Password requirements:</p>
+                  <ul>
+                    <li :class="{ met: pwChecks.length }">
+                      <i :class="pwChecks.length ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                      At least 12 characters
+                    </li>
+                    <li :class="{ met: pwChecks.uppercase }">
+                      <i :class="pwChecks.uppercase ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                      At least one uppercase letter (A–Z)
+                    </li>
+                    <li :class="{ met: pwChecks.lowercase }">
+                      <i :class="pwChecks.lowercase ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                      At least one lowercase letter (a–z)
+                    </li>
+                    <li :class="{ met: pwChecks.number }">
+                      <i :class="pwChecks.number ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                      At least one number (0–9)
+                    </li>
+                    <li :class="{ met: pwChecks.special }">
+                      <i :class="pwChecks.special ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                      At least one special character (!@#$%...)
+                    </li>
+                    <li :class="{ met: pwChecks.match }" v-if="passwords.confirm">
+                      <i :class="pwChecks.match ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                      Passwords match
+                    </li>
+                  </ul>
+                </div>
+
                 <div class="form-group">
                   <label class="form-label">Confirm New Password</label>
                   <div class="input-icon-wrap">
@@ -289,7 +320,6 @@ import UserAvatar from '@/components/UserAvatar.vue'
 import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
-
 const toast = useToast()
 
 const isLoading = ref(false)
@@ -336,6 +366,27 @@ const passwords = ref({
   new: '',
   confirm: '',
 })
+
+// Password requirement checks
+const pwChecks = computed(() => {
+  const pw = passwords.value.new
+  return {
+    length:    pw.length >= 12,
+    uppercase: /[A-Z]/.test(pw),
+    lowercase: /[a-z]/.test(pw),
+    number:    /[0-9]/.test(pw),
+    special:   /[^a-zA-Z0-9]/.test(pw),
+    match:     pw.length > 0 && pw === passwords.value.confirm,
+  }
+})
+
+const allPwChecksPassed = computed(() =>
+  pwChecks.value.length &&
+  pwChecks.value.uppercase &&
+  pwChecks.value.lowercase &&
+  pwChecks.value.number &&
+  pwChecks.value.special
+)
 
 const otp = ref(['', '', '', '', '', ''])
 
@@ -445,6 +496,10 @@ async function submitPassword() {
     toast.error('Please fill in all password fields!')
     return
   }
+  if (!allPwChecksPassed.value) {
+    toast.error('Password does not meet all requirements. Please check the checklist.')
+    return
+  }
   if (passwords.value.new !== passwords.value.confirm) {
     toast.error('New passwords do not match!')
     return
@@ -484,3 +539,63 @@ async function finalizePasswordChange() {
 
 <style scoped src="@/assets/admin/AdminProfile.css"></style>
 <style src="@/assets/admin/admin-layout.css"></style>
+
+<style scoped>
+/* ── Password Requirement Checklist ── */
+.pw-checklist {
+  grid-column: 1 / -1;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  box-sizing: border-box;
+}
+
+.pw-checklist-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pw-checklist ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px 16px;
+}
+
+.pw-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: #9ca3af;
+  transition: color 0.2s ease;
+}
+
+.pw-checklist li i {
+  font-size: 15px;
+  color: #d1d5db;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.pw-checklist li.met {
+  color: #065f46;
+}
+
+.pw-checklist li.met i {
+  color: #059669;
+}
+
+@media (max-width: 768px) {
+  .pw-checklist ul {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

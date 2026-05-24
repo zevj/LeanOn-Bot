@@ -224,6 +224,7 @@ class AnalyticsController extends Controller
         $startDate = $request->query('start_date');
         $endDate   = $request->query('end_date');
         $isCustomRange = $startDate && $endDate;
+        $format    = $request->query('format', 'pdf'); // 'pdf' or 'csv'
 
         if ($isCustomRange) {
             // Validate date format
@@ -316,7 +317,11 @@ class AnalyticsController extends Controller
 
             // Record export notification for admin panel
             try {
-                \App\Models\AdminNotification::reportExported($periodLabel, array_values($sections));
+                if ($format === 'csv') {
+                    \App\Models\AdminNotification::csvExported($periodLabel);
+                } else {
+                    \App\Models\AdminNotification::reportExported($periodLabel, array_values($sections));
+                }
             } catch (\Exception $e) {
                 Log::warning('Failed to create export notification: ' . $e->getMessage());
             }

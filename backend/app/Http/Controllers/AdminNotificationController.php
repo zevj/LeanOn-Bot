@@ -58,4 +58,23 @@ class AdminNotificationController extends Controller
         AdminNotification::where('is_read', false)->update(['is_read' => true]);
         return response()->json(['ok' => true]);
     }
+
+    /**
+     * POST /api/admin/notifications/log-csv-exported
+     *
+     * Record a log records CSV export notification.
+     */
+    public function logCsvExported(Request $request)
+    {
+        try {
+            $totalRecords = (int) $request->input('total_records', 0);
+            $filters      = $request->input('filters', []);
+
+            AdminNotification::logCsvExported($totalRecords, $filters);
+
+            return response()->json(['ok' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['ok' => false], 500);
+        }
+    }
 }

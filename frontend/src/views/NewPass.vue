@@ -69,6 +69,37 @@
 
           </div>
 
+          <!-- Password Checklist -->
+          <div class="pw-checklist" v-if="password">
+            <p class="pw-checklist-title">Password requirements:</p>
+            <ul>
+              <li :class="{ met: checks.length }">
+                <i :class="checks.length ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                At least 12 characters
+              </li>
+              <li :class="{ met: checks.uppercase }">
+                <i :class="checks.uppercase ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                At least one uppercase letter (A–Z)
+              </li>
+              <li :class="{ met: checks.lowercase }">
+                <i :class="checks.lowercase ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                At least one lowercase letter (a–z)
+              </li>
+              <li :class="{ met: checks.number }">
+                <i :class="checks.number ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                At least one number (0–9)
+              </li>
+              <li :class="{ met: checks.special }">
+                <i :class="checks.special ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                At least one special character (!@#$%...)
+              </li>
+              <li :class="{ met: checks.match }" v-if="confirmPassword">
+                <i :class="checks.match ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                Passwords match
+              </li>
+            </ul>
+          </div>
+
           <!-- ✅ BUTTONS -->
           <div class="group-buttons">
 
@@ -122,7 +153,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { gsap } from 'gsap'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
@@ -145,6 +176,27 @@ const isLoading = ref(false)
 const togglePassword = () => showPassword.value = !showPassword.value
 const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value
 
+/* PASSWORD REQUIREMENT CHECKS */
+const checks = computed(() => {
+  const pw = password.value
+  return {
+    length:    pw.length >= 12,
+    uppercase: /[A-Z]/.test(pw),
+    lowercase: /[a-z]/.test(pw),
+    number:    /[0-9]/.test(pw),
+    special:   /[^a-zA-Z0-9]/.test(pw),
+    match:     pw.length > 0 && pw === confirmPassword.value,
+  }
+})
+
+const allChecksPassed = computed(() =>
+  checks.value.length &&
+  checks.value.uppercase &&
+  checks.value.lowercase &&
+  checks.value.number &&
+  checks.value.special
+)
+
 /* ✅ RESET PASSWORD */
 const handleResetPassword = async () => {
   if (isLoading.value) return
@@ -163,21 +215,8 @@ const handleResetPassword = async () => {
     return
   }
 
-  const pw = password.value
-  if (pw.length < 12) {
-    toast.error('Password must be at least 12 characters!')
-    return
-  }
-  if (!/[a-zA-Z]/.test(pw)) {
-    toast.error('Password must contain at least one letter.')
-    return
-  }
-  if (!/[0-9]/.test(pw)) {
-    toast.error('Password must contain at least one number.')
-    return
-  }
-  if (!/[^a-zA-Z0-9]/.test(pw)) {
-    toast.error('Password must contain at least one special character.')
+  if (!allChecksPassed.value) {
+    toast.error('Password does not meet all requirements. Please check the checklist.')
     return
   }
 
@@ -298,3 +337,80 @@ onMounted(async () => {
 </script>
 
 <style scoped src="../assets/login/forgotPass.css"></style>
+
+<style scoped>
+/* ── Password Requirement Checklist ── */
+.pw-checklist {
+  width: 100%;
+  max-width: 600px;
+  background: #f8fdf8;
+  border: 1px solid #d1fae5;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 4px;
+  box-sizing: border-box;
+}
+
+.pw-checklist-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pw-checklist ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.pw-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #9ca3af;
+  transition: color 0.2s ease;
+}
+
+.pw-checklist li i {
+  font-size: 15px;
+  color: #d1d5db;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.pw-checklist li.met {
+  color: #065f46;
+}
+
+.pw-checklist li.met i {
+  color: #059669;
+}
+
+[data-theme="dark"] .pw-checklist {
+  background: rgba(6, 78, 59, 0.1);
+  border-color: rgba(52, 211, 153, 0.2);
+}
+
+[data-theme="dark"] .pw-checklist-title {
+  color: #d1fae5;
+}
+
+[data-theme="dark"] .pw-checklist li {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .pw-checklist li.met {
+  color: #6ee7b7;
+}
+
+[data-theme="dark"] .pw-checklist li.met i {
+  color: #34d399;
+}
+</style>
