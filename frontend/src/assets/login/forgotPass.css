@@ -173,50 +173,115 @@ input[type="password"]::-webkit-textfield-decoration-container {
     display: none !important;
 }
 
-/* ── Submit / Send button ── */
-.login-button {
-    display: block;
-    width: 100%;
-    max-width: 600px;
-    height: 55px;
-    background-color: #0E6008;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    text-align: center;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background-color 0.15s ease-in-out;
-    margin-top: 0.5rem;
-}
+/* ── Button ── */
+    .login-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      margin-bottom: 15px;
+      height: 46px;
+      background: linear-gradient(180deg, #1a8012 0%, #0d5c07 100%);
+      color: #fff;
+      border: none;
+      border-radius: 11px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 1px 3px rgba(14, 96, 8, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      transition: transform 0.12s, filter 0.12s, box-shadow 0.15s;
+    }
+ 
+    .login-button:hover {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 12px rgba(14, 96, 8, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+ 
+    .login-button:active {
+      transform: translateY(0);
+      filter: brightness(0.97);
+    }
 
-.login-button:hover {
-    background-color: #0b4706;
-}
-
-/* ── Back button ── */
 .back-button {
-    display: block;
-    width: 100%;
-    max-width: 600px;
-    height: 50px;
-    background-color: #fff;
-    color: #0b4706;
-    border: 2px solid #0b4706;
-    border-radius: 8px;
-    font-size: 14px;
-    text-align: center;
-    padding-top: 12px;
-    cursor: pointer;
-    text-decoration: none;
-    margin-top: 12px;
-    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 15px;
+  height: 46px;
+  background: transparent;
+  color: #0d5c07;              /* green text at rest */
+  border: 1.5px solid #0d5c07;
+  border-radius: 11px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  text-decoration: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: color 0.22s ease, border-color 0.22s ease, transform 0.12s ease, box-shadow 0.15s ease;
+}
+
+.back-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #1a8012 0%, #0d5c07 100%);
+  transform: translateX(-100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+
+.back-button::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 3px;
+  background: #0d5c07;
+  border-radius: 0 3px 3px 0;
+  transition: opacity 0.22s ease;
+  z-index: 1;
+}
+
+.back-button svg,
+.back-button span {
+  position: relative;
+  z-index: 2;                  /* must be above ::before fill layer */
 }
 
 .back-button:hover {
-    background-color: #0b4706;
-    color: white;
+  color: #ffffff !important;   /* force white over the green fill */
+  border-color: #1a8012;
+  transform: translateX(3px);
+  box-shadow: -4px 0 14px rgba(13, 92, 7, 0.25);
+}
+
+.back-button:hover::before {
+  transform: translateX(0);
+}
+
+.back-button:hover::after {
+  opacity: 0;
+}
+
+.back-button:hover span,
+.back-button:hover svg {
+  color: #ffffff !important;   /* belt-and-suspenders for Vue router-link */
+  stroke: #ffffff !important;
+}
+
+.back-button:active {
+  transform: translateX(1px);
+  filter: brightness(0.95);
 }
 
 /* ── "Remembered your password?" hint ── */
@@ -298,6 +363,83 @@ input[type="password"]::-webkit-textfield-decoration-container {
     width: 100%;
     height: 100%;
     background: rgba(10, 65, 6, 0.55);
+}
+
+/* OVERLAY */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(10, 65, 6, 0.55);
+}
+
+/* LEAN ON BOT BADGE */
+.app-logo-badge {
+    position: absolute;
+    top: 45px;
+    right: 30px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.app-logo-badge:hover {
+    transform: scale(1.07);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.app-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    opacity: 0.92;
+}
+
+/* GC - LOGO */
+/* GC Logo Badge */
+.gc-logo-badge {
+    position: absolute;
+    top: 45px;
+    right: 98px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.gc-logo-badge:hover {
+    transform: scale(1.07);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.gc-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    opacity: 0.92;
 }
 
 .headings {

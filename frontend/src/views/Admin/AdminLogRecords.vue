@@ -234,7 +234,7 @@ const search = ref('');
 const deptFilter = ref('');
 const statusFilter = ref('');
 const page = ref(1);
-const PER_PAGE = 20;
+const PER_PAGE = 6;
 const pagTotal = ref(0);
 const totalPages = computed(() => Math.max(1, Math.ceil(pagTotal.value / PER_PAGE)));
 const pagStart = computed(() => pagTotal.value === 0 ? 0 : (page.value - 1) * PER_PAGE + 1);
@@ -341,7 +341,7 @@ const drawPdfHeader = async (doc, title, subtitle, meta) => {
     const GC_X      = 10          // Gordon College seal — left edge
     const LB_X      = GC_X + LOGO_SIZE + 3        // LeanOn Bot — 3mm gap after GC
 
-    const gcLogo = await loadImgDataUrl('/GordonCollegeLogo.png')
+    const gcLogo = await loadImgDataUrl('/gc-logo.png')
     if (gcLogo) doc.addImage(gcLogo, 'PNG', GC_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE)
 
     // Thin white vertical divider between logos
