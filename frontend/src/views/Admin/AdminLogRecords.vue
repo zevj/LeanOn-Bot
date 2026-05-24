@@ -567,7 +567,7 @@ const downloadPDF = async () => {
         doc.setFont('helvetica', 'italic')
         doc.setTextColor(...TEXT_LIGHT)
         doc.text(
-            'Privacy Notice: Email addresses are masked by default. This report is for authorized administrative use only. Do not distribute.',
+            'Privacy Notice: This report is for authorized administrative use only. Do not distribute.',
             margin, finalY
         )
 
