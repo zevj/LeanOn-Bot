@@ -244,44 +244,59 @@ class AIInsightsService
 
         $cacheExpiresAt = now()->addSeconds($this->cacheTtl);
 
-        // Use period_end + days_window suffix to prevent 7d and 60d reports
+        // Use report_type + period_end + days_window to prevent 7d and 60d reports
         // from overwriting each other when generated on the same day.
-        $periodEndStored = $days > 0
-            ? $end->toDateString() . "_d{$days}"
-            : $end->toDateString();
+        // period_end stays a clean date; days_window lives in metadata only.
+        $query = AiInsightReport::where('report_type', $period)
+            ->whereDate('period_end', $end->toDateString());
 
-        $report = AiInsightReport::updateOrCreate(
-            [
-                'report_type' => $period,
-                'period_end'  => $periodEndStored,
+        if ($days > 0) {
+            $query->whereJsonContains('metadata->days_window', $days);
+        } else {
+            $query->where(function ($q) {
+                $q->whereNull('metadata->days_window')
+                  ->orWhereJsonContains('metadata->days_window', null);
+            });
+        }
+
+        $existing = $query->first();
+
+        $reportData = [
+            'analytics_snapshot_id' => $snapshotId,
+            'period_start' => $startDate->toDateString(),
+            'period_end'   => $end->toDateString(),
+            'analytics_snapshot' => $this->compactSnapshotForStorage($stats),
+            'insights' => $result['insights'] ?? [],
+            'recommendations' => $result['recommendations'] ?? [],
+            'trends' => $result['trends'] ?? [],
+            'wellness_summary' => $result['wellness_summary'] ?? '',
+            'anomalies' => $result['anomalies'] ?? [],
+            'ai_provider' => $this->provider->getProviderName(),
+            'status' => 'completed',
+            'error_message' => null,
+            'request_count' => $requestCount,
+            'generated_at' => now(),
+            'cache_expires_at' => $cacheExpiresAt,
+            'metadata' => [
+                'model' => config('services.ai_insights.gemini_model', 'gemini-2.5-flash'),
+                'privacy' => 'aggregated_anonymized_stats_only',
+                'prompt_bytes' => strlen($prompt),
+                'days_window'                 => $days > 0 ? $days : null,
+                'top_department'              => $result['top_department'] ?? null,
+                'top_gender'                  => $result['top_gender'] ?? null,
+                'department_with_most_alerts' => $result['department_with_most_alerts'] ?? null,
             ],
-            [
-                'analytics_snapshot_id' => $snapshotId,
-                'period_start' => $startDate->toDateString(),
-                'analytics_snapshot' => $this->compactSnapshotForStorage($stats),
-                'insights' => $result['insights'] ?? [],
-                'recommendations' => $result['recommendations'] ?? [],
-                'trends' => $result['trends'] ?? [],
-                'wellness_summary' => $result['wellness_summary'] ?? '',
-                'anomalies' => $result['anomalies'] ?? [],
-                'ai_provider' => $this->provider->getProviderName(),
-                'status' => 'completed',
-                'error_message' => null,
-                'request_count' => $requestCount,
-                'generated_at' => now(),
-                'cache_expires_at' => $cacheExpiresAt,
-                'metadata' => [
-                    'model' => config('services.ai_insights.gemini_model', 'gemini-2.5-flash'),
-                    'privacy' => 'aggregated_anonymized_stats_only',
-                    'prompt_bytes' => strlen($prompt),
-                    'days_window'                 => $days > 0 ? $days : null,
-                    'top_department'              => $result['top_department'] ?? null,
-                    'top_gender'                  => $result['top_gender'] ?? null,
-                    'department_with_most_alerts' => $result['department_with_most_alerts'] ?? null,
-                ],
-            ]
-        );
+        ];
 
+        if ($existing) {
+            $existing->update($reportData);
+            $report = $existing->fresh();
+        } else {
+            $report = AiInsightReport::create(array_merge(
+                ['report_type' => $period],
+                $reportData
+            ));
+        }
         $payload = $this->formatReport($report);
         $cacheKey = $this->cacheKey($period, $days);
         Cache::put($cacheKey, $payload, $this->cacheTtl);
