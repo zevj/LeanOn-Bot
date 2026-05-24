@@ -10,9 +10,6 @@ php artisan migrate --force
 echo "Seeding data..."
 php artisan db:seed --force
 
-# Reset AI insight reports and caches so a fresh generation runs after deploy
-php artisan insights:reset --no-interaction
-
 echo "Clearing cache..."
 php artisan cache:clear
 php artisan config:cache
