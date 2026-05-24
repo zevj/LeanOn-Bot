@@ -25,7 +25,9 @@ class ResetAiInsights extends Command
 
         $scope = $period ? "period: {$period}" : 'ALL periods';
 
-        if (!$this->confirm("This will delete all AI insight reports and caches for {$scope}. Continue?")) {
+        $autoConfirm = !$this->input->isInteractive();
+
+        if (!$this->confirm("This will delete all AI insight reports and caches for {$scope}. Continue?", $autoConfirm)) {
             $this->info('Aborted.');
             return self::SUCCESS;
         }
