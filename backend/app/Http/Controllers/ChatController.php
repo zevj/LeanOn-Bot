@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ChatMessage;
 use App\Models\CrisisAlert;
+use App\Models\AdminNotification;
 use App\Models\EmotionLog;
+use Illuminate\Support\Facades\Log;
 use OpenAI;
 
 class ChatController extends Controller {
@@ -273,12 +275,12 @@ I'm here with you. Do you want to talk about what's going on?";
 
             // Notify admin panel — non-critical, silently fail if it errors
             try {
-                $newAlert = \App\Models\CrisisAlert::where('chat_message_id', $chatMsg->id)->first();
+                $newAlert = CrisisAlert::where('chat_message_id', $chatMsg->id)->first();
                 if ($newAlert) {
-                    \App\Models\AdminNotification::crisisFlagged($newAlert);
+                    AdminNotification::crisisFlagged($newAlert);
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Failed to create admin notification: ' . $e->getMessage());
+                Log::warning('Failed to create admin notification: ' . $e->getMessage());
             }
 
             return response()->json([

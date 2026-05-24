@@ -253,7 +253,7 @@ input[type="password"]::-webkit-textfield-decoration-container {
   height: 60px;
   border-radius: 16px;
   border: none;
-  background: #0f0f0f;
+  background: #ffffff;
   cursor: pointer;
   overflow: hidden;
   padding: 0 28px;
@@ -274,17 +274,17 @@ input[type="password"]::-webkit-textfield-decoration-container {
   animation: spin 4s linear infinite;
 }
 
-/* inner dark mask */
+/* inner light mask (light mode) */
 .google-signin::after {
   content: '';
   position: absolute;
   inset: 2px;
   border-radius: 14px;
-  background: #0f0f0f;
+  background: #ffffff;
   transition: background 0.3s ease;
 }
 
-.google-signin:hover::after { background: #161616; }
+.google-signin:hover::after { background: #f5f5f5; }
 .google-signin:hover        { transform: translateY(-2px); }
 .google-signin:active       { transform: scale(0.995); transition: transform 0.08s ease; }
 
@@ -301,14 +301,14 @@ input[type="password"]::-webkit-textfield-decoration-container {
 .separator {
   width: 1px;
   height: 22px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.15);
 }
 
 .btn-label {
   font-family: 'Syne', sans-serif;
   font-size: 15px;
   font-weight: 600;
-  color: #ffffff;
+  color: #1a1a1a;
   letter-spacing: 0.01em;
 }
 
@@ -316,7 +316,7 @@ input[type="password"]::-webkit-textfield-decoration-container {
   font-family: 'DM Sans', sans-serif;
   font-size: 11px;
   font-weight: 400;
-  color: rgba(255,255,255,0.35);
+  color: rgba(0,0,0,0.4);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -878,8 +878,28 @@ input[type="password"]::-webkit-textfield-decoration-container {
     transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
+[data-theme="dark"] .google-signin::after {
+    background: #0f0f0f;
+}
+
+[data-theme="dark"] .google-signin:hover::after {
+    background: #161616;
+}
+
 [data-theme="dark"] .google-signin:hover {
     background: var(--surface-hover);
+}
+
+[data-theme="dark"] .separator {
+    background: rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .btn-label {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .btn-sub {
+    color: rgba(255,255,255,0.35);
 }
 
 [data-theme="dark"] .new-student {

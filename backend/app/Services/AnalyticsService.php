@@ -279,8 +279,8 @@ class AnalyticsService
         $weekCount = 0;
 
         for ($i = $weeksToShow - 1; $i >= 0; $i--) {
-            $wStart = Carbon::now()->subWeeks($i)->startOfWeek(\Carbon\CarbonInterface::MONDAY);
-            $wEnd   = Carbon::now()->subWeeks($i)->endOfWeek(\Carbon\CarbonInterface::SUNDAY);
+            $wStart = Carbon::now()->subWeeks($i)->startOfWeek(1); // 1 = Monday
+            $wEnd   = Carbon::now()->subWeeks($i)->endOfWeek(0);   // 0 = Sunday
 
             if ($wStart->lt($start)) $wStart = $start->copy();
             if ($wEnd->gt($end))     $wEnd   = $end->copy();
@@ -309,8 +309,8 @@ class AnalyticsService
         // ── Referral-style emotion totals ─────────────────────────────────
         $totalEmotionLogs  = EmotionLog::whereBetween('created_at', [$start, $end])->count();
         $thisWeekEmotions  = EmotionLog::whereBetween('created_at', [
-            Carbon::now()->startOfWeek(\Carbon\CarbonInterface::MONDAY),
-            Carbon::now()->endOfWeek(\Carbon\CarbonInterface::SUNDAY),
+            Carbon::now()->startOfWeek(1), // 1 = Monday
+            Carbon::now()->endOfWeek(0),   // 0 = Sunday
         ])->count();
 
         // ── COMPACT payload — only aggregated numbers, no PII ─────────────
