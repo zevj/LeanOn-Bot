@@ -234,7 +234,7 @@ const search = ref('');
 const deptFilter = ref('');
 const statusFilter = ref('');
 const page = ref(1);
-const PER_PAGE = 20;
+const PER_PAGE = 6;
 const pagTotal = ref(0);
 const totalPages = computed(() => Math.max(1, Math.ceil(pagTotal.value / PER_PAGE)));
 const pagStart = computed(() => pagTotal.value === 0 ? 0 : (page.value - 1) * PER_PAGE + 1);

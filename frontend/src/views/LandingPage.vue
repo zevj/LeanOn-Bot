@@ -187,7 +187,9 @@
     <!-- FOOTER -->
     <footer>
       <div class="footer-logo">
-        <div class="logo-icon"><i class='bx bxs-leaf'></i></div>
+        <div class="logo-icon">
+        <img src="/leanOnBot.png" alt="Logo" class="logo-img">
+        </div>
         <span>LeanOn Bot</span>
       </div>
       <p>AI-Assisted Mental Health Wellness Support System for Gordon College Students</p>

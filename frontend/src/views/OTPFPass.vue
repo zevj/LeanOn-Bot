@@ -56,7 +56,10 @@
           </LoadingButton>
 
           <router-link to="/forgotPass" class="back-button">
-            Back
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 12H5M5 12l7 7M5 12l7-7"/>
+            </svg>
+            <span>Back</span>
           </router-link>
         </form>
       </div>
@@ -65,6 +68,14 @@
       <div class="right-container" ref="rightRef">
         <div class="overlay" ref="overlayRef"></div>
 
+         <!-- GC Logo Badge — top-right of right panel -->
+        <div class="app-logo-badge" ref="appLogoRef">
+        <img src="/leanOnBot.png" alt="Gordon College" class="app-logo-img" /></div>
+
+         <!-- GC Logo Badge — top-right of right panel -->
+        <div class="gc-logo-badge" ref="gcLogoRef">
+        <img src="/gc-logo.png" alt="Gordon College" class="gc-logo-img" /></div>
+        
         <div class="headings">
           <h1 class="title" ref="rightTitleRef">LeanOn <span>Bot</span></h1>
           <p class="subtitle" ref="rightSubtitleRef">Always There. Always Ready.</p>
@@ -139,6 +150,9 @@ const feature1Ref       = ref(null)
 const feature2Ref       = ref(null)
 const feature3Ref       = ref(null)
 const mobileBrandRef    = ref(null)   // ← new
+/* GC LOGO */
+const gcLogoRef = ref(null)
+const appLogoRef = ref(null)
 
 const featureRefs = [feature1Ref, feature2Ref, feature3Ref]
 
@@ -270,6 +284,9 @@ onMounted(() => {
       stagger: 0.25,
       ease: 'power2.out'
     })
+
+        tl.from(gcLogoRef.value, { y: -20, opacity: 0, duration: 0.6 }, 0.3)
+        tl.from(appLogoRef.value, { y: -20, opacity: 0, duration: 0.6 }, 0.3)
 
     // Animate the moving gradient circle
     gsap.from('.gradient-circle', {

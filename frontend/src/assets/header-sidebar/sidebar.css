@@ -617,6 +617,7 @@ hr {
   max-height: min(460px, 85vh);
   background: #fff;
   border-radius: 14px;
+    scale: 1.2;
   padding: 18px;
   overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -750,6 +751,7 @@ hr {
   max-height: min(80vh, 600px);
   background: #fff;
   border-radius: 16px;
+    scale: 1.050;
   padding: 20px;
   overflow-y: auto;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -829,6 +831,7 @@ hr {
   padding: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   display: flex;
+  scale: 1.1;
   flex-direction: column;
   gap: 12px;
   color: #222;
