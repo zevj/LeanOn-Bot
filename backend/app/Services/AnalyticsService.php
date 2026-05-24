@@ -63,6 +63,11 @@ class AnalyticsService
             // Total registered users
             $totalUsers = User::where('role', 'student')->count();
 
+            // Active users in the current period
+            $activeUsersInPeriod = SessionLog::whereBetween('session_start', [$start, $end])
+                ->distinct('user_id')
+                ->count('user_id');
+
             // ── NEW: Three replacement stat cards ──────────────────
             // 1. Department with most users
             $topDeptUsers = User::where('role', 'student')
@@ -102,6 +107,7 @@ class AnalyticsService
                 'crisis_by_severity'    => $crisisBySeverity,
                 'fallback_count'        => $fallbackCount,
                 'total_registered_users' => $totalUsers,
+                'active_users_in_period' => $activeUsersInPeriod,
                 'period'                => $period,
                 'period_start'          => $start->toDateString(),
                 'period_end'            => $end->toDateString(),
@@ -587,9 +593,8 @@ class AnalyticsService
 
     private function getFallbackCount(Carbon $start, Carbon $end): int
     {
-        // Count messages where the bot replied with the mental health redirect
         return ChatMessage::whereBetween('created_at', [$start, $end])
-            ->where('reply', 'like', '%support mental health%')
+            ->where('is_fallback', true)
             ->count();
     }
 

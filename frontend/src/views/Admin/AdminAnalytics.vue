@@ -139,7 +139,7 @@
                 <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
                   <span>Active Student Engagement Rate:</span>
                   <strong style="color:#111827;">
-                    {{ stats.total_registered_users > 0 ? ((stats.daily_active_users / stats.total_registered_users) * 100).toFixed(1) : 0 }}%
+                    {{ stats.total_registered_users > 0 ? ((stats.active_users_in_period / stats.total_registered_users) * 100).toFixed(1) : 0 }}%
                   </strong>
                 </div>
                 <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
