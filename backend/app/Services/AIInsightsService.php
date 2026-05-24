@@ -244,14 +244,16 @@ class AIInsightsService
 
         $cacheExpiresAt = now()->addSeconds($this->cacheTtl);
 
-        // Use a unique period_end per days-window so different windows don't overwrite each other
-        $periodEndKey = $days > 0 ? $end->toDateString() . "_d{$days}" : $end->toDateString();
+        // Use period_end + days_window suffix to prevent 7d and 60d reports
+        // from overwriting each other when generated on the same day.
+        $periodEndStored = $days > 0
+            ? $end->toDateString() . "_d{$days}"
+            : $end->toDateString();
 
         $report = AiInsightReport::updateOrCreate(
             [
                 'report_type' => $period,
-                'period_end' => $end->toDateString(),
-                // Differentiate 7d vs 60d reports via metadata days_window
+                'period_end'  => $periodEndStored,
             ],
             [
                 'analytics_snapshot_id' => $snapshotId,

@@ -352,6 +352,8 @@ const getTrendIcon = (direction) => {
   border: 1px solid var(--card-border, #e5e7eb);
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ── Header ── */
@@ -370,6 +372,7 @@ const getTrendIcon = (direction) => {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
 }
 
 .insights-header-right {
@@ -428,6 +431,7 @@ const getTrendIcon = (direction) => {
   justify-content: center;
   font-size: 1.4rem;
   backdrop-filter: blur(4px);
+  flex-shrink: 0;
 }
 
 .insights-title {
@@ -581,9 +585,7 @@ const getTrendIcon = (direction) => {
   color: #166534;
 }
 
-.wellness-header i {
-  font-size: 20px;
-}
+.wellness-header i { font-size: 20px; }
 
 .wellness-header h3 {
   font-size: 15px;
@@ -620,9 +622,7 @@ const getTrendIcon = (direction) => {
   color: #0E6008;
 }
 
-.anomaly-label i {
-  color: #dc2626;
-}
+.anomaly-label i { color: #dc2626; }
 
 /* ── Insight Cards ── */
 .insight-cards {
@@ -644,17 +644,9 @@ const getTrendIcon = (direction) => {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
-.insight-card.severity-critical {
-  border-left: 3px solid #ef4444;
-}
-
-.insight-card.severity-warning {
-  border-left: 3px solid #f59e0b;
-}
-
-.insight-card.severity-info {
-  border-left: 3px solid #3b82f6;
-}
+.insight-card.severity-critical { border-left: 3px solid #ef4444; }
+.insight-card.severity-warning  { border-left: 3px solid #f59e0b; }
+.insight-card.severity-info     { border-left: 3px solid #3b82f6; }
 
 .insight-card-top {
   display: flex;
@@ -741,20 +733,9 @@ const getTrendIcon = (direction) => {
   flex-shrink: 0;
 }
 
-.dir-increasing {
-  background: #fef2f2;
-  color: #ef4444;
-}
-
-.dir-decreasing {
-  background: #f0fdf4;
-  color: #10b981;
-}
-
-.dir-stable {
-  background: #f3f4f6;
-  color: #6b7280;
-}
+.dir-increasing { background: #fef2f2; color: #ef4444; }
+.dir-decreasing { background: #f0fdf4; color: #10b981; }
+.dir-stable     { background: #f3f4f6; color: #6b7280; }
 
 .trend-metric {
   font-size: 13px;
@@ -800,9 +781,7 @@ const getTrendIcon = (direction) => {
   flex-shrink: 0;
 }
 
-.rec-content {
-  flex: 1;
-}
+.rec-content { flex: 1; min-width: 0; }
 
 .rec-priority-badge {
   display: inline-block;
@@ -848,27 +827,11 @@ const getTrendIcon = (direction) => {
   margin-top: 1px;
 }
 
-.anomaly-item p {
-  margin: 0;
-}
+.anomaly-item p { margin: 0; }
 
-.anomaly-critical {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-}
-
-.anomaly-warning {
-  background: #fffbeb;
-  border: 1px solid #fef08a;
-  color: #854d0e;
-}
-
-.anomaly-info {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1e40af;
-}
+.anomaly-critical { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.anomaly-warning  { background: #fffbeb; border: 1px solid #fef08a; color: #854d0e; }
+.anomaly-info     { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
 
 /* ── Empty State ── */
 .insights-empty {
@@ -896,26 +859,159 @@ const getTrendIcon = (direction) => {
 }
 
 /* ── Responsive ── */
+@media (max-width: 1024px) {
+  .insight-cards {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+}
+
 @media (max-width: 768px) {
   .insights-header {
     padding: 1rem 1.25rem;
+    gap: 10px;
   }
 
   .insights-header-right {
     width: 100%;
     justify-content: space-between;
+    gap: 8px;
+  }
+
+  .insights-title {
+    font-size: 16px;
+  }
+
+  .insights-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+  }
+
+  .generate-btn {
+    font-size: 12px;
+    padding: 7px 12px;
+  }
+
+  .days-tab {
+    padding: 5px 10px;
+    font-size: 11.5px;
   }
 
   .insights-content {
     padding: 0 1.25rem 1.25rem;
   }
 
+  .notice-banner {
+    margin: 1rem 1.25rem 0;
+    font-size: 12.5px;
+  }
+
   .insight-cards {
     grid-template-columns: 1fr;
   }
 
-  .scheduled-badge span {
-    display: none;
+  .wellness-card {
+    padding: 1rem;
+  }
+
+  .wellness-text {
+    font-size: 13.5px;
+  }
+
+  .section-label {
+    font-size: 13px;
+  }
+
+  .skeleton-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .insights-header {
+    padding: 0.875rem 1rem;
+  }
+
+  .insights-header-right {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .days-selector {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .days-tab {
+    flex: 1;
+    text-align: center;
+    padding: 6px 8px;
+  }
+
+  .generate-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .insights-title {
+    font-size: 15px;
+  }
+
+  .insights-subtitle {
+    font-size: 11px;
+  }
+
+  .insights-content {
+    padding: 0 1rem 1rem;
+  }
+
+  .notice-banner {
+    margin: 0.875rem 1rem 0;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .insight-card {
+    padding: 0.875rem 1rem;
+  }
+
+  .trend-item,
+  .recommendation-item {
+    padding: 10px 12px;
+  }
+
+  .insights-empty {
+    padding: 2rem 1rem;
+  }
+
+  .insights-empty i {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .insights-header {
+    padding: 0.75rem;
+  }
+
+  .insights-title {
+    font-size: 14px;
+  }
+
+  .generate-btn {
+    font-size: 11.5px;
+    padding: 6px 10px;
+  }
+
+  .insight-card {
+    padding: 0.75rem;
+  }
+
+  .rec-number {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
   }
 }
 </style>

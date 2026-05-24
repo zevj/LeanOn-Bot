@@ -341,6 +341,7 @@ I'm here with you. Do you want to talk about what's going on?";
                 'message' => $userMessage,
                 'reply' => $refusalMessage,
                 'is_crisis' => false,
+                'is_fallback' => true,
             ]);
 
             return response()->json([

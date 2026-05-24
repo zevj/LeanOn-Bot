@@ -132,6 +132,8 @@ const chartOptions = computed(() => ({
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
   transition: all 0.3s ease;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chart-card:hover {
@@ -154,6 +156,7 @@ const chartOptions = computed(() => ({
   align-items: center;
   justify-content: center;
   font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 .icon-amber {
@@ -165,13 +168,14 @@ const chartOptions = computed(() => ({
 .chart-card-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #111827);
+  color: black;
   margin: 0;
 }
 
 .chart-body {
   height: 260px;
   position: relative;
+  width: 100%;
 }
 
 .empty-chart-state {
@@ -192,5 +196,70 @@ const chartOptions = computed(() => ({
 .empty-chart-state p {
   font-size: 13px;
   margin: 0;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1024px) {
+  .chart-body {
+    height: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-card {
+    padding: 1.25rem;
+    border-radius: 14px;
+  }
+
+  .chart-body {
+    height: 220px;
+  }
+
+  .chart-card-title {
+    font-size: 14px;
+  }
+
+  .chart-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .chart-body {
+    height: 200px;
+  }
+
+  .chart-card-header {
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .chart-card-title {
+    font-size: 13.5px;
+  }
+
+  .chart-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .chart-body {
+    height: 180px;
+  }
+
+  .chart-card-title {
+    font-size: 13px;
+  }
 }
 </style>

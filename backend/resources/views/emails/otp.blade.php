@@ -65,7 +65,7 @@
                     <tr>
                         <td style="text-align:center; padding-top:20px;">
                             <p style="font-size:12px; color:#aaa;">
-                                If you didn’t request this, you can safely ignore this email.
+                                If you didn't request this, you can safely ignore this email.
                             </p>
                         </td>
                     </tr>

@@ -18,19 +18,18 @@
 
           <div class="header-actions">
             <!-- Period Tabs Selector -->
+            <!-- Period Selector — dropdown for all screen sizes -->
             <div class="period-selector">
               <label>Reporting Period:</label>
-              <div class="period-tabs">
-                <button
-                  v-for="p in periods"
-                  :key="p.value"
-                  class="period-tab"
-                  :class="{ active: selectedPeriod === p.value }"
-                  @click="changePeriod(p.value)"
-                >
+              <select
+                class="period-dropdown"
+                :value="selectedPeriod"
+                @change="changePeriod($event.target.value)"
+              >
+                <option v-for="p in periods" :key="p.value" :value="p.value">
                   {{ p.label }}
-                </button>
-              </div>
+                </option>
+              </select>
             </div>
 
             <!-- Export Button -->
@@ -98,20 +97,6 @@
               </div>
               <div class="stat-icon-wrapper icon-amber"><i class="bx bx-shield"></i></div>
             </div>
-
-            <!-- Card 5: Top Age Range -->
-            <div class="stat-card purple">
-              <div class="stat-card-content">
-                <h4 class="stat-label">Users Age Range</h4>
-                <p class="stat-value unit-suffix" style="font-size:22px;font-weight:700;">
-                  {{ stats.top_age_range || 'N/A' }}
-                </p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">
-                  {{ stats.top_age_range_count || 0 }} registered students
-                </span>
-              </div>
-              <div class="stat-icon-wrapper icon-purple"><i class="bx bx-group"></i></div>
-            </div>
           </div>
 
           <!-- Charts Row 1 -->
@@ -139,7 +124,7 @@
                 <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
                   <span>Active Student Engagement Rate:</span>
                   <strong style="color:#111827;">
-                    {{ stats.total_registered_users > 0 ? ((stats.daily_active_users / stats.total_registered_users) * 100).toFixed(1) : 0 }}%
+                    {{ stats.total_registered_users > 0 ? ((stats.active_users_in_period / stats.total_registered_users) * 100).toFixed(1) : 0 }}%
                   </strong>
                 </div>
                 <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
@@ -216,46 +201,41 @@
             </div>
 
             <!-- Date Range -->
-            <div class="export-field-group">
-              <label class="export-field-label">Date Range</label>
-              <div class="export-date-mode-tabs">
-                <button
-                  class="export-period-tab"
-                  :class="{ active: exportOptions.dateMode === 'preset' }"
-                  @click="exportOptions.dateMode = 'preset'"
-                >Preset Period</button>
-                <button
-                  class="export-period-tab"
-                  :class="{ active: exportOptions.dateMode === 'custom' }"
-                  @click="exportOptions.dateMode = 'custom'"
-                >Custom Range</button>
-              </div>
+            <!-- Date Range -->
+<div class="export-field-group">
+  <label class="export-field-label">Date Range</label>
 
-              <!-- Preset period tabs -->
-              <div v-if="exportOptions.dateMode === 'preset'" class="export-period-tabs" style="margin-top:8px;">
-                <button
-                  v-for="p in periods"
-                  :key="p.value"
-                  class="export-period-tab"
-                  :class="{ active: exportOptions.period === p.value }"
-                  @click="exportOptions.period = p.value"
-                >
-                  {{ p.label }}
-                </button>
-              </div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <!-- Mode -->
+    <div style="flex:0 0 150px; display:flex; flex-direction:column; gap:5px;">
+      <span class="export-date-label">Mode</span>
+      <select class="period-dropdown" v-model="exportOptions.dateMode" style="min-width:unset;">
+        <option value="preset">Preset period</option>
+        <option value="custom">Custom range</option>
+      </select>
+    </div>
 
-              <!-- Custom date inputs -->
-              <div v-if="exportOptions.dateMode === 'custom'" class="export-date-range" style="margin-top:8px;">
-                <div class="export-date-field">
-                  <label class="export-date-label">From</label>
-                  <input type="date" v-model="exportOptions.startDate" class="export-date-input" :max="exportOptions.endDate || today" />
-                </div>
-                <div class="export-date-field">
-                  <label class="export-date-label">To</label>
-                  <input type="date" v-model="exportOptions.endDate" class="export-date-input" :min="exportOptions.startDate" :max="today" />
-                </div>
-              </div>
-            </div>
+    <!-- Preset period -->
+    <div v-if="exportOptions.dateMode === 'preset'" style="flex:1; display:flex; flex-direction:column; gap:5px;">
+      <span class="export-date-label">Period</span>
+      <select class="period-dropdown" v-model="exportOptions.period" style="min-width:unset;">
+        <option v-for="p in periods" :key="p.value" :value="p.value">{{ p.label }}</option>
+      </select>
+    </div>
+
+    <!-- Custom dates -->
+    <template v-if="exportOptions.dateMode === 'custom'">
+      <div style="flex:1; display:flex; flex-direction:column; gap:5px;">
+        <span class="export-date-label">From</span>
+        <input type="date" v-model="exportOptions.startDate" class="export-date-input" :max="exportOptions.endDate || today" />
+      </div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:5px;">
+        <span class="export-date-label">To</span>
+        <input type="date" v-model="exportOptions.endDate" class="export-date-input" :min="exportOptions.startDate" :max="today" />
+      </div>
+    </template>
+  </div>
+</div>
 
             <!-- Sections (PDF only) -->
             <div class="export-field-group" v-if="exportOptions.format === 'pdf'">
@@ -693,7 +673,7 @@ const pdfDrawHeader = async (doc, title, periodLabel, generatedAt, refId) => {
   const GC_X      = M           // Gordon College seal — left margin
   const LB_X      = GC_X + LOGO_SIZE + 3        // LeanOn Bot — 3mm gap after GC
 
-  const gcLogo = await loadImageAsDataUrl('/GordonCollegeLogo.png')
+  const gcLogo = await loadImageAsDataUrl('/gc-logo.png')
   if (gcLogo) {
     doc.addImage(gcLogo, 'PNG', GC_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE)
   }
@@ -1151,406 +1131,3 @@ onMounted(() => {
 
 <style scoped src="@/assets/admin/adminAnalytics.css"></style>
 <style src="@/assets/admin/admin-layout.css"></style>
-
-<style scoped>
-/* ── Export Format Tabs ── */
-.export-format-tabs {
-  display: flex;
-  gap: 8px;
-}
-
-.export-format-tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 20px;
-  border-radius: 9px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  color: #6b7280;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  transition: all 0.18s ease;
-}
-
-.export-format-tab:hover:not(.active) { background: #e5e7eb; color: #374151; }
-
-.export-format-tab.active {
-  background: linear-gradient(135deg, #0E6008 0%, #16a34a 100%);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(14, 96, 8, 0.25);
-}
-
-.export-format-tab i { font-size: 16px; }
-
-/* ── Date Mode Tabs ── */
-.export-date-mode-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 2px;
-}
-
-/* ── Custom Date Range ── */
-.export-date-range {
-  display: flex;
-  gap: 12px;
-}
-
-.export-date-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.export-date-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.export-date-input {
-  padding: 8px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 13px;
-  color: #111827;
-  background: #fff;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  transition: border-color 0.18s;
-  width: 100%;
-}
-
-.export-date-input:focus {
-  outline: none;
-  border-color: #0E6008;
-  box-shadow: 0 0 0 3px rgba(14, 96, 8, 0.1);
-}
-
-/* ── Header Actions Row ── */
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-/* ── Export Button ── */
-.export-btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 18px;
-  background: linear-gradient(135deg, #0E6008 0%, #16a34a 100%);
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 3px 10px rgba(14, 96, 8, 0.22);
-  white-space: nowrap;
-}
-
-.export-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(14, 96, 8, 0.32);
-  background: linear-gradient(135deg, #0b4e06 0%, #15803d 100%);
-}
-
-.export-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.export-btn i { font-size: 17px; }
-
-/* ── Export Modal Overlay ── */
-.export-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-  padding: 1rem;
-}
-
-.export-modal {
-  background: #ffffff;
-  border-radius: 18px;
-  border: 1px solid #e5e7eb;
-  width: 520px;
-  max-width: 95vw;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 24px 40px -8px rgba(0, 0, 0, 0.14), 0 8px 16px -4px rgba(0, 0, 0, 0.06);
-}
-
-/* ── Modal Header ── */
-.export-modal-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fafafa;
-  flex-shrink: 0;
-}
-
-.export-modal-header-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.export-modal-icon {
-  width: 42px;
-  height: 42px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #dc2626;
-  font-size: 22px;
-}
-
-.export-modal-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-  margin: 0;
-}
-
-.export-modal-subtitle {
-  font-size: 12.5px;
-  color: #6b7280;
-  margin: 2px 0 0;
-}
-
-.export-modal-close {
-  width: 32px;
-  height: 32px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-  font-size: 20px;
-  transition: all 0.2s;
-}
-
-.export-modal-close:hover { background: #f3f4f6; color: #111827; }
-
-/* ── Modal Body ── */
-.export-modal-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.export-field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.export-field-label {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #4b5563;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-/* Period tabs inside modal */
-.export-period-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.export-period-tab {
-  padding: 7px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-  cursor: pointer;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  transition: all 0.18s ease;
-}
-
-.export-period-tab:hover:not(.active) { background: #e5e7eb; color: #374151; }
-
-.export-period-tab.active {
-  background: linear-gradient(135deg, #0E6008 0%, #16a34a 100%);
-  color: #fff;
-  border-color: transparent;
-  box-shadow: 0 2px 8px rgba(14, 96, 8, 0.25);
-}
-
-/* Section checkboxes */
-.export-sections {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.export-section-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.18s ease;
-  background: #fafafa;
-}
-
-.export-section-item:hover { background: #f0fdf4; border-color: #bbf7d0; }
-
-.export-checkbox {
-  width: 16px;
-  height: 16px;
-  accent-color: #0E6008;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.export-section-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-}
-
-.export-section-icon {
-  font-size: 20px;
-  color: #0E6008;
-  flex-shrink: 0;
-}
-
-.export-section-name {
-  display: block;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.export-section-desc {
-  display: block;
-  font-size: 12px;
-  color: #6b7280;
-  margin-top: 1px;
-}
-
-/* ── Modal Footer ── */
-.export-modal-footer {
-  padding: 1.25rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-shrink: 0;
-  background: #fafafa;
-}
-
-.export-cancel-btn {
-  padding: 10px 20px;
-  border: 1px solid #d1d5db;
-  border-radius: 9px;
-  background: #fff;
-  color: #374151;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  transition: all 0.18s ease;
-}
-
-.export-cancel-btn:hover { background: #f3f4f6; border-color: #9ca3af; }
-
-.export-confirm-btn {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 10px 22px;
-  background: linear-gradient(135deg, #0E6008 0%, #16a34a 100%);
-  color: #fff;
-  border: none;
-  border-radius: 9px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: 'DM Sans', system-ui, sans-serif;
-  transition: all 0.25s ease;
-  box-shadow: 0 3px 10px rgba(14, 96, 8, 0.22);
-}
-
-.export-confirm-btn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(14, 96, 8, 0.3);
-}
-
-.export-confirm-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.btn-spinner {
-  width: 15px;
-  height: 15px;
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  border-left-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes spin { 100% { transform: rotate(360deg); } }
-
-/* ── Modal Transition ── */
-.modal-fade-enter-active { transition: opacity 0.22s ease; }
-.modal-fade-leave-active { transition: opacity 0.18s ease; }
-.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
-
-.modal-fade-enter-active .export-modal {
-  animation: modal-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-@keyframes modal-pop {
-  from { opacity: 0; transform: scale(0.94) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-@media (max-width: 600px) {
-  .header-actions { flex-direction: column; align-items: flex-start; }
-  .export-btn { width: 100%; justify-content: center; }
-}
-</style>

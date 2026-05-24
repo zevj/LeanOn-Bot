@@ -12,6 +12,7 @@ class ChatMessage extends Model
         'message',
         'reply',
         'is_crisis',
+        'is_fallback',
     ];
 
     public function conversation()

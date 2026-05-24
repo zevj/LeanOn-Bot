@@ -190,7 +190,7 @@
 .hero::after {
   content: '';
   position: absolute;
-  right: 150px;
+  right: 190px;
   top: 50%;
   transform: translateY(-50%);
   width: 380px;
@@ -660,7 +660,7 @@ section {
 
 /* ── HOW IT WORKS ── */
 .how {
-  background: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 60%, var(--tertiary-color) 100%);
 }
 
 .section-header-1 {
@@ -1047,6 +1047,12 @@ footer p {
 
 [data-theme="dark"] .chat-input-mock {
   border-color: var(--border-color);
+}
+
+[data-theme="dark"] .section-label-1,
+.section-title-1.how-title, 
+.section-sub-1.how-sub {
+  color: white;
 }
 
 [data-theme="dark"] .form-group input,

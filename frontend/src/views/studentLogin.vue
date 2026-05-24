@@ -149,7 +149,15 @@
       <!-- RIGHT SIDE — unchanged, hidden via CSS on mobile -->
       <div class="right-container" ref="rightRef">
         <div class="overlay"></div>
- 
+        
+         <!-- GC Logo Badge — top-right of right panel -->
+        <div class="app-logo-badge" ref="appLogoRef">
+        <img src="/leanOnBot.png" alt="Gordon College" class="app-logo-img" /></div>
+
+         <!-- GC Logo Badge — top-right of right panel -->
+        <div class="gc-logo-badge" ref="gcLogoRef">
+        <img src="/gc-logo.png" alt="Gordon College" class="gc-logo-img" /></div>
+        
         <div class="headings">
           <h1 class="title">
             LeanOn <span>Bot</span>
@@ -304,6 +312,10 @@ const forgotTermsRef = ref(null)
 const loginBtnRef = ref(null)
 const googleBtnRef = ref(null)
 const mobileBrandRef = ref(null)
+/* GC LOGO */
+const gcLogoRef = ref(null)
+const appLogoRef = ref(null)
+
  
 /* =========================
    GSAP ANIMATION
@@ -332,6 +344,8 @@ onMounted(() => {
   tl.from(formGroupRefs.value, { y: 25, opacity: 0, stagger: 0.15 }, 0.5)
   tl.from(forgotTermsRef.value, { y: 15, opacity: 0 }, 0.7)
   tl.from(loginBtnRef.value, { scale: 0.92, opacity: 0 }, 0.8)
+  tl.from(gcLogoRef.value, { y: -20, opacity: 0, duration: 0.6 }, 0.3)
+  tl.from(appLogoRef.value, { y: -20, opacity: 0, duration: 0.6 }, 0.3)
   tl.from('.divider', { y: 15, opacity: 0 }, 0.9)
  
   gsap.set(googleBtnRef.value, { opacity: 0, y: 20, scale: 0.95 })
