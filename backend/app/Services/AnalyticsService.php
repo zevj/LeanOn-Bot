@@ -89,6 +89,9 @@ class AnalyticsService
                 ->orderByDesc('count')
                 ->first();
 
+            // 4. Age range that uses the system most
+            $topAgeRange = $this->getTopAgeRange();
+
             return [
                 // Kept for backward compat (charts, export, etc.)
                 'total_conversations'   => $currentConversations,
@@ -110,6 +113,10 @@ class AnalyticsService
                 'top_department_alerts_count' => (int) ($topDeptAlerts?->count ?? 0),
                 'top_gender'            => $topGender?->gender          ?? 'N/A',
                 'top_gender_count'      => (int) ($topGender?->count    ?? 0),
+
+                // ── Age range card ──
+                'top_age_range'         => $topAgeRange['range']  ?? 'N/A',
+                'top_age_range_count'   => (int) ($topAgeRange['count'] ?? 0),
             ];
         });
     }
@@ -272,8 +279,8 @@ class AnalyticsService
         $weekCount = 0;
 
         for ($i = $weeksToShow - 1; $i >= 0; $i--) {
-            $wStart = Carbon::now()->subWeeks($i)->startOfWeek(\Carbon\CarbonInterface::MONDAY);
-            $wEnd   = Carbon::now()->subWeeks($i)->endOfWeek(\Carbon\CarbonInterface::SUNDAY);
+            $wStart = Carbon::now()->subWeeks($i)->startOfWeek(1); // 1 = Monday
+            $wEnd   = Carbon::now()->subWeeks($i)->endOfWeek(0);   // 0 = Sunday
 
             if ($wStart->lt($start)) $wStart = $start->copy();
             if ($wEnd->gt($end))     $wEnd   = $end->copy();
@@ -302,8 +309,8 @@ class AnalyticsService
         // ── Referral-style emotion totals ─────────────────────────────────
         $totalEmotionLogs  = EmotionLog::whereBetween('created_at', [$start, $end])->count();
         $thisWeekEmotions  = EmotionLog::whereBetween('created_at', [
-            Carbon::now()->startOfWeek(\Carbon\CarbonInterface::MONDAY),
-            Carbon::now()->endOfWeek(\Carbon\CarbonInterface::SUNDAY),
+            Carbon::now()->startOfWeek(1), // 1 = Monday
+            Carbon::now()->endOfWeek(0),   // 0 = Sunday
         ])->count();
 
         // ── COMPACT payload — only aggregated numbers, no PII ─────────────
@@ -320,10 +327,11 @@ class AnalyticsService
             'fallback_count'              => $fallbackCount,
             'total_registered_students'   => User::where('role', 'student')->count(),
 
-            // Department / gender
+            // Department / gender / age
             'top_department'              => $topDeptUsers?->department  ?? 'N/A',
             'top_gender'                  => $topGender?->gender          ?? 'N/A',
             'department_with_most_alerts' => $topDeptAlerts?->department ?? 'N/A',
+            'top_age_range'               => $this->getTopAgeRange()['range'] ?? 'N/A',
 
             // Crisis
             'total_flagged_alerts'        => $totalFlagged,
@@ -706,6 +714,40 @@ class AnalyticsService
                 }
             }
         }
+    }
+
+    /**
+     * Bucket registered students into age ranges and return the most common one.
+     * Buckets: Under 18 | 18–20 | 21–23 | 24–26 | 27+
+     */
+    private function getTopAgeRange(): array
+    {
+        $buckets = [
+            'Under 18' => [0,  17],
+            '18–20'    => [18, 20],
+            '21–23'    => [21, 23],
+            '24–26'    => [24, 26],
+            '27+'      => [27, 999],
+        ];
+
+        $counts = [];
+        foreach ($buckets as $label => [$min, $max]) {
+            $counts[$label] = User::where('role', 'student')
+                ->whereNotNull('age')
+                ->whereBetween('age', [$min, $max])
+                ->count();
+        }
+
+        if (empty($counts) || array_sum($counts) === 0) {
+            return ['range' => 'N/A', 'count' => 0];
+        }
+
+        $topLabel = array_key_first(array_filter($counts, fn($v) => $v === max($counts)));
+
+        return [
+            'range' => $topLabel ?? 'N/A',
+            'count' => $counts[$topLabel] ?? 0,
+        ];
     }
 
     private function periodToStart(string $period, Carbon $end): Carbon

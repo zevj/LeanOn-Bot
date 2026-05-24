@@ -44,22 +44,73 @@ class AdminNotification extends Model
     }
 
     /**
-     * Create a "report exported" notification.
+     * Create a "PDF report exported" notification.
      */
     public static function reportExported(string $period, array $sections): self
     {
         $sectionLabels = implode(', ', array_map('ucfirst', $sections));
         return self::create([
             'type'    => 'report_exported',
-            'title'   => 'Analytics Report Exported',
-            'message' => "A PDF analytics report was downloaded (period: {$period}).",
+            'title'   => 'PDF Report Downloaded',
+            'message' => "An analytics PDF report was downloaded (period: {$period}).",
             'detail'  => "Sections included: {$sectionLabels}.",
-            'icon'    => 'bx bx-download',
+            'icon'    => 'bx bxs-file-pdf',
             'color'   => 'blue',
             'is_read' => false,
             'meta'    => [
+                'format'   => 'pdf',
                 'period'   => $period,
                 'sections' => $sections,
+            ],
+        ]);
+    }
+
+    /**
+     * Create a "CSV report exported" notification.
+     */
+    public static function csvExported(string $period): self
+    {
+        return self::create([
+            'type'    => 'csv_exported',
+            'title'   => 'CSV Report Downloaded',
+            'message' => "An analytics CSV report was downloaded (period: {$period}).",
+            'detail'  => 'Includes dashboard stats, emotion distribution, sentiment trends, peak usage hours, and daily snapshots.',
+            'icon'    => 'bx bx-spreadsheet',
+            'color'   => 'green',
+            'is_read' => false,
+            'meta'    => [
+                'format' => 'csv',
+                'period' => $period,
+            ],
+        ]);
+    }
+
+    /**
+     * Create a "log records CSV exported" notification.
+     */
+    public static function logCsvExported(int $totalRecords, array $filters = []): self
+    {
+        $filterParts = [];
+        if (!empty($filters['department']) && $filters['department'] !== 'All Departments') {
+            $filterParts[] = 'Dept: ' . $filters['department'];
+        }
+        if (!empty($filters['status']) && $filters['status'] !== 'All Sessions') {
+            $filterParts[] = 'Status: ' . $filters['status'];
+        }
+        $filterLabel = !empty($filterParts) ? implode(', ', $filterParts) : 'No filters applied';
+
+        return self::create([
+            'type'    => 'log_csv_exported',
+            'title'   => 'Log Records CSV Downloaded',
+            'message' => "A session log CSV was exported with {$totalRecords} record(s).",
+            'detail'  => $filterLabel,
+            'icon'    => 'bx bx-spreadsheet',
+            'color'   => 'green',
+            'is_read' => false,
+            'meta'    => [
+                'format'        => 'csv',
+                'total_records' => $totalRecords,
+                'filters'       => $filters,
             ],
         ]);
     }

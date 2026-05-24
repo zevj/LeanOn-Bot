@@ -271,8 +271,8 @@ const steps = [
 const contactItems = [
   { icon: 'bx-buildings',   title: 'Gordon College – Guidance Office', desc: 'Tapinac Oval Sports Complex, Donor St., East Tapinac, Olongapo City' },
   { icon: 'bx-envelope',    title: 'Email',        desc: 'guidance@gordoncollege.edu.ph' },
-  { icon: 'bxl-messenger',  title: 'GC Connect',   desc: 'Message the Guidance Office via GC Connect platform or Facebook Messenger.' },
-  { icon: 'bx-time-five',   title: 'Office Hours', desc: 'Monday – Friday, 8:00 AM – 5:00 PM (LeanOn Bot available 24/7)' },
+  { icon: 'bxl-messenger',  title: 'GC - Office of Student Welfare and Services',   desc: 'Message the Guidance Office via Facebook or Messenger.' },
+  { icon: 'bx-time-five',   title: 'Office Hours', desc: 'Monday – Friday, 8:00 AM – 5:00 PM' },
 ]
 
 // ── Contact form

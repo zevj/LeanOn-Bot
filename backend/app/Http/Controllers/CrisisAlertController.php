@@ -64,9 +64,11 @@ class CrisisAlertController extends Controller
             $data = $alert->toArray();
             if ($alert->user) {
                 $data['masked_email']  = \App\Helpers\DataFormatter::maskEmail($alert->user->email);
+                $data['real_email']    = $alert->user->email;
                 $data['user_display']  = 'Anonymous #' . ($alert->id + 1000);
             } else {
                 $data['masked_email']  = 'Anonymous';
+                $data['real_email']    = null;
                 $data['user_display']  = 'Anonymous #' . ($alert->id + 1000);
             }
             unset($data['user']);
@@ -153,14 +155,8 @@ class CrisisAlertController extends Controller
         $subject = $request->input('subject', 'Important: Wellness Support from LeanOn Bot');
         $body    = $request->input('body', '');
 
-        // Append appointment info if provided
         $appointmentDate = $request->input('appointment_date');
         $appointmentTime = $request->input('appointment_time');
-        if ($appointmentDate && $appointmentTime) {
-            $formatted = \Carbon\Carbon::parse("{$appointmentDate} {$appointmentTime}")
-                ->format('F j, Y \a\t g:i A');
-            $body .= "\n\nAppointment scheduled: {$formatted}";
-        }
 
         $apiKey = env('BREVO_API_KEY');
 
@@ -172,8 +168,25 @@ class CrisisAlertController extends Controller
         $fromEmail = config('mail.from.address', env('MAIL_FROM_ADDRESS'));
         $fromName  = config('mail.from.name',    env('MAIL_FROM_NAME', 'LeanOn Bot Support'));
 
-        // Convert plain-text body to simple HTML (preserve line breaks)
-        $htmlBody = nl2br(e($body));
+        // Format appointment string for the template
+        $appointmentFormatted = null;
+        if ($appointmentDate && $appointmentTime) {
+            $appointmentFormatted = \Carbon\Carbon::parse("{$appointmentDate} {$appointmentTime}")
+                ->format('F j, Y \a\t g:i A');
+        }
+
+        // Split body into paragraphs for the template
+        $paragraphs = array_filter(
+            explode("\n", $body),
+            fn($line) => trim($line) !== ''
+        );
+
+        // Render the styled HTML email template
+        $htmlBody = \Illuminate\Support\Facades\View::make('emails.crisis_alert', [
+            'paragraphs'           => array_values($paragraphs),
+            'severity'             => $alert->severity,
+            'appointmentFormatted' => $appointmentFormatted,
+        ])->render();
 
         try {
             $response = Http::withHeaders([

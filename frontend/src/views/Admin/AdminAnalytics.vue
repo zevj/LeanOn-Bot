@@ -98,6 +98,20 @@
               </div>
               <div class="stat-icon-wrapper icon-amber"><i class="bx bx-shield"></i></div>
             </div>
+
+            <!-- Card 5: Top Age Range -->
+            <div class="stat-card purple">
+              <div class="stat-card-content">
+                <h4 class="stat-label">Users Age Range</h4>
+                <p class="stat-value unit-suffix" style="font-size:22px;font-weight:700;">
+                  {{ stats.top_age_range || 'N/A' }}
+                </p>
+                <span style="font-size:11px;color:#6b7280;margin-top:2px;">
+                  {{ stats.top_age_range_count || 0 }} registered students
+                </span>
+              </div>
+              <div class="stat-icon-wrapper icon-purple"><i class="bx bx-group"></i></div>
+            </div>
           </div>
 
           <!-- Charts Row 1 -->
@@ -336,6 +350,8 @@ const stats = ref({
   top_department_users: 'N/A', top_department_users_count: 0,
   top_department_alerts: 'N/A', top_department_alerts_count: 0,
   top_gender: 'N/A', top_gender_count: 0,
+  // Age range card
+  top_age_range: 'N/A', top_age_range_count: 0,
 })
 
 const trendData = ref({
@@ -454,12 +470,13 @@ const generatePDF = async () => {
     const params = buildExportParams()
     const sections = exportOptions.value.sections.join(',')
     params.set('sections', sections)
+    params.set('format', 'pdf')
     const res = await axios.get(
       `/api/admin/analytics/export?${params.toString()}`,
       authConfig()
     )
     const data = res.data
-    buildPDF(data)
+    await buildPDF(data)
     closeExportModal()
   } catch (err) {
     console.error('Export failed:', err)
@@ -475,76 +492,147 @@ const generateCSV = async () => {
   try {
     const params = buildExportParams()
     params.set('sections', 'dashboard,trends,snapshots')
+    params.set('format', 'csv')
     const res = await axios.get(
       `/api/admin/analytics/export?${params.toString()}`,
       authConfig()
     )
     const data = res.data
 
-    const rows = []
+    // Helper: escape a cell value for CSV (UTF-8 BOM-safe, Excel-compatible)
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`
+
+    // Human-readable date formatter
+    const fmtDate = (iso) => {
+      if (!iso) return ''
+      return new Date(iso).toLocaleDateString('en-PH', {
+        month: 'long', day: '2-digit', year: 'numeric',
+      })
+    }
+
     const periodLabel = data.period
       ? (periods.find(p => p.value === data.period)?.label || data.period)
       : `${exportOptions.value.startDate} to ${exportOptions.value.endDate}`
 
-    rows.push(['LeanOn Bot — Analytics Report'])
-    rows.push([`Period: ${periodLabel}`])
-    rows.push([`Generated: ${new Date(data.generated_at).toLocaleString('en-PH')}`])
+    const generatedAt = new Date(data.generated_at).toLocaleString('en-PH', {
+      month: 'long', day: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    })
+
+    const refId = `RPT-${Date.now().toString(36).toUpperCase()}`
+
+    const rows = []
+
+    // ── Report header block ──
+    rows.push([esc('LeanOn Bot — AI Analytics & Wellness Report')])
+    rows.push([esc('Gordon College — Guidance & Counseling Office')])
+    rows.push([esc(`Reporting Period: ${periodLabel}`)])
+    rows.push([esc(`Generated: ${generatedAt}`)])
+    rows.push([esc(`Export Reference: ${refId}`)])
+    rows.push([esc('Privacy Notice: All data is anonymized. No student PII is included.')])
     rows.push([])
 
+    // ── Dashboard Statistics ──
     if (data.dashboard) {
       const d = data.dashboard
-      rows.push(['=== Dashboard Statistics ==='])
-      rows.push(['Metric', 'Value'])
-      rows.push(['Dept. With Most Crisis Alerts', d.top_department_alerts ?? 'N/A'])
-      rows.push(['Alerts in Top Dept.', d.top_department_alerts_count ?? 0])
-      rows.push(['Total Conversations', d.total_conversations ?? 0])
-      rows.push(['Peak Usage Hour', d.peak_hour !== null ? formatPeakHour(d.peak_hour) : 'N/A'])
-      rows.push(['Crisis Alerts (Period)', d.crisis_alert_count ?? 0])
-      rows.push(['Off-topic Fallbacks', d.fallback_count ?? 0])
-      rows.push(['Total Registered Students', d.total_registered_users ?? 0])
+      rows.push([esc('=== DASHBOARD STATISTICS ===')])
+      rows.push([esc('Metric'), esc('Value')])
+      rows.push([esc('Department With Most Crisis Alerts'), esc(d.top_department_alerts ?? 'N/A')])
+      rows.push([esc('Crisis Alerts in Top Department'),   esc(d.top_department_alerts_count ?? 0)])
+      rows.push([esc('Total Conversations'),               esc(d.total_conversations ?? 0)])
+      rows.push([esc('Conversation Growth (%)'),           esc(d.conversation_growth ?? 0)])
+      rows.push([esc('Peak Usage Hour'),                   esc(d.peak_hour !== null ? formatPeakHour(d.peak_hour) : 'N/A')])
+      rows.push([esc('Crisis Alerts (Period)'),            esc(d.crisis_alert_count ?? 0)])
+      rows.push([esc('Off-Topic Fallbacks'),               esc(d.fallback_count ?? 0)])
+      rows.push([esc('Total Registered Students'),         esc(d.total_registered_users ?? 0)])
+      rows.push([esc('Most Active Age Range'),             esc(d.top_age_range ?? 'N/A')])
+      rows.push([esc('Students in Top Age Range'),         esc(d.top_age_range_count ?? 0)])
       rows.push([])
     }
 
+    // ── Emotion Distribution ──
     if (data.trends?.emotion_distribution && Object.keys(data.trends.emotion_distribution).length > 0) {
-      rows.push(['=== Emotion Distribution ==='])
-      rows.push(['Emotion', 'Count', 'Percentage'])
+      rows.push([esc('=== EMOTION DISTRIBUTION ===')])
+      rows.push([esc('Emotion'), esc('Count'), esc('Percentage of Total'), esc('Relative Rank')])
       const total = Object.values(data.trends.emotion_distribution).reduce((a, b) => a + b, 0)
-      Object.entries(data.trends.emotion_distribution).forEach(([emotion, count]) => {
+      const sorted = Object.entries(data.trends.emotion_distribution)
+        .sort(([, a], [, b]) => b - a)
+      sorted.forEach(([emotion, count], idx) => {
         rows.push([
-          emotion.charAt(0).toUpperCase() + emotion.slice(1),
-          count,
-          total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%',
+          esc(emotion.charAt(0).toUpperCase() + emotion.slice(1)),
+          esc(count),
+          esc(total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%'),
+          esc(`#${idx + 1}`),
         ])
       })
       rows.push([])
     }
 
+    // ── Sentiment Over Time ──
     if (data.trends?.sentiment_over_time?.length > 0) {
-      rows.push(['=== Sentiment Over Time ==='])
-      rows.push(['Week Starting', 'Positive', 'Neutral', 'Negative'])
+      rows.push([esc('=== SENTIMENT TREND (WEEKLY) ===')])
+      rows.push([esc('Week Starting'), esc('Positive'), esc('Neutral'), esc('Negative'), esc('Dominant Sentiment')])
       data.trends.sentiment_over_time.forEach((w, i) => {
-        rows.push([w.week_start || `Week ${i + 1}`, w.positive ?? 0, w.neutral ?? 0, w.negative ?? 0])
+        const pos = w.positive ?? 0
+        const neu = w.neutral  ?? 0
+        const neg = w.negative ?? 0
+        const dominant = pos >= neu && pos >= neg ? 'Positive'
+                       : neg >= pos && neg >= neu ? 'Negative'
+                       : 'Neutral'
+        rows.push([
+          esc(w.week_start ? fmtDate(w.week_start) : `Week ${i + 1}`),
+          esc(pos), esc(neu), esc(neg), esc(dominant),
+        ])
       })
       rows.push([])
     }
 
-    if (data.snapshots?.length > 0) {
-      rows.push(['=== Historical Daily Snapshots ==='])
-      rows.push(['Date', 'Active Users', 'Conversations', 'Messages', 'Avg Session (min)', 'Crisis Alerts'])
-      data.snapshots.forEach(s => {
-        rows.push([s.snapshot_date || '', s.daily_active_users ?? 0, s.total_conversations ?? 0, s.total_messages ?? 0, s.avg_session_minutes ?? 0, s.crisis_alert_count ?? 0])
+    // ── Peak Usage Hours ──
+    if (data.trends?.peak_usage_hours?.length > 0) {
+      rows.push([esc('=== PEAK USAGE HOURS ===')])
+      rows.push([esc('Hour'), esc('Session Count')])
+      data.trends.peak_usage_hours.forEach(h => {
+        rows.push([esc(formatPeakHour(h.hour)), esc(h.count ?? 0)])
       })
+      rows.push([])
     }
 
-    const csvContent = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+    // ── Historical Daily Snapshots ──
+    if (data.snapshots?.length > 0) {
+      rows.push([esc('=== HISTORICAL DAILY SNAPSHOTS ===')])
+      rows.push([
+        esc('Date'),
+        esc('Daily Active Users'),
+        esc('Total Conversations'),
+        esc('Total Messages'),
+        esc('Avg Session Duration (min)'),
+        esc('Crisis Alerts'),
+      ])
+      data.snapshots.forEach(s => {
+        rows.push([
+          esc(s.snapshot_date ? fmtDate(s.snapshot_date) : ''),
+          esc(s.daily_active_users   ?? 0),
+          esc(s.total_conversations  ?? 0),
+          esc(s.total_messages       ?? 0),
+          esc(s.avg_session_minutes  ?? 0),
+          esc(s.crisis_alert_count   ?? 0),
+        ])
+      })
+      rows.push([])
+    }
+
+    rows.push([esc(`End of Report — ${refId}`)])
+
+    // UTF-8 BOM ensures Excel opens with correct encoding
+    const csvContent = '\uFEFF' + rows.map(r => r.join(',')).join('\r\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
+    const url  = URL.createObjectURL(blob)
     const link = document.createElement('a')
-    link.href = url
+    link.href  = url
     const dateSuffix = exportOptions.value.dateMode === 'custom'
       ? `${exportOptions.value.startDate}_${exportOptions.value.endDate}`
       : exportOptions.value.period
-    link.download = `leanon-analytics-${dateSuffix}-${new Date().toISOString().slice(0, 10)}.csv`
+    link.download = `LeanOn-Analytics-${dateSuffix}-${new Date().toISOString().slice(0, 10)}.csv`
     link.click()
     URL.revokeObjectURL(url)
     closeExportModal()
@@ -556,55 +644,247 @@ const generateCSV = async () => {
   }
 }
 
-const buildPDF = (data) => {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+// ── PDF shared helpers ──────────────────────────────────────────
+const PDF_GREEN      = [14, 96, 8]
+const PDF_GREEN_MID  = [22, 163, 74]
+const PDF_GREEN_DARK = [10, 68, 6]
+const PDF_TEXT_DARK  = [17, 24, 39]
+const PDF_TEXT_MID   = [75, 85, 99]
+const PDF_TEXT_LIGHT = [156, 163, 175]
+const PDF_ROW_ALT    = [247, 250, 247]
+const PDF_BORDER     = [229, 231, 235]
+
+const pdfMakeRefId = () => `RPT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2,5).toUpperCase()}`
+
+// Load an image from /public as a base64 data URL for jsPDF
+const loadImageAsDataUrl = (path) => new Promise((resolve) => {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.onload = () => {
+    const canvas = document.createElement('canvas')
+    canvas.width  = img.naturalWidth
+    canvas.height = img.naturalHeight
+    canvas.getContext('2d').drawImage(img, 0, 0)
+    resolve(canvas.toDataURL('image/png'))
+  }
+  img.onerror = () => resolve(null)
+  img.src = path
+})
+
+const pdfDrawHeader = async (doc, title, periodLabel, generatedAt, refId) => {
+  const W = doc.internal.pageSize.getWidth()
+  const M = 14
+  const BANNER_TOP = 0
+  const BANNER_H   = 42
+
+  // Dark top stripe
+  doc.setFillColor(...PDF_GREEN_DARK)
+  doc.rect(0, BANNER_TOP, W, 7, 'F')
+  // Main green banner
+  doc.setFillColor(...PDF_GREEN)
+  doc.rect(0, 7, W, BANNER_H - 7, 'F')
+  // Right accent block (narrower — leaves room for logos)
+  doc.setFillColor(...PDF_GREEN_MID)
+  doc.rect(W - 38, 7, 38, BANNER_H - 7, 'F')
+
+  // ── Logos — vertically centered in the banner content area (y7 → y42 = 35mm tall) ──
+  const LOGO_SIZE = 22          // both logos same square size
+  const LOGO_Y    = 7 + (35 - LOGO_SIZE) / 2   // = 13.5 — perfectly centered
+  const GC_X      = M           // Gordon College seal — left margin
+  const LB_X      = GC_X + LOGO_SIZE + 3        // LeanOn Bot — 3mm gap after GC
+
+  const gcLogo = await loadImageAsDataUrl('/GordonCollegeLogo.png')
+  if (gcLogo) {
+    doc.addImage(gcLogo, 'PNG', GC_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE)
+  }
+
+  // Thin white vertical divider between logos
+  doc.setDrawColor(255, 255, 255)
+  doc.setLineWidth(0.4)
+  doc.line(LB_X - 1.5, LOGO_Y + 2, LB_X - 1.5, LOGO_Y + LOGO_SIZE - 2)
+
+  const lbLogo = await loadImageAsDataUrl('/leanOnBot.png')
+  if (lbLogo) {
+    doc.addImage(lbLogo, 'PNG', LB_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE)
+  }
+
+  // Text starts after both logos + gap
+  const textX = LB_X + LOGO_SIZE + 5
+
+  // Institution label — near top of banner content
+  doc.setFontSize(6.5)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(187, 247, 208)
+  doc.text('GORDON COLLEGE  ·  GUIDANCE & COUNSELING OFFICE  ·  LEANON BOT', textX, 15)
+
+  // Report title — vertically centered in banner
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(255, 255, 255)
+  doc.text(title, textX, 25)
+
+  // Period + generated
+  doc.setFontSize(7.5)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(187, 247, 208)
+  const metaText = `Period: ${periodLabel}   ·   Generated: ${generatedAt}`
+  doc.text(metaText, textX, 34, { maxWidth: W - textX - 42 })
+
+  // Right badge text — vertically centered in banner content (7→42)
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(255, 255, 255)
+  doc.text('CONFIDENTIAL', W - 19, 19, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6)
+  doc.text('Admin Use Only', W - 19, 25, { align: 'center' })
+  doc.setFontSize(5.5)
+  doc.text(`Ref: ${refId}`, W - 19, 30, { align: 'center' })
+
+  // Separator line
+  doc.setDrawColor(...PDF_BORDER)
+  doc.setLineWidth(0.25)
+  doc.line(0, BANNER_H + 1, W, BANNER_H + 1)
+
+  // Privacy notice below banner
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'italic')
+  doc.setTextColor(...PDF_TEXT_MID)
+  doc.text('All data is anonymized. No student PII is included in this report.', M, BANNER_H + 7)
+
+  return BANNER_H + 13 // starting Y after header
+}
+
+const pdfDrawFooter = (doc, refId) => {
+  const count = doc.internal.getNumberOfPages()
+  const W = doc.internal.pageSize.getWidth()
+  const H = doc.internal.pageSize.getHeight()
+  for (let i = 1; i <= count; i++) {
+    doc.setPage(i)
+    // Footer separator line
+    doc.setDrawColor(...PDF_BORDER)
+    doc.setLineWidth(0.25)
+    doc.line(14, H - 14, W - 14, H - 14)
+    doc.setFontSize(6.5)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...PDF_TEXT_LIGHT)
+    // Left: system label
+    doc.text('LeanOn Bot  ·  Gordon College  ·  Confidential — For authorized personnel only', 14, H - 9)
+    // Left second line: ref ID (below the label, no collision)
+    doc.setFontSize(6)
+    doc.text(`Export Ref: ${refId}`, 14, H - 5)
+    // Right: page number (aligned to bottom-right, vertically centered between the two lines)
+    doc.setFontSize(7)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(120, 130, 145)
+    doc.text(`Page ${i} of ${count}`, W - 14, H - 7, { align: 'right' })
+  }
+}
+
+const pdfSectionHeading = (doc, text, y, margin) => {
+  const W = doc.internal.pageSize.getWidth()
+  doc.setFillColor(...PDF_GREEN)
+  doc.rect(margin, y - 4.5, 3, 7, 'F')
+  doc.setFontSize(10.5)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...PDF_TEXT_DARK)
+  doc.text(text, margin + 6, y)
+  doc.setDrawColor(...PDF_BORDER)
+  doc.setLineWidth(0.2)
+  doc.line(margin + 6, y + 2, W - margin, y + 2)
+  return y + 8
+}
+
+const pdfTableStyles = () => ({
+  headStyles: {
+    fillColor: PDF_GREEN,
+    textColor: [255, 255, 255],
+    fontStyle: 'bold',
+    fontSize: 8.5,
+    cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+  },
+  bodyStyles: {
+    fontSize: 8,
+    textColor: PDF_TEXT_DARK,
+    cellPadding: { top: 3, bottom: 3, left: 5, right: 5 },
+  },
+  alternateRowStyles: { fillColor: PDF_ROW_ALT },
+  styles: { lineColor: PDF_BORDER, lineWidth: 0.2, overflow: 'linebreak', font: 'helvetica' },
+  theme: 'grid',
+})
+
+const buildPDF = async (data) => {
+  const doc   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const pageW = doc.internal.pageSize.getWidth()
   const margin = 14
-  let y = 0
+  const refId  = pdfMakeRefId()
 
-  // ── Header ──
-  doc.setFillColor(14, 96, 8)
-  doc.rect(0, 0, pageW, 28, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(18)
-  doc.setFont('helvetica', 'bold')
-  doc.text('LeanOn Bot — Analytics Report', margin, 12)
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
   const periodLabel = data.period
     ? (periods.find(p => p.value === data.period)?.label || data.period)
     : `${exportOptions.value.startDate} to ${exportOptions.value.endDate}`
-  doc.text(`Period: ${periodLabel}   |   Generated: ${new Date(data.generated_at).toLocaleString('en-PH')}`, margin, 20)
-  doc.text('All data is anonymized. No student PII is included.', margin, 25)
-  y = 36
 
-  doc.setTextColor(17, 24, 39)
+  const generatedAt = new Date(data.generated_at).toLocaleString('en-PH', {
+    month: 'long', day: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  })
+
+  let y = await pdfDrawHeader(doc, 'AI Analytics & Wellness Report', periodLabel, generatedAt, refId)
+
+  doc.setTextColor(...PDF_TEXT_DARK)
 
   // ── Dashboard Stats ──
   if (data.dashboard) {
     const d = data.dashboard
-    doc.setFontSize(13)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Dashboard Statistics', margin, y)
-    y += 6
+    y = pdfSectionHeading(doc, 'Dashboard Statistics', y, margin)
+
+    // Summary metric cards (2-column layout)
+    const metrics = [
+      { label: 'Total Conversations',          value: String(d.total_conversations ?? 0),          color: PDF_GREEN },
+      { label: 'Crisis Alerts',                value: String(d.crisis_alert_count ?? 0),            color: [185, 28, 28] },
+      { label: 'Total Registered Students',    value: String(d.total_registered_users ?? 0),        color: [14, 116, 144] },
+      { label: 'Off-Topic Fallbacks',          value: String(d.fallback_count ?? 0),                color: [107, 114, 128] },
+    ]
+    const cardW = (pageW - margin * 2 - 6) / 4
+    metrics.forEach((m, i) => {
+      const bx = margin + i * (cardW + 2)
+      doc.setFillColor(248, 250, 248)
+      doc.setDrawColor(...m.color)
+      doc.setLineWidth(0.35)
+      doc.roundedRect(bx, y, cardW, 14, 1.5, 1.5, 'FD')
+      doc.setFillColor(...m.color)
+      doc.roundedRect(bx, y, 2.5, 14, 1, 1, 'F')
+      doc.setFontSize(12)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...m.color)
+      doc.text(m.value, bx + cardW / 2, y + 7, { align: 'center' })
+      doc.setFontSize(5.5)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...PDF_TEXT_MID)
+      doc.text(m.label.toUpperCase(), bx + cardW / 2, y + 11.5, { align: 'center' })
+    })
+    y += 20
 
     autoTable(doc, {
+      ...pdfTableStyles(),
       startY: y,
       head: [['Metric', 'Value']],
       body: [
-        ['Dept. With Most Crisis Alerts', d.top_department_alerts      ?? 'N/A'],
-        ['Alerts in Top Dept.',          String(d.top_department_alerts_count ?? 0)],
-        ['Total Conversations',          String(d.total_conversations  ?? 0)],
-        ['Peak Usage Hour',              d.peak_hour !== null ? formatPeakHour(d.peak_hour) : 'N/A'],
-        ['Crisis Alerts (Period)',        String(d.crisis_alert_count  ?? 0)],
-        ['Off-topic Fallbacks',          String(d.fallback_count       ?? 0)],
-        ['Total Registered Students',    String(d.total_registered_users ?? 0)],
+        ['Department With Most Crisis Alerts', d.top_department_alerts ?? 'N/A'],
+        ['Crisis Alerts in Top Department',    String(d.top_department_alerts_count ?? 0)],
+        ['Total Conversations',                String(d.total_conversations ?? 0)],
+        ['Conversation Growth',                `${d.conversation_growth ?? 0}%`],
+        ['Peak Usage Hour',                    d.peak_hour !== null ? formatPeakHour(d.peak_hour) : 'N/A'],
+        ['Crisis Alerts (Period)',             String(d.crisis_alert_count ?? 0)],
+        ['Off-Topic Fallbacks',               String(d.fallback_count ?? 0)],
+        ['Total Registered Students',         String(d.total_registered_users ?? 0)],
+        ['Most Active Age Range',             d.top_age_range ?? 'N/A'],
+        ['Students in Top Age Range',         String(d.top_age_range_count ?? 0)],
       ],
-      headStyles: { fillColor: [14, 96, 8], textColor: 255, fontStyle: 'bold', fontSize: 10 },
-      bodyStyles: { fontSize: 9, textColor: [31, 41, 55] },
-      alternateRowStyles: { fillColor: [247, 248, 250] },
+      columnStyles: {
+        0: { cellWidth: 110, fontStyle: 'bold' },
+        1: { cellWidth: 'auto', halign: 'center' },
+      },
       margin: { left: margin, right: margin },
-      theme: 'grid',
     })
     y = doc.lastAutoTable.finalY + 10
   }
@@ -612,27 +892,40 @@ const buildPDF = (data) => {
   // ── Emotion Distribution ──
   if (data.trends?.emotion_distribution && Object.keys(data.trends.emotion_distribution).length > 0) {
     if (y > 230) { doc.addPage(); y = 20 }
-    doc.setFontSize(13)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Emotion Distribution', margin, y)
-    y += 6
+    y = pdfSectionHeading(doc, 'Emotion Distribution', y, margin)
 
     const total = Object.values(data.trends.emotion_distribution).reduce((a, b) => a + b, 0)
-    const rows = Object.entries(data.trends.emotion_distribution).map(([emotion, count]) => [
-      emotion.charAt(0).toUpperCase() + emotion.slice(1),
-      String(count),
-      total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%',
-    ])
+    const emotionColors = {
+      happy: [22, 163, 74], sad: [59, 130, 246], angry: [239, 68, 68],
+      anxious: [245, 158, 11], neutral: [107, 114, 128], fearful: [168, 85, 247],
+      disgusted: [234, 88, 12], surprised: [14, 116, 144],
+    }
+    const sortedEmotions = Object.entries(data.trends.emotion_distribution).sort(([,a],[,b]) => b - a)
 
     autoTable(doc, {
+      ...pdfTableStyles(),
       startY: y,
-      head: [['Emotion', 'Count', 'Percentage']],
-      body: rows,
-      headStyles: { fillColor: [14, 96, 8], textColor: 255, fontStyle: 'bold', fontSize: 10 },
-      bodyStyles: { fontSize: 9, textColor: [31, 41, 55] },
-      alternateRowStyles: { fillColor: [247, 248, 250] },
+      head: [['Emotion', 'Count', 'Percentage', 'Rank']],
+      body: sortedEmotions.map(([emotion, count], idx) => [
+        emotion.charAt(0).toUpperCase() + emotion.slice(1),
+        String(count),
+        total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%',
+        `#${idx + 1}`,
+      ]),
+      columnStyles: {
+        0: { cellWidth: 60, fontStyle: 'bold' },
+        1: { cellWidth: 30, halign: 'center' },
+        2: { cellWidth: 40, halign: 'center' },
+        3: { cellWidth: 25, halign: 'center' },
+      },
+      didParseCell(data) {
+        if (data.section === 'body' && data.column.index === 0) {
+          const key = String(data.cell.raw).toLowerCase()
+          const c = emotionColors[key]
+          if (c) data.cell.styles.textColor = c
+        }
+      },
       margin: { left: margin, right: margin },
-      theme: 'grid',
     })
     y = doc.lastAutoTable.finalY + 10
   }
@@ -640,25 +933,41 @@ const buildPDF = (data) => {
   // ── Sentiment Over Time ──
   if (data.trends?.sentiment_over_time?.length > 0) {
     if (y > 220) { doc.addPage(); y = 20 }
-    doc.setFontSize(13)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Sentiment Over Time (Weekly)', margin, y)
-    y += 6
+    y = pdfSectionHeading(doc, 'Sentiment Trend (Weekly)', y, margin)
 
     autoTable(doc, {
+      ...pdfTableStyles(),
       startY: y,
-      head: [['Week Starting', 'Positive', 'Neutral', 'Negative']],
-      body: data.trends.sentiment_over_time.map((w, i) => [
-        w.week_start || `Week ${i + 1}`,
-        String(w.positive ?? 0),
-        String(w.neutral ?? 0),
-        String(w.negative ?? 0),
-      ]),
-      headStyles: { fillColor: [14, 96, 8], textColor: 255, fontStyle: 'bold', fontSize: 10 },
-      bodyStyles: { fontSize: 9, textColor: [31, 41, 55] },
-      alternateRowStyles: { fillColor: [247, 248, 250] },
+      head: [['Week Starting', 'Positive', 'Neutral', 'Negative', 'Dominant']],
+      body: data.trends.sentiment_over_time.map((w, i) => {
+        const pos = w.positive ?? 0
+        const neu = w.neutral  ?? 0
+        const neg = w.negative ?? 0
+        const dom = pos >= neu && pos >= neg ? 'Positive'
+                  : neg >= pos && neg >= neu ? 'Negative' : 'Neutral'
+        return [
+          w.week_start
+            ? new Date(w.week_start).toLocaleDateString('en-PH', { month: 'short', day: '2-digit', year: 'numeric' })
+            : `Week ${i + 1}`,
+          String(pos), String(neu), String(neg), dom,
+        ]
+      }),
+      columnStyles: {
+        0: { cellWidth: 45 },
+        1: { cellWidth: 28, halign: 'center' },
+        2: { cellWidth: 28, halign: 'center' },
+        3: { cellWidth: 28, halign: 'center' },
+        4: { cellWidth: 35, halign: 'center', fontStyle: 'bold' },
+      },
+      didParseCell(data) {
+        if (data.section === 'body' && data.column.index === 4) {
+          const v = String(data.cell.raw)
+          data.cell.styles.textColor =
+            v === 'Positive' ? PDF_GREEN :
+            v === 'Negative' ? [185, 28, 28] : PDF_TEXT_MID
+        }
+      },
       margin: { left: margin, right: margin },
-      theme: 'grid',
     })
     y = doc.lastAutoTable.finalY + 10
   }
@@ -667,50 +976,75 @@ const buildPDF = (data) => {
   if (data.insights) {
     const ins = data.insights
     if (y > 200) { doc.addPage(); y = 20 }
+    y = pdfSectionHeading(doc, 'AI-Generated Insights & Recommendations', y, margin)
 
-    doc.setFontSize(13)
-    doc.setFont('helvetica', 'bold')
-    doc.text('AI-Generated Insights', margin, y)
-    y += 4
-
+    // Small italic note — same style as privacy notice
+    doc.setFontSize(7.5)
+    doc.setFont('helvetica', 'italic')
+    doc.setTextColor(...PDF_TEXT_MID)
+    doc.text('Note: This report contains AI-generated insights and should be reviewed by authorized personnel.', margin, y)
+    y += 7
     if (ins.wellness_summary) {
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'italic')
-      doc.setTextColor(21, 128, 61)
-      const lines = doc.splitTextToSize(`Wellness Summary: ${ins.wellness_summary}`, pageW - margin * 2)
-      doc.text(lines, margin, y + 4)
-      y += lines.length * 4.5 + 6
-      doc.setTextColor(17, 24, 39)
+      doc.setFillColor(240, 253, 244)
+      doc.setDrawColor(...PDF_GREEN)
+      doc.setLineWidth(0.3)
+      doc.roundedRect(margin, y, pageW - margin * 2, 2, 1, 1, 'FD')
+      doc.setFillColor(240, 253, 244)
+      doc.setDrawColor(...PDF_GREEN)
+      const summaryLines = doc.splitTextToSize(ins.wellness_summary, pageW - margin * 2 - 12)
+      const boxH = summaryLines.length * 4.5 + 10
+      doc.roundedRect(margin, y, pageW - margin * 2, boxH, 2, 2, 'FD')
+      doc.setFillColor(...PDF_GREEN)
+      doc.roundedRect(margin, y, 3, boxH, 1, 1, 'F')
+      doc.setFontSize(7.5)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(...PDF_GREEN)
+      doc.text('WELLNESS SUMMARY', margin + 7, y + 5)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(...PDF_TEXT_DARK)
+      doc.text(summaryLines, margin + 7, y + 10)
+      y += boxH + 6
     }
 
+    // Insights table
     if (ins.insights?.length > 0) {
+      if (y > 220) { doc.addPage(); y = 20 }
+      const severityColors = { severe: [185,28,28], high: [185,28,28], moderate: [180,83,9], medium: [180,83,9], low: [22,163,74], info: [14,116,144] }
       autoTable(doc, {
+        ...pdfTableStyles(),
         startY: y,
         head: [['Category', 'Title', 'Observation', 'Severity']],
         body: ins.insights.map(i => [
-          (i.category || 'general').replace(/_/g, ' '),
+          (i.category || 'general').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
           i.title || '',
-          i.text || '',
-          i.severity || 'info',
+          i.text  || '',
+          (i.severity || 'info').toUpperCase(),
         ]),
-        headStyles: { fillColor: [14, 96, 8], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-        bodyStyles: { fontSize: 8, textColor: [31, 41, 55] },
-        alternateRowStyles: { fillColor: [247, 248, 250] },
-        columnStyles: { 2: { cellWidth: 80 } },
+        columnStyles: {
+          0: { cellWidth: 28, fontStyle: 'bold' },
+          1: { cellWidth: 38, fontStyle: 'bold' },
+          2: { cellWidth: 90 },
+          3: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+        },
+        didParseCell(data) {
+          if (data.section === 'body' && data.column.index === 3) {
+            const key = String(data.cell.raw).toLowerCase()
+            const c = severityColors[key] || PDF_TEXT_MID
+            data.cell.styles.textColor = c
+          }
+        },
         margin: { left: margin, right: margin },
-        theme: 'grid',
       })
       y = doc.lastAutoTable.finalY + 8
     }
 
+    // Recommendations
     if (ins.recommendations?.length > 0) {
       if (y > 220) { doc.addPage(); y = 20 }
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Recommendations', margin, y)
-      y += 4
-
+      y = pdfSectionHeading(doc, 'Recommendations', y, margin)
+      const priorityColors = { high: [185,28,28], medium: [180,83,9], low: [22,163,74] }
       autoTable(doc, {
+        ...pdfTableStyles(),
         startY: y,
         head: [['#', 'Priority', 'Recommendation']],
         body: ins.recommendations.map((r, i) => [
@@ -718,32 +1052,46 @@ const buildPDF = (data) => {
           (r.priority || 'medium').toUpperCase(),
           r.text || '',
         ]),
-        headStyles: { fillColor: [14, 96, 8], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-        bodyStyles: { fontSize: 8, textColor: [31, 41, 55] },
-        alternateRowStyles: { fillColor: [247, 248, 250] },
-        columnStyles: { 2: { cellWidth: 130 } },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 22, halign: 'center', fontStyle: 'bold' },
+          2: { cellWidth: 'auto' },
+        },
+        didParseCell(data) {
+          if (data.section === 'body' && data.column.index === 1) {
+            const key = String(data.cell.raw).toLowerCase()
+            const c = priorityColors[key] || PDF_TEXT_MID
+            data.cell.styles.textColor = c
+          }
+        },
         margin: { left: margin, right: margin },
-        theme: 'grid',
       })
       y = doc.lastAutoTable.finalY + 8
     }
 
+    // Observed Trends
     if (ins.trends?.length > 0) {
       if (y > 220) { doc.addPage(); y = 20 }
-      doc.setFontSize(11)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Observed Trends', margin, y)
-      y += 4
-
+      y = pdfSectionHeading(doc, 'Observed Trends', y, margin)
+      const dirColors = { up: PDF_GREEN, increasing: PDF_GREEN, down: [185,28,28], decreasing: [185,28,28], stable: PDF_TEXT_MID }
       autoTable(doc, {
+        ...pdfTableStyles(),
         startY: y,
         head: [['Metric', 'Direction', 'Description']],
-        body: ins.trends.map(t => [t.metric || '', t.direction || '', t.description || '']),
-        headStyles: { fillColor: [14, 96, 8], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-        bodyStyles: { fontSize: 8, textColor: [31, 41, 55] },
-        alternateRowStyles: { fillColor: [247, 248, 250] },
+        body: ins.trends.map(t => [t.metric || '', (t.direction || '').toUpperCase(), t.description || '']),
+        columnStyles: {
+          0: { cellWidth: 40, fontStyle: 'bold' },
+          1: { cellWidth: 28, halign: 'center', fontStyle: 'bold' },
+          2: { cellWidth: 'auto' },
+        },
+        didParseCell(data) {
+          if (data.section === 'body' && data.column.index === 1) {
+            const key = String(data.cell.raw).toLowerCase()
+            const c = dirColors[key] || PDF_TEXT_MID
+            data.cell.styles.textColor = c
+          }
+        },
         margin: { left: margin, right: margin },
-        theme: 'grid',
       })
       y = doc.lastAutoTable.finalY + 8
     }
@@ -752,44 +1100,47 @@ const buildPDF = (data) => {
   // ── Snapshots ──
   if (data.snapshots?.length > 0) {
     if (y > 200) { doc.addPage(); y = 20 }
-    doc.setFontSize(13)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Historical Daily Snapshots', margin, y)
-    y += 6
+    y = pdfSectionHeading(doc, 'Historical Daily Snapshots', y, margin)
 
     autoTable(doc, {
+      ...pdfTableStyles(),
       startY: y,
       head: [['Date', 'Active Users', 'Conversations', 'Messages', 'Avg Session (min)', 'Crisis Alerts']],
       body: data.snapshots.map(s => [
-        s.snapshot_date || '',
-        String(s.daily_active_users ?? 0),
+        s.snapshot_date
+          ? new Date(s.snapshot_date).toLocaleDateString('en-PH', { month: 'short', day: '2-digit', year: 'numeric' })
+          : '',
+        String(s.daily_active_users  ?? 0),
         String(s.total_conversations ?? 0),
-        String(s.total_messages ?? 0),
+        String(s.total_messages      ?? 0),
         String(s.avg_session_minutes ?? 0),
-        String(s.crisis_alert_count ?? 0),
+        String(s.crisis_alert_count  ?? 0),
       ]),
-      headStyles: { fillColor: [14, 96, 8], textColor: 255, fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { fontSize: 8, textColor: [31, 41, 55] },
-      alternateRowStyles: { fillColor: [247, 248, 250] },
+      columnStyles: {
+        0: { cellWidth: 32 },
+        1: { cellWidth: 26, halign: 'center' },
+        2: { cellWidth: 30, halign: 'center' },
+        3: { cellWidth: 24, halign: 'center' },
+        4: { cellWidth: 34, halign: 'center' },
+        5: { cellWidth: 26, halign: 'center' },
+      },
+      didParseCell(data) {
+        if (data.section === 'body' && data.column.index === 5) {
+          const v = parseInt(data.cell.raw, 10)
+          if (v > 0) data.cell.styles.textColor = [185, 28, 28]
+        }
+      },
       margin: { left: margin, right: margin },
-      theme: 'grid',
     })
   }
 
   // ── Footer on all pages ──
-  const pageCount = doc.internal.getNumberOfPages()
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i)
-    doc.setFontSize(8)
-    doc.setTextColor(156, 163, 175)
-    doc.text(
-      `LeanOn Bot Analytics Report  |  Page ${i} of ${pageCount}  |  Confidential — For authorized personnel only`,
-      margin, doc.internal.pageSize.getHeight() - 8
-    )
-  }
+  pdfDrawFooter(doc, refId)
 
-  const filename = `leanon-analytics-${exportOptions.value.period}-${new Date().toISOString().slice(0, 10)}.pdf`
-  doc.save(filename)
+  const dateSuffix = exportOptions.value.dateMode === 'custom'
+    ? `${exportOptions.value.startDate}_${exportOptions.value.endDate}`
+    : (exportOptions.value.period || 'custom')
+  doc.save(`LeanOn-Analytics-${dateSuffix}-${new Date().toISOString().slice(0, 10)}.pdf`)
 }
 
 onMounted(() => {

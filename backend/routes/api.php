@@ -127,6 +127,7 @@ Route::middleware(['auth:sanctum', 'role:guidance'])->prefix('admin')->group(fun
     Route::get('/notifications', [AdminNotificationController::class, 'index']);
     Route::patch('/notifications/{id}/read', [AdminNotificationController::class, 'markRead']);
     Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead']);
+    Route::post('/notifications/log-csv-exported', [AdminNotificationController::class, 'logCsvExported']);
     Route::get('/emotional-trends', [EmotionController::class, 'index']);
     Route::get('/logs', [LogController::class, 'index']);
 

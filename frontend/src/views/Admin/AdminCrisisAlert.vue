@@ -131,7 +131,20 @@
                                     <span>{{ alert.flag_reason }}</span>
                                 </div>
 
-                                <p class="alert-user">{{ alert.user_display }} · {{ alert.masked_email }}</p>
+                                <p class="alert-user">
+                                    {{ alert.user_display }} ·
+                                    <span class="alert-email-text">
+                                        {{ revealedEmails.has(alert.id) ? alert.real_email : alert.masked_email }}
+                                    </span>
+                                    <button
+                                        v-if="alert.real_email"
+                                        class="reveal-email-btn"
+                                        :title="revealedEmails.has(alert.id) ? 'Hide email' : 'Show full email'"
+                                        @click="toggleEmail(alert.id)"
+                                    >
+                                        <i :class="revealedEmails.has(alert.id) ? 'bx bx-hide' : 'bx bx-show'"></i>
+                                    </button>
+                                </p>
 
                                 <!-- SEVERITY ASSIGNMENT -->
                                 <div class="severity-assign-row">
@@ -266,7 +279,20 @@
                                     >{{ kw }}</span>
                                 </div>
 
-                                <p class="alert-user">{{ alert.user_display }} · {{ alert.masked_email }}</p>
+                                <p class="alert-user">
+                                    {{ alert.user_display }} ·
+                                    <span class="alert-email-text">
+                                        {{ revealedEmails.has(alert.id) ? alert.real_email : alert.masked_email }}
+                                    </span>
+                                    <button
+                                        v-if="alert.real_email"
+                                        class="reveal-email-btn"
+                                        :title="revealedEmails.has(alert.id) ? 'Hide email' : 'Show full email'"
+                                        @click="toggleEmail(alert.id)"
+                                    >
+                                        <i :class="revealedEmails.has(alert.id) ? 'bx bx-hide' : 'bx bx-show'"></i>
+                                    </button>
+                                </p>
 
                                 <!-- SEVERITY RE-ASSIGNMENT -->
                                 <div class="severity-assign-row">
@@ -313,14 +339,14 @@
                                 <button
                                     class="action-btn action-btn--review"
                                     @click="updateStatus(alert, 'reviewed')"
-                                    :disabled="alert.status === 'reviewed'"
+                                    :disabled="alert.status === 'reviewed' || alert.status === 'resolved'"
                                 >
                                     <i class="bx bx-search-alt"></i> Review
                                 </button>
                                 <button
                                     class="action-btn action-btn--resolve"
                                     @click="openResolveModal(alert)"
-                                    :disabled="alert.status === 'resolved'"
+                                    :disabled="alert.status !== 'reviewed'"
                                 >
                                     <i class="bx bx-check"></i> Resolve
                                 </button>
@@ -511,6 +537,14 @@ import HeaderAdmin from '@/components/headerAdmin.vue';
 const toast = useToast();
 const sidebarOpen = ref(localStorage.getItem('adminSidebarOpen') !== 'false');
 const loading = ref(false);
+
+// ── Email reveal toggle ────────────────────────────────────────
+const revealedEmails = ref(new Set());
+const toggleEmail = (id) => {
+    const updated = new Set(revealedEmails.value);
+    updated.has(id) ? updated.delete(id) : updated.add(id);
+    revealedEmails.value = updated;
+};
 
 // ── Alert Data (declared first — used by pagination computeds below) ──
 const alerts = ref([]);
@@ -751,3 +785,40 @@ const todayDate = computed(() => new Date().toISOString().split('T')[0]);
 
 <style scoped src="@/assets/admin/AdminCrisisAlert.css"></style>
 <style src="@/assets/admin/admin-layout.css"></style>
+
+<style scoped>
+.alert-user {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.alert-email-text {
+    font-family: monospace;
+    font-size: 12.5px;
+}
+
+.reveal-email-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    cursor: pointer;
+    color: #6b7280;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+}
+
+.reveal-email-btn:hover {
+    color: #0e6008;
+    background: #f0fdf4;
+}
+
+.reveal-email-btn i {
+    font-size: 14px;
+}
+</style>

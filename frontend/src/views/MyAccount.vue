@@ -214,10 +214,37 @@
                                                 @click="showNew = !showNew"
                                                 ></i>
                                             </div>
-                                            <p class="password-hint">
-                                                <i class='bx bx-info-circle'></i>
-                                                At least 12 characters with a letter, number, and special character.
-                                            </p>
+                                        </div>
+
+                                        <!-- Password Checklist -->
+                                        <div class="pw-checklist" v-if="passwords.new">
+                                            <p class="pw-checklist-title">Password requirements:</p>
+                                            <ul>
+                                                <li :class="{ met: pwChecks.length }">
+                                                    <i :class="pwChecks.length ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                                                    At least 12 characters
+                                                </li>
+                                                <li :class="{ met: pwChecks.uppercase }">
+                                                    <i :class="pwChecks.uppercase ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                                                    At least one uppercase letter (A–Z)
+                                                </li>
+                                                <li :class="{ met: pwChecks.lowercase }">
+                                                    <i :class="pwChecks.lowercase ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                                                    At least one lowercase letter (a–z)
+                                                </li>
+                                                <li :class="{ met: pwChecks.number }">
+                                                    <i :class="pwChecks.number ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                                                    At least one number (0–9)
+                                                </li>
+                                                <li :class="{ met: pwChecks.special }">
+                                                    <i :class="pwChecks.special ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                                                    At least one special character (!@#$%...)
+                                                </li>
+                                                <li :class="{ met: pwChecks.match }" v-if="passwords.confirm">
+                                                    <i :class="pwChecks.match ? 'bx bx-check-circle' : 'bx bx-circle'"></i>
+                                                    Passwords match
+                                                </li>
+                                            </ul>
                                         </div>
 
                                       <div class="password-right-side" style="display: none;"></div>
@@ -286,7 +313,6 @@ import UserAvatar from '@/components/UserAvatar.vue';
 import { ref, onMounted, computed } from 'vue'
 import { useToast } from 'vue-toastification'
 import axios from 'axios'
-
 const toast = useToast();
 const sidebarOpen = ref(false)
 const isOTPVerified = ref(false)
@@ -348,6 +374,27 @@ const passwords = ref({
     new: '',
     confirm: ''
 })
+
+// Password requirement checks
+const pwChecks = computed(() => {
+    const pw = passwords.value.new
+    return {
+        length:    pw.length >= 12,
+        uppercase: /[A-Z]/.test(pw),
+        lowercase: /[a-z]/.test(pw),
+        number:    /[0-9]/.test(pw),
+        special:   /[^a-zA-Z0-9]/.test(pw),
+        match:     pw.length > 0 && pw === passwords.value.confirm,
+    }
+})
+
+const allPwChecksPassed = computed(() =>
+    pwChecks.value.length &&
+    pwChecks.value.uppercase &&
+    pwChecks.value.lowercase &&
+    pwChecks.value.number &&
+    pwChecks.value.special
+)
 
 onMounted(async () => {
     fetchUser()
@@ -473,22 +520,8 @@ async function submitPassword() {
         return
     }
 
-    // Strict password policy: min 12 chars, must contain letter, number, and special character
-    const pw = passwords.value.new
-    if (pw.length < 12) {
-        toast.error("New password must be at least 12 characters.")
-        return
-    }
-    if (!/[a-zA-Z]/.test(pw)) {
-        toast.error("New password must contain at least one letter.")
-        return
-    }
-    if (!/[0-9]/.test(pw)) {
-        toast.error("New password must contain at least one number.")
-        return
-    }
-    if (!/[^a-zA-Z0-9]/.test(pw)) {
-        toast.error("New password must contain at least one special character.")
+    if (!allPwChecksPassed.value) {
+        toast.error("Password does not meet all requirements. Please check the checklist.")
         return
     }
 
@@ -536,16 +569,76 @@ async function finalizePasswordChange() {
 <style scoped src="../assets/users/MyAccount.css"></style>
 
 <style scoped>
-.password-hint {
-    font-size: 11.5px;
-    color: #6b7280;
-    margin-top: 5px;
+/* ── Password Requirement Checklist ── */
+.pw-checklist {
+    background: #f8fdf8;
+    border: 1px solid #d1fae5;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-top: 4px;
+    box-sizing: border-box;
+}
+
+.pw-checklist-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pw-checklist ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pw-checklist li {
     display: flex;
     align-items: center;
-    gap: 4px;
-}
-.password-hint i {
-    font-size: 13px;
+    gap: 7px;
+    font-size: 12px;
     color: #9ca3af;
+    transition: color 0.2s ease;
+}
+
+.pw-checklist li i {
+    font-size: 14px;
+    color: #d1d5db;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.pw-checklist li.met {
+    color: #065f46;
+}
+
+.pw-checklist li.met i {
+    color: #059669;
+}
+
+[data-theme="dark"] .pw-checklist {
+    background: rgba(6, 78, 59, 0.1);
+    border-color: rgba(52, 211, 153, 0.2);
+}
+
+[data-theme="dark"] .pw-checklist-title {
+    color: #d1fae5;
+}
+
+[data-theme="dark"] .pw-checklist li {
+    color: #6b7280;
+}
+
+[data-theme="dark"] .pw-checklist li.met {
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .pw-checklist li.met i {
+    color: #34d399;
 }
 </style>

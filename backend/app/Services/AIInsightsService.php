@@ -349,8 +349,8 @@ PROMPT;
         return [
             'id' => $report->id,
             'report_type' => $report->report_type,
-            'period_start' => $report->period_start?->toDateString(),
-            'period_end' => $report->period_end?->toDateString(),
+            'period_start' => $report->period_start?->format('Y-m-d'),
+            'period_end' => $report->period_end?->format('Y-m-d'),
             'insights' => $report->insights ?? [],
             'recommendations' => $report->recommendations ?? [],
             'trends' => $report->trends ?? [],

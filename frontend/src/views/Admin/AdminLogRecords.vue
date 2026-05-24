@@ -19,11 +19,17 @@
                         <p class="subtext">Track student login and logout activity across the system in real-time.</p>
                     </div>
 
-                    <!-- PDF Download Button -->
-                    <button class="download-btn hover-glow" @click="downloadPDF" data-html2canvas-ignore="true">
-                        <i class='bx bx-cloud-download'></i>
-                        <span>Export PDF</span>
-                    </button>
+                    <!-- Export Buttons -->
+                    <div class="export-btn-group" data-html2canvas-ignore="true">
+                        <button class="download-btn hover-glow" @click="downloadPDF">
+                            <i class='bx bxs-file-pdf'></i>
+                            <span>Export PDF</span>
+                        </button>
+                        <button class="download-btn download-btn-csv hover-glow" @click="downloadCSV">
+                            <i class='bx bx-spreadsheet'></i>
+                            <span>Export CSV</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="audit-log">
@@ -279,95 +285,419 @@ function fmt(dt) {
     };
 }
 
-// PDF Generation Logic 
-const downloadPDF = () => {
-    try {
-        const doc = new jsPDF({ orientation: 'landscape' });
+// ── Shared helpers ──────────────────────────────────────────────────────────
+const BRAND_GREEN      = [14, 96, 8]       // #0E6008
+const BRAND_GREEN_MID  = [22, 163, 74]     // #16a34a
+const ACCENT_DARK      = [10, 68, 6]       // deep header accent
+const TEXT_DARK        = [17, 24, 39]      // #111827
+const TEXT_MID         = [75, 85, 99]      // #4b5563
+const TEXT_LIGHT       = [156, 163, 175]   // #9ca3af
+const ROW_ALT          = [247, 250, 247]   // subtle green-tinted alt row
+const BORDER_LIGHT     = [229, 231, 235]   // #e5e7eb
+const HEADER_BG        = [248, 250, 248]   // near-white section bg
 
-        // 1. Draw a Header Background Rectangle
-        doc.setFillColor(14, 96, 8); // #0E6008 
-        doc.rect(0, 0, doc.internal.pageSize.width, 28, 'F'); 
+// Generate a short export reference ID
+const makeRefId = (prefix) => {
+    const ts = Date.now().toString(36).toUpperCase()
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase()
+    return `${prefix}-${ts}-${rand}`
+}
 
-        // 2. Add Custom Header Title
-        doc.setFontSize(18);
-        doc.setTextColor(255, 255, 255); 
-        doc.setFont("helvetica", "bold");
-        doc.text("System Log Records Report", 14, 19);
-
-        // 3. Add Subtitle / Timestamp
-        doc.setFontSize(10);
-        doc.setTextColor(100, 100, 100);
-        doc.setFont("helvetica", "normal");
-        const currentDate = new Date().toLocaleString('en-PH', { 
-            month: 'short', day: '2-digit', year: 'numeric', 
-            hour: '2-digit', minute: '2-digit', hour12: true 
-        });
-        doc.text(`Generated on: ${currentDate}`, 14, 38);
-
-        // 4. ADD FILTERS SECTION dynamically based on current vue ref states
-        const currentDept = deptFilter.value ? deptFilter.value : 'All Departments';
-        let currentStatus = 'All Sessions';
-        if (statusFilter.value === 'active') currentStatus = 'Active (In)';
-        if (statusFilter.value === 'closed') currentStatus = 'Closed (Out)';
-        
-        doc.text(`Filters Applied: ${currentDept} | ${currentStatus}`, 14, 46);
-        
-        // 5. Render Dashboard Stats
-        doc.setTextColor(40, 40, 40);
-        doc.setFont("helvetica", "bold");
-        doc.text(`Total Logs: ${totalLogs.value}   |   Active Sessions: ${activeSessions.value}   |   Closed Sessions: ${closedSessions.value}`, 14, 56);
-
-        // 6. Map the reactive logs data array into rows for the PDF table
-        const tableColumn = ["Log ID", "Email", "Department", "Program", "Date", "Session In", "Session Out"];
-        const tableRows = [];
-
-        logs.value.forEach(r => {
-            const logData = [
-                `LOG-${String(r.id).padStart(8, '0')}`,
-                r.real_email || r.masked_email || 'N/A',
-                r.department || 'N/A',
-                r.program || 'N/A',
-                fmt(r.session_start).date || 'N/A',
-                fmt(r.session_start).time || 'N/A',
-                r.session_end ? fmt(r.session_end).time : 'Active'
-            ];
-            tableRows.push(logData);
-        });
-
-        // 7. Build the stylized table using autoTable
-        autoTable(doc, {
-            head: [tableColumn],
-            body: tableRows,
-            startY: 62, // Pushed down to accommodate the new Filters line
-            theme: 'grid',
-            headStyles: { 
-                fillColor: [14, 96, 8], 
-                textColor: [255, 255, 255],
-                fontSize: 10,
-                halign: 'center',
-                fontStyle: 'bold'
-            },
-            bodyStyles: {
-                fontSize: 9,
-                halign: 'center',
-                textColor: [50, 50, 50]
-            },
-            alternateRowStyles: { 
-                fillColor: [248, 250, 248] 
-            },
-            styles: {
-                cellPadding: 4
-            }
-        });
-
-        // 8. Trigger Download
-        const safeDate = new Date().toLocaleDateString('en-PH').replace(/\//g, '-');
-        doc.save(`Log-Records-${safeDate}.pdf`);
-    } catch (error) {
-        console.error("PDF Generation failed:", error);
-        alert("There was an issue generating the PDF. Please check the console.");
+// Load an image from /public as a base64 data URL for jsPDF
+const loadImgDataUrl = (path) => new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width  = img.naturalWidth
+        canvas.height = img.naturalHeight
+        canvas.getContext('2d').drawImage(img, 0, 0)
+        resolve(canvas.toDataURL('image/png'))
     }
-};
+    img.onerror = () => resolve(null)
+    img.src = path
+})
+
+// Draw the professional two-tone header banner on a page
+const drawPdfHeader = async (doc, title, subtitle, meta) => {
+    const W = doc.internal.pageSize.getWidth()
+    const BANNER_H = 38
+
+    // Dark top stripe
+    doc.setFillColor(...ACCENT_DARK)
+    doc.rect(0, 0, W, 7, 'F')
+
+    // Main green banner
+    doc.setFillColor(...BRAND_GREEN)
+    doc.rect(0, 7, W, BANNER_H - 7, 'F')
+
+    // Right accent block
+    doc.setFillColor(...BRAND_GREEN_MID)
+    doc.rect(W - 38, 7, 38, BANNER_H - 7, 'F')
+
+    // ── Logos — vertically centered in the banner content area (y7 → y38 = 31mm tall) ──
+    const LOGO_SIZE = 20          // both logos same square size
+    const LOGO_Y    = 7 + (31 - LOGO_SIZE) / 2   // = 12.5 — perfectly centered
+    const GC_X      = 10          // Gordon College seal — left edge
+    const LB_X      = GC_X + LOGO_SIZE + 3        // LeanOn Bot — 3mm gap after GC
+
+    const gcLogo = await loadImgDataUrl('/GordonCollegeLogo.png')
+    if (gcLogo) doc.addImage(gcLogo, 'PNG', GC_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE)
+
+    // Thin white vertical divider between logos
+    doc.setDrawColor(255, 255, 255)
+    doc.setLineWidth(0.4)
+    doc.line(LB_X - 1.5, LOGO_Y + 2, LB_X - 1.5, LOGO_Y + LOGO_SIZE - 2)
+
+    const lbLogo = await loadImgDataUrl('/leanOnBot.png')
+    if (lbLogo) doc.addImage(lbLogo, 'PNG', LB_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE)
+
+    // Text starts after both logos + gap
+    const textX = LB_X + LOGO_SIZE + 5
+
+    // System name — sits above the title, vertically near top of banner content
+    doc.setFontSize(6.5)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(187, 247, 208)
+    doc.text('GORDON COLLEGE  ·  LEANON BOT SYSTEM', textX, 14)
+
+    // Report title — vertically centered in banner
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(255, 255, 255)
+    doc.text(title, textX, 23)
+
+    // Subtitle
+    if (subtitle) {
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(187, 247, 208)
+        doc.text(subtitle, textX, 31)
+    }
+
+    // Right badge — vertically centered in banner content (7→38)
+    doc.setFontSize(7)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(255, 255, 255)
+    doc.text('CONFIDENTIAL', W - 19, 18, { align: 'center' })
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(6)
+    doc.text('Admin Use Only', W - 19, 24, { align: 'center' })
+
+    // Separator line
+    doc.setDrawColor(...BORDER_LIGHT)
+    doc.setLineWidth(0.3)
+    doc.line(0, BANNER_H + 1, W, BANNER_H + 1)
+
+    // Meta info row
+    doc.setFontSize(7.5)
+    doc.setTextColor(...TEXT_MID)
+    doc.setFont('helvetica', 'normal')
+    if (meta) {
+        doc.text(meta, 14, BANNER_H + 7, { maxWidth: W - 28 })
+    }
+
+    return BANNER_H + 13
+}
+
+// Draw the footer on every page
+const drawPdfFooter = (doc, refId) => {
+    const pageCount = doc.internal.getNumberOfPages()
+    const W = doc.internal.pageSize.getWidth()
+    const H = doc.internal.pageSize.getHeight()
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        // Footer separator line
+        doc.setDrawColor(...BORDER_LIGHT)
+        doc.setLineWidth(0.3)
+        doc.line(14, H - 14, W - 14, H - 14)
+        // Left line 1: system label
+        doc.setFontSize(6.5)
+        doc.setTextColor(...TEXT_LIGHT)
+        doc.setFont('helvetica', 'normal')
+        doc.text('LeanOn Bot  ·  Gordon College  ·  Confidential — For authorized personnel only', 14, H - 9)
+        // Left line 2: ref ID
+        doc.setFontSize(6)
+        doc.text(`Export Ref: ${refId}`, 14, H - 5)
+        // Right: page number
+        doc.setFontSize(7)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(120, 130, 145)
+        doc.text(`Page ${i} of ${pageCount}`, W - 14, H - 7, { align: 'right' })
+    }
+}
+
+// Draw a section heading with a left accent bar
+const drawSectionHeading = (doc, text, y, margin) => {
+    const W = doc.internal.pageSize.getWidth()
+    // Accent bar
+    doc.setFillColor(...BRAND_GREEN)
+    doc.rect(margin, y - 4, 3, 7, 'F')
+    // Heading text
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...TEXT_DARK)
+    doc.text(text, margin + 6, y)
+    // Thin underline
+    doc.setDrawColor(...BORDER_LIGHT)
+    doc.setLineWidth(0.25)
+    doc.line(margin + 6, y + 2, W - margin, y + 2)
+    return y + 8
+}
+
+// Shared autoTable style config
+const tableStyles = () => ({
+    headStyles: {
+        fillColor: BRAND_GREEN,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9,
+        cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+        halign: 'center',
+    },
+    bodyStyles: {
+        fontSize: 8.5,
+        textColor: TEXT_DARK,
+        cellPadding: { top: 3.5, bottom: 3.5, left: 5, right: 5 },
+    },
+    alternateRowStyles: { fillColor: ROW_ALT },
+    styles: {
+        lineColor: BORDER_LIGHT,
+        lineWidth: 0.2,
+        overflow: 'linebreak',
+        font: 'helvetica',
+    },
+    theme: 'grid',
+})
+
+// ── PDF Export ──────────────────────────────────────────────────────────────
+const downloadPDF = async () => {
+    try {
+        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+        const W   = doc.internal.pageSize.getWidth()   // 297mm
+        const margin = 14
+        const refId  = makeRefId('LOG')
+
+        const currentDept   = deptFilter.value   || 'All Departments'
+        const currentStatus = statusFilter.value === 'active' ? 'Active Sessions'
+                            : statusFilter.value === 'closed' ? 'Closed Sessions'
+                            : 'All Sessions'
+        const generatedAt = new Date().toLocaleString('en-PH', {
+            month: 'long', day: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: true,
+        })
+
+        const metaLine = `Generated: ${generatedAt}   ·   Filters: ${currentDept} / ${currentStatus}   ·   Showing ${logs.value.length} of ${pagTotal.value} records`
+
+        let y = await drawPdfHeader(doc, 'System Log Records Report',
+            'Student session activity — login and logout audit trail', metaLine)
+
+        // ── Summary stats bar ──
+        // Landscape usable width = 297 - 28 = 269mm, divide into 3 equal cards
+        const statsBoxW = (W - margin * 2) / 3
+        const statsData = [
+            { label: 'Total Log Entries', value: String(totalLogs.value),     color: BRAND_GREEN },
+            { label: 'Active Sessions',   value: String(activeSessions.value), color: [14, 116, 144] },
+            { label: 'Closed Sessions',   value: String(closedSessions.value), color: [75, 85, 99] },
+        ]
+        statsData.forEach((s, i) => {
+            const bx = margin + i * statsBoxW
+            doc.setFillColor(248, 250, 248)
+            doc.setDrawColor(...s.color)
+            doc.setLineWidth(0.4)
+            doc.roundedRect(bx, y, statsBoxW - 4, 16, 2, 2, 'FD')
+            doc.setFillColor(...s.color)
+            doc.roundedRect(bx, y, 3, 16, 1, 1, 'F')
+            doc.setFontSize(14)
+            doc.setFont('helvetica', 'bold')
+            doc.setTextColor(...s.color)
+            doc.text(s.value, bx + (statsBoxW - 4) / 2, y + 8, { align: 'center' })
+            doc.setFontSize(7)
+            doc.setFont('helvetica', 'normal')
+            doc.setTextColor(...TEXT_MID)
+            doc.text(s.label.toUpperCase(), bx + (statsBoxW - 4) / 2, y + 13, { align: 'center' })
+        })
+        y += 22
+
+        // ── Log records table ──
+        y = drawSectionHeading(doc, 'Session Activity Records', y, margin)
+
+        const tableRows = logs.value.map(r => [
+            `LOG-${String(r.id).padStart(8, '0')}`,
+            r.real_email || r.masked_email || 'N/A',
+            r.department || 'N/A',
+            r.program    || 'N/A',
+            fmt(r.session_start).date || 'N/A',
+            fmt(r.session_start).time || 'N/A',
+            r.session_end ? fmt(r.session_end).time : '● Active',
+        ])
+
+        // Landscape usable = 269mm. Column widths must sum to ≤ 269mm.
+        // Log ID: 32 | Email: 68 | Dept: 26 | Program: 46 | Date: 30 | In: 30 | Out: 37 = 269
+        autoTable(doc, {
+            ...tableStyles(),
+            startY: y,
+            head: [['Log ID', 'User Email', 'Dept', 'Program', 'Date', 'Session In', 'Session Out']],
+            body: tableRows,
+            margin: { left: margin, right: margin },
+            tableWidth: W - margin * 2,
+            columnStyles: {
+                0: { cellWidth: 32, halign: 'center', fontStyle: 'bold' },
+                1: { cellWidth: 68, overflow: 'linebreak' },
+                2: { cellWidth: 26, halign: 'center' },
+                3: { cellWidth: 46, overflow: 'linebreak' },
+                4: { cellWidth: 30, halign: 'center' },
+                5: { cellWidth: 30, halign: 'center' },
+                6: { cellWidth: 37, halign: 'center' },
+            },
+            didParseCell(data) {
+                if (data.section === 'body' && data.column.index === 6) {
+                    const val = String(data.cell.raw || '')
+                    if (val.includes('Active')) {
+                        data.cell.styles.textColor = BRAND_GREEN
+                        data.cell.styles.fontStyle  = 'bold'
+                    }
+                }
+            },
+        })
+
+        // ── Privacy notice ──
+        const finalY = doc.lastAutoTable.finalY + 6
+        doc.setFontSize(7.5)
+        doc.setFont('helvetica', 'italic')
+        doc.setTextColor(...TEXT_LIGHT)
+        doc.text(
+            'Privacy Notice: Email addresses are masked by default. This report is for authorized administrative use only. Do not distribute.',
+            margin, finalY
+        )
+
+        drawPdfFooter(doc, refId)
+
+        const safeDate = new Date().toISOString().slice(0, 10)
+        doc.save(`LeanOn-LogRecords-${safeDate}.pdf`)
+    } catch (error) {
+        console.error('PDF Generation failed:', error)
+        alert('There was an issue generating the PDF. Please check the console.')
+    }
+}
+
+// ── CSV Export ──────────────────────────────────────────────────────────────
+const downloadCSV = async () => {
+    try {
+        const token = localStorage.getItem('token')
+        // Fetch ALL matching records (no pagination) for the CSV
+        const params = { per_page: 9999, page: 1 }
+        if (search.value)      params.search     = search.value
+        if (deptFilter.value)  params.department = deptFilter.value
+        if (statusFilter.value) params.status    = statusFilter.value
+
+        const res = await axios.get('/api/admin/logs', {
+            headers: { Authorization: `Bearer ${token}` },
+            params,
+        })
+
+        const allLogs = res.data.logs.data
+
+        const currentDept   = deptFilter.value   || 'All Departments'
+        const currentStatus = statusFilter.value === 'active' ? 'Active Sessions'
+                            : statusFilter.value === 'closed' ? 'Closed Sessions'
+                            : 'All Sessions'
+        const generatedAt = new Date().toLocaleString('en-PH', {
+            month: 'long', day: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', hour12: true,
+        })
+
+        const esc = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`
+
+        const fmtCsv = (dt) => {
+            if (!dt) return ''
+            const d = new Date(dt)
+            return d.toLocaleString('en-PH', {
+                month: 'long', day: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true,
+            })
+        }
+
+        const rows = []
+
+        // Report metadata block
+        rows.push([esc('LeanOn Bot — System Log Records Report')])
+        rows.push([esc('Gordon College — Guidance & Counseling Office')])
+        rows.push([esc(`Generated: ${generatedAt}`)])
+        rows.push([esc(`Filters Applied: ${currentDept} / ${currentStatus}`)])
+        rows.push([esc(`Total Records Exported: ${allLogs.length}`)])
+        rows.push([])
+
+        // Summary stats
+        rows.push([esc('=== SESSION SUMMARY ===')])
+        rows.push([esc('Metric'), esc('Count')])
+        rows.push([esc('Total Log Entries'),  esc(totalLogs.value)])
+        rows.push([esc('Active Sessions'),    esc(activeSessions.value)])
+        rows.push([esc('Closed Sessions'),    esc(closedSessions.value)])
+        rows.push([esc('Departments Tracked'), esc(departments.value.length)])
+        rows.push([])
+
+        // Data table
+        rows.push([esc('=== SESSION ACTIVITY RECORDS ===')])
+        rows.push([
+            esc('Log ID'),
+            esc('User Email'),
+            esc('Department'),
+            esc('Program'),
+            esc('Session Start'),
+            esc('Session End'),
+            esc('Session Status'),
+            esc('Duration (approx.)'),
+        ])
+
+        allLogs.forEach(r => {
+            const start = r.session_start ? new Date(r.session_start) : null
+            const end   = r.session_end   ? new Date(r.session_end)   : null
+            let duration = 'Active'
+            if (start && end) {
+                const mins = Math.round((end - start) / 60000)
+                duration = mins < 60
+                    ? `${mins} min`
+                    : `${Math.floor(mins / 60)}h ${mins % 60}m`
+            }
+            rows.push([
+                esc(`LOG-${String(r.id).padStart(8, '0')}`),
+                esc(r.real_email || r.masked_email || 'N/A'),
+                esc(r.department || 'N/A'),
+                esc(r.program    || 'N/A'),
+                esc(fmtCsv(r.session_start)),
+                esc(r.session_end ? fmtCsv(r.session_end) : 'Still Active'),
+                esc(r.session_end ? 'Closed' : 'Active'),
+                esc(duration),
+            ])
+        })
+
+        rows.push([])
+        rows.push([esc('Privacy Notice: This report contains anonymized session data. For authorized administrative use only.')])
+
+        const csvContent = '\uFEFF' + rows.map(r => r.join(',')).join('\r\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url  = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href     = url
+        link.download = `LeanOn-LogRecords-${new Date().toISOString().slice(0, 10)}.csv`
+        link.click()
+        URL.revokeObjectURL(url)
+
+        // Notify admin panel
+        try {
+            await axios.post('/api/admin/notifications/log-csv-exported', {
+                total_records: allLogs.length,
+                filters: { department: currentDept, status: currentStatus },
+            }, { headers: { Authorization: `Bearer ${token}` } })
+        } catch (notifErr) {
+            console.warn('Log CSV notification failed (non-fatal):', notifErr)
+        }
+    } catch (err) {
+        console.error('CSV export failed:', err)
+        alert('Failed to generate CSV. Please try again.')
+    }
+}
 
 onMounted(() => {
     fetchLogs();
@@ -385,3 +715,28 @@ const toggleEmail = (id) => {
 
 <style scoped src="@/assets/admin/AdminLogRecords.css"></style>
 <style src="@/assets/admin/admin-layout.css"></style>
+
+<style scoped>
+/* ── Export button group ── */
+.export-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.download-btn-csv {
+  background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
+  box-shadow: 0 3px 10px rgba(14, 116, 144, 0.25);
+}
+
+.download-btn-csv:hover {
+  background: linear-gradient(135deg, #0c6478 0%, #0e7490 100%);
+  box-shadow: 0 6px 16px rgba(14, 116, 144, 0.35);
+}
+
+@media (max-width: 600px) {
+  .export-btn-group { width: 100%; }
+  .download-btn { flex: 1; justify-content: center; }
+}
+</style>

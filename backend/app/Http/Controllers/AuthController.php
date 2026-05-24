@@ -280,7 +280,18 @@ public function resetPassword(Request $request)
     $request->validate([
         'email' => 'required|email',
         'otp' => 'required',
-        'password' => 'required|min:6|confirmed'
+        'password' => [
+            'required',
+            'confirmed',
+            'min:12',
+            'regex:/[A-Z]/',
+            'regex:/[a-z]/',
+            'regex:/[0-9]/',
+            'regex:/[^a-zA-Z0-9]/',
+        ]
+    ], [
+        'password.min'   => 'Password must be at least 12 characters.',
+        'password.regex' => 'Password must contain uppercase, lowercase, a number, and a special character.',
     ]);
 
     // Re-verify OTP before allowing password reset
@@ -435,8 +446,19 @@ public function resetPassword(Request $request)
         // 1. Validate request
         $request->validate([
             'current_password' => 'required',
-            'new_password' => 'required|min:6|confirmed',
+            'new_password' => [
+                'required',
+                'confirmed',
+                'min:12',
+                'regex:/[A-Z]/',
+                'regex:/[a-z]/',
+                'regex:/[0-9]/',
+                'regex:/[^a-zA-Z0-9]/',
+            ],
             'otp' => 'required'
+        ], [
+            'new_password.min'   => 'New password must be at least 12 characters.',
+            'new_password.regex' => 'New password must contain uppercase, lowercase, a number, and a special character.',
         ]);
 
         // 2. Get authenticated user
