@@ -59,17 +59,17 @@ class CrisisAlertController extends Controller
 
         $unclassifiedCount = CrisisAlert::where('is_classified', false)->count();
 
-        // ── Anonymize both collections ──
+        // ── Mask both collections ──
         $anonymize = function ($alert) {
             $data = $alert->toArray();
             if ($alert->user) {
                 $data['masked_email']  = \App\Helpers\DataFormatter::maskEmail($alert->user->email);
                 $data['real_email']    = $alert->user->email;
-                $data['user_display']  = 'Anonymous #' . ($alert->id + 1000);
+                $data['user_display']  = 'Flagged #' . ($alert->id + 1000);
             } else {
-                $data['masked_email']  = 'Anonymous';
+                $data['masked_email']  = 'Flagged';
                 $data['real_email']    = null;
-                $data['user_display']  = 'Anonymous #' . ($alert->id + 1000);
+                $data['user_display']  = 'Flagged #' . ($alert->id + 1000);
             }
             unset($data['user']);
             return $data;

@@ -97,6 +97,20 @@
               </div>
               <div class="stat-icon-wrapper icon-amber"><i class="bx bx-shield"></i></div>
             </div>
+
+            <!-- Card 5: Top Age Range -->
+            <div class="stat-card purple">
+              <div class="stat-card-content">
+                <h4 class="stat-label">Users Age Range</h4>
+                <p class="stat-value unit-suffix" style="font-size:22px;font-weight:700;">
+                  {{ stats.top_age_range || 'N/A' }}
+                </p>
+                <span style="font-size:11px;color:#6b7280;margin-top:2px;">
+                  {{ stats.top_age_range_count || 0 }} registered students
+                </span>
+              </div>
+              <div class="stat-icon-wrapper icon-purple"><i class="bx bx-group"></i></div>
+            </div>
           </div>
 
           <!-- Charts Row 1 -->
