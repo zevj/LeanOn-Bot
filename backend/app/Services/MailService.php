@@ -53,6 +53,12 @@ class MailService
         }
 
         Log::error("Failed to send email via Brevo API: " . $response->body());
+
+        if (app()->environment('local')) {
+            Log::info("LOCAL FALLBACK: Failed to send email via Brevo, but logged OTP locally. The OTP for {$toEmail} is: {$otp}");
+            return true;
+        }
+
         throw new \Exception('Failed to send OTP email.');
     }
 }
