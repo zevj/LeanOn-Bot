@@ -252,18 +252,18 @@
                                             <!-- OTP Modal -->
                                             <transition name="fade-slide">
                                             <div v-if="showOTP" class="modal-overlay" @click.self="showOTP = false">
-                                                <div class="modal-content" style="text-align: center; padding: 30px; background: white; border-radius: 12px; max-width: 400px; width: 90%;">
+                                                <div class="modal-content">
                                                 <!-- Close button -->
-                                                <button class="close-btn" @click="showOTP = false" style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 24px; cursor: pointer;">
+                                                <button class="close-btn" @click="showOTP = false">
                                                     <i class="bx bx-x"></i>
                                                 </button>
 
                                                 <div class="otp-label-container">
-                                                    <label class="otp-label" style="font-size: 1.2rem; font-weight: 600;">Verify Password Change</label>
-                                                    <p style="font-size: 13px; color: #666; margin-top: 8px;">We've sent a 6-digit code to your email.</p>
+                                                    <label class="otp-label">Verify Password Change</label>
+                                                    <p>We've sent a 6-digit code to your email.</p>
                                                 </div>
 
-                                                <div class="otp-inputs" style="margin: 25px 0; display: flex; justify-content: center; gap: 8px;">
+                                                <div class="otp-inputs">
                                                     <input 
                                                         v-for="(digit, index) in otp" 
                                                         :key="index" 
@@ -273,18 +273,17 @@
                                                         v-model="otp[index]"
                                                         @input="handleOtpInput($event, index)"
                                                         :id="'otp-' + index"
-                                                        style="width: 40px; height: 50px; text-align: center; font-size: 20px; border: 2px solid #ddd; border-radius: 8px; outline: none; transition: border-color 0.2s;"
                                                     />
                                                 </div>
 
-                                                <div v-if="otpTimer > 0" class="otp-countdown" style="margin-bottom: 20px; color: #666; font-size: 14px;">
+                                                <div v-if="otpTimer > 0" class="otp-countdown">
                                                     Resend code in <strong>{{ Math.floor(otpTimer / 60) }}:{{ String(otpTimer % 60).padStart(2, '0') }}</strong>
                                                 </div>
-                                                <div v-else class="resend-link" @click="sendOTP" style="cursor: pointer; color: #0E6008; margin-bottom: 20px; font-weight: 600; font-size: 14px;">
+                                                <div v-else class="resend-link" @click="sendOTP">
                                                     Resend OTP
                                                 </div>
 
-                                                <button @click="finalizePasswordChange" :disabled="isSavingPassword" style="width: 100%; padding: 12px; background: #0E6008; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s;">
+                                                <button class="verify-btn" @click="finalizePasswordChange" :disabled="isSavingPassword">
                                                     {{ isSavingPassword ? 'Verifying...' : 'Verify & Update Password' }}
                                                 </button>
                                                 </div>

@@ -34,7 +34,7 @@ class GenerateDailyAiAnalytics extends Command
         }
 
         $windowTag = $days > 0 ? "_{$days}d" : '';
-        $runKey = "analytics:scheduled-run:{$period}{$windowTag}:" . now()->toDateString();
+        $runKey = "analytics:scheduled-run:{$period}{$windowTag}:" . \now()->toDateString();
 
         if (!$force && Cache::has($runKey)) {
             $this->info("AI analytics already generated today for {$period}" . ($days > 0 ? " ({$days}-day window)" : '') . '.');
@@ -42,16 +42,16 @@ class GenerateDailyAiAnalytics extends Command
         }
 
         try {
-            $snapshot = $analytics->computeDailySnapshot(now()->subDay());
+            $snapshot = $analytics->computeDailySnapshot(\now()->subDay());
             $report   = $insights->generateInsights($period, $force, $days);
             Cache::put($runKey, true, 86400);
 
             Log::info('Scheduled AI analytics generation completed', [
                 'period'       => $period,
                 'days'         => $days,
-                'snapshot_id'  => $snapshot->id,
+                'snapshot_id'  => $snapshot->getKey(),
                 'report_id'    => $report['id'] ?? null,
-                'generated_at' => $report['generated_at'] ?? now()->toIso8601String(),
+                'generated_at' => $report['generated_at'] ?? \now()->toIso8601String(),
             ]);
 
             $this->info("AI analytics generated for {$period}" . ($days > 0 ? " ({$days}-day window)" : '') . '.');
