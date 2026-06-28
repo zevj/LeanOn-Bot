@@ -553,13 +553,16 @@
 .log-pag-info { color: #6b7280; }
 .log-pag-info strong { color: #111827; }
 
-.log-pag-btns { display: flex; gap: 10px; }
-
-.log-pag-btns button {
+.log-pag-btns {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 18px;
+}
+
+.pag-num {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 6px;
   border: 1px solid #d1d5db;
   border-radius: 10px;
   background: #fff;
@@ -567,14 +570,62 @@
   cursor: pointer;
   font-size: 13.5px;
   font-weight: 600;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 
-.log-pag-btns button i { font-size: 18px; }
+.pag-num:hover {
+  border-color: #0E6008;
+  color: #0E6008;
+  background: #f0fdf4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(14, 96, 8, 0.08);
+}
 
-.log-pag-btns button:hover:not(:disabled) {
+.pag-num.active {
+  background: linear-gradient(135deg, #0E6008, #16a34a);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 10px rgba(14, 96, 8, 0.3);
+  transform: translateY(-1px);
+  cursor: default;
+}
+
+.pag-ellipsis {
+  min-width: 32px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.btn-prev,
+.btn-next {
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #374151;
+  cursor: pointer;
+  font-size: 20px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.btn-prev:hover:not(:disabled),
+.btn-next:hover:not(:disabled) {
   border-color: #0E6008;
   color: #0E6008;
   background: #f0fdf4;
@@ -582,11 +633,12 @@
   transform: translateY(-2px);
 }
 
-.log-pag-btns button:disabled {
-  opacity: 0.5;
+.btn-prev:disabled,
+.btn-next:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
-  background: #f9fafb;
   box-shadow: none;
+  transform: none;
 }
 
 /*ADD EYE ICON*/

@@ -1,6 +1,6 @@
 <template>
   <router-view />
-  <ThemeToggleFAB v-if="!hideThemeToggle" />
+  <ThemeToggleFAB v-if="showThemeToggleFAB" />
 </template>
 
 <script setup>
@@ -10,7 +10,10 @@ import { useTheme } from '@/composables/useTheme'
 import ThemeToggleFAB from '@/components/ThemeToggleFAB.vue'
 
 const route = useRoute()
-const hideThemeToggle = computed(() => route.meta.hideThemeToggle === true)
+const showThemeToggleFAB = computed(() => {
+  const allowed = ['LandingPage', 'login', 'OTPFPass', 'forgotPass', 'NewPass']
+  return allowed.includes(route.name)
+})
 const { initTheme } = useTheme()
 
 onMounted(() => {
