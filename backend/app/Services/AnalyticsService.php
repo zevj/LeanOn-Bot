@@ -640,10 +640,30 @@ class AnalyticsService
     {
         $driver = DB::connection()->getDriverName();
 
-        // Group by week
+        switch ($driver) {
+            case 'pgsql':
+                $dateExpr = "created_at::date";
+                break;
+            case 'sqlite':
+                $dateExpr = "date(created_at)";
+                break;
+            default:
+                $dateExpr = "DATE(created_at)";
+                break;
+        }
+
+        $emotionCounts = EmotionLog::whereBetween('created_at', [$start, $end])
+            ->selectRaw("$dateExpr as date, emotion, COUNT(*) as count")
+            ->groupByRaw("$dateExpr, emotion")
+            ->get()
+            ->groupBy('date')
+            ->map(function ($items) {
+                return $items->pluck('count', 'emotion')->toArray();
+            })
+            ->toArray();
+
         $positiveEmotions = ['positive', 'hopeful'];
         $negativeEmotions = ['sad', 'angry', 'lonely'];
-        $neutralEmotions = ['stressed', 'anxious', 'overwhelmed'];
 
         $weeks = [];
         $current = $start->copy()->startOfWeek(1); // Monday
@@ -652,19 +672,25 @@ class AnalyticsService
             $weekEnd = $current->copy()->endOfWeek(7); // Sunday
             if ($weekEnd->gt($end)) $weekEnd = $end->copy();
 
-            $emotions = EmotionLog::whereBetween('created_at', [$current, $weekEnd])
-                ->selectRaw('emotion, COUNT(*) as count')
-                ->groupBy('emotion')
-                ->pluck('count', 'emotion')
-                ->toArray();
-
             $pos = 0;
             $neg = 0;
             $neu = 0;
-            foreach ($emotions as $emo => $cnt) {
-                if (in_array($emo, $positiveEmotions)) $pos += $cnt;
-                elseif (in_array($emo, $negativeEmotions)) $neg += $cnt;
-                else $neu += $cnt;
+
+            $currentDay = $current->copy();
+            while ($currentDay->lte($weekEnd)) {
+                $dayStr = $currentDay->toDateString();
+                if (isset($emotionCounts[$dayStr])) {
+                    foreach ($emotionCounts[$dayStr] as $emo => $cnt) {
+                        if (in_array($emo, $positiveEmotions)) {
+                            $pos += $cnt;
+                        } elseif (in_array($emo, $negativeEmotions)) {
+                            $neg += $cnt;
+                        } else {
+                            $neu += $cnt;
+                        }
+                    }
+                }
+                $currentDay->addDay();
             }
 
             $weeks[] = [
@@ -682,20 +708,77 @@ class AnalyticsService
 
     private function getWeeklyComparison(): array
     {
+        $start = Carbon::now()->subWeeks(3)->startOfWeek(1); // Monday of W1
+        $end = Carbon::now()->endOfWeek(7); // Sunday of W4
+        $driver = DB::connection()->getDriverName();
+
+        switch ($driver) {
+            case 'pgsql':
+                $dateExpr = "created_at::date";
+                $sessionDateExpr = "session_start::date";
+                break;
+            case 'sqlite':
+                $dateExpr = "date(created_at)";
+                $sessionDateExpr = "date(session_start)";
+                break;
+            default:
+                $dateExpr = "DATE(created_at)";
+                $sessionDateExpr = "DATE(session_start)";
+                break;
+        }
+
+        // 1. Fetch conversations count by date
+        $convCounts = Conversation::whereBetween('created_at', [$start, $end])
+            ->selectRaw("$dateExpr as date, COUNT(*) as count")
+            ->groupByRaw("$dateExpr")
+            ->pluck('count', 'date')
+            ->toArray();
+
+        // 2. Fetch chat messages count by date
+        $msgCounts = ChatMessage::whereBetween('created_at', [$start, $end])
+            ->selectRaw("$dateExpr as date, COUNT(*) as count")
+            ->groupByRaw("$dateExpr")
+            ->pluck('count', 'date')
+            ->toArray();
+
+        // 3. Fetch active users per date (distinct user_ids per day)
+        $userSessions = SessionLog::whereBetween('session_start', [$start, $end])
+            ->selectRaw("$sessionDateExpr as date, user_id")
+            ->groupByRaw("$sessionDateExpr, user_id")
+            ->get()
+            ->groupBy('date')
+            ->map(function ($rows) {
+                return $rows->pluck('user_id')->unique()->toArray();
+            })
+            ->toArray();
+
         $results = [];
 
         for ($i = 3; $i >= 0; $i--) {
             $weekStart = Carbon::now()->subWeeks($i)->startOfWeek(1); // Monday
             $weekEnd = Carbon::now()->subWeeks($i)->endOfWeek(7); // Sunday
 
+            $convSum = 0;
+            $msgSum = 0;
+            $weekUsers = [];
+
+            $currentDay = $weekStart->copy();
+            while ($currentDay->lte($weekEnd)) {
+                $dayStr = $currentDay->toDateString();
+                $convSum += $convCounts[$dayStr] ?? 0;
+                $msgSum += $msgCounts[$dayStr] ?? 0;
+                if (isset($userSessions[$dayStr])) {
+                    $weekUsers = array_merge($weekUsers, $userSessions[$dayStr]);
+                }
+                $currentDay->addDay();
+            }
+
             $results[] = [
                 'label'         => 'W' . (4 - $i),
                 'week_start'    => $weekStart->toDateString(),
-                'conversations' => Conversation::whereBetween('created_at', [$weekStart, $weekEnd])->count(),
-                'messages'      => ChatMessage::whereBetween('created_at', [$weekStart, $weekEnd])->count(),
-                'active_users'  => SessionLog::whereBetween('session_start', [$weekStart, $weekEnd])
-                                    ->distinct('user_id')
-                                    ->count('user_id'),
+                'conversations' => $convSum,
+                'messages'      => $msgSum,
+                'active_users'  => count(array_unique($weekUsers)),
             ];
         }
 
@@ -706,16 +789,21 @@ class AnalyticsService
     {
         // Backfill missing snapshots for the last N days (max 7 per call to avoid heavy load)
         $backfillLimit = min($days, 7);
-
+        $datesToCheck = [];
         for ($i = 1; $i <= $backfillLimit; $i++) {
-            $date = Carbon::now()->subDays($i);
-            $exists = AnalyticsSnapshot::where('snapshot_date', $date->toDateString())->exists();
+            $datesToCheck[] = Carbon::now()->subDays($i)->toDateString();
+        }
 
-            if (!$exists) {
+        $existingDates = AnalyticsSnapshot::whereIn('snapshot_date', $datesToCheck)
+            ->pluck('snapshot_date')
+            ->toArray();
+
+        foreach ($datesToCheck as $dateStr) {
+            if (!in_array($dateStr, $existingDates)) {
                 try {
-                    $this->computeDailySnapshot($date);
+                    $this->computeDailySnapshot(Carbon::parse($dateStr));
                 } catch (\Exception $e) {
-                    Log::warning("Failed to compute snapshot for {$date->toDateString()}: " . $e->getMessage());
+                    Log::warning("Failed to compute snapshot for {$dateStr}: " . $e->getMessage());
                 }
             }
         }
@@ -727,21 +815,24 @@ class AnalyticsService
      */
     private function getTopAgeRange(): array
     {
-        $buckets = [
-            'Under 18' => [0,  17],
-            '18–20'    => [18, 20],
-            '21–23'    => [21, 23],
-            '24–26'    => [24, 26],
-            '27+'      => [27, 999],
-        ];
+        $result = User::where('role', 'student')
+            ->whereNotNull('age')
+            ->selectRaw("
+                COUNT(CASE WHEN age <= 17 THEN 1 END) as under_17,
+                COUNT(CASE WHEN age BETWEEN 18 AND 20 THEN 1 END) as age_18_20,
+                COUNT(CASE WHEN age BETWEEN 21 AND 23 THEN 1 END) as age_21_23,
+                COUNT(CASE WHEN age BETWEEN 24 AND 26 THEN 1 END) as age_24_26,
+                COUNT(CASE WHEN age >= 27 THEN 1 END) as age_27_plus
+            ")
+            ->first();
 
-        $counts = [];
-        foreach ($buckets as $label => [$min, $max]) {
-            $counts[$label] = User::where('role', 'student')
-                ->whereNotNull('age')
-                ->whereBetween('age', [$min, $max])
-                ->count();
-        }
+        $counts = [
+            'Under 18' => (int) ($result->under_17 ?? 0),
+            '18–20'    => (int) ($result->age_18_20 ?? 0),
+            '21–23'    => (int) ($result->age_21_23 ?? 0),
+            '24–26'    => (int) ($result->age_24_26 ?? 0),
+            '27+'      => (int) ($result->age_27_plus ?? 0),
+        ];
 
         if (empty($counts) || array_sum($counts) === 0) {
             return ['range' => 'N/A', 'count' => 0];
