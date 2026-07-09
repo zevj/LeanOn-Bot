@@ -13,7 +13,15 @@
 
     <!-- CHART -->
     <div class="chart-wrapper">
-      <Bar :data="chartData" :options="chartOptions" />
+      <Bar v-if="!hasNoData" :data="chartData" :options="chartOptions" />
+
+      <div v-else class="empty-state-bar">
+        <div class="empty-icon-wrap-bar">
+          <i class='bx bx-bar-chart-alt-2'></i>
+        </div>
+        <p class="empty-title-bar">No interactions yet</p>
+        <p class="empty-subtitle-bar">Daily activity will appear here once users start interacting.</p>
+      </div>
     </div>
   </div>
 </template>
@@ -43,6 +51,9 @@ const props = defineProps({
 })
 
 const total = computed(() => props.data.reduce((a, b) => a + b, 0))
+
+// --- Empty state: no data array, or every day is zero ---
+const hasNoData = computed(() => !props.data.length || props.data.every(v => Number(v) === 0))
 
 const chartData = computed(() => ({
   labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
@@ -214,6 +225,48 @@ const chartOptions = {
   width: 100%;
 }
 
+/* EMPTY STATE */
+.empty-state-bar {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 12px;
+}
+
+.empty-icon-wrap-bar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  border: 1px solid rgba(14, 96, 8, 0.15);
+  color: #0E6008;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.empty-title-bar {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.empty-subtitle-bar {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin: 0;
+  max-width: 220px;
+  line-height: 1.5;
+}
+
 /* ── RESPONSIVE BREAKPOINTS ── */
 
 @media (max-width: 1024px) {
@@ -254,5 +307,15 @@ const chartOptions = {
   .total-badge {
     align-self: flex-start;
   }
+
+  .empty-icon-wrap-bar {
+    width: 44px;
+    height: 44px;
+    font-size: 19px;
+    border-radius: 12px;
+  }
+
+  .empty-title-bar { font-size: 13px; }
+  .empty-subtitle-bar { font-size: 11.5px; }
 }
 </style>

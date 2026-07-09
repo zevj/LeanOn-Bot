@@ -188,6 +188,10 @@
                                 <!-- No actions on unclassified cards — admin must assign severity first -->
                             </div>
                         </div>
+
+                        <p v-if="unclassifiedAlerts.length === 0" class="no-alerts">
+                            No alerts awaiting classification.
+                        </p>
                     </div>
 
                     <!-- Pagination — Awaiting Classification -->
@@ -353,9 +357,14 @@
                             </div>
                         </div>
 
-                        <p v-if="sortedClassifiedAlerts.length === 0 && !loading" class="no-alerts">
-                            No classified alerts match the current filters.
-                        </p>
+                       <div v-if="sortedClassifiedAlerts.length === 0 && !loading" class="empty-state-filtered">
+                            <div class="empty-icon-wrap-filtered">
+                                <i class='bx bx-filter-alt'></i>
+                            </div>
+                            <p class="empty-title-filtered">No matching alerts</p>
+                            <p class="empty-subtitle-filtered">Try adjusting your filters to see more results.</p>
+                        </div>
+                        <p v-if="loading" class="no-alerts">Loading alerts...</p>
                         <p v-if="loading" class="no-alerts">Loading alerts...</p>
                     </div>
 

@@ -75,8 +75,8 @@
           <div class="menu-item" @click="openSearchModal">
             <i class='bx bx-search'></i>
             <span>Search Chat</span>
-              <span>Search Chat</span>
-          </div>
+<!--               <span>Search Chat</span>
+ -->          </div>
           <div class="menu-item" @click="openSavedModal">
             <i class='bx bx-bookmark'></i>
             <span>Saved</span>

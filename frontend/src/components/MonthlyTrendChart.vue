@@ -30,7 +30,15 @@
 
     <!-- CHART -->
     <div class="chart-wrapper">
-      <Line :data="chartData" :options="chartOptions" />
+      <Line v-if="!hasNoData" :data="chartData" :options="chartOptions" />
+
+      <div v-else class="empty-state-line">
+        <div class="empty-icon-wrap-line">
+          <i class='bx bx-line-chart'></i>
+        </div>
+        <p class="empty-title-line">No interaction data yet</p>
+        <p class="empty-subtitle-line">This trend will populate once activity is recorded.</p>
+      </div>
     </div>
 
   </div>
@@ -75,6 +83,9 @@ const rangesData = computed(() => ({
   q3:  { labels: months.slice(6, 9),  data: props.data.slice(6, 9)  },
   q4:  { labels: months.slice(9, 12), data: props.data.slice(9, 12) }
 }))
+
+// --- Empty state: no data array, or every month is zero ---
+const hasNoData = computed(() => !props.data.length || props.data.every(v => Number(v) === 0))
 
 // Simple trend: compare last 6 months average to first 6 months
 const trendPercent = computed(() => {
@@ -321,6 +332,48 @@ const chartOptions = {
   width: 100%;
 }
 
+/* EMPTY STATE */
+.empty-state-line {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 12px;
+}
+
+.empty-icon-wrap-line {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  border: 1px solid rgba(14, 96, 8, 0.15);
+  color: #0E6008;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.empty-title-line {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.empty-subtitle-line {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin: 0;
+  max-width: 220px;
+  line-height: 1.5;
+}
+
 /* ── RESPONSIVE BREAKPOINTS ── */
 
 @media (max-width: 1024px) {
@@ -375,5 +428,15 @@ const chartOptions = {
   .chart-wrapper {
     height: 200px; /* Give the canvas a strict height on small phones */
   }
+
+  .empty-icon-wrap-line {
+    width: 44px;
+    height: 44px;
+    font-size: 19px;
+    border-radius: 12px;
+  }
+
+  .empty-title-line { font-size: 13px; }
+  .empty-subtitle-line { font-size: 11.5px; }
 }
 </style>

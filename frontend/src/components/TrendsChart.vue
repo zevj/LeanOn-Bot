@@ -21,28 +21,39 @@
       </div>
     </div>
 
-    <!-- CUSTOM LEGEND (Interactive Pills) -->
-    <div class="legend-container">
-      <button
-        v-for="d in chartData.datasets"
-        :key="d.label"
-        class="legend-pill"
-        :class="{ dimmed: hiddenSets.has(d.label) }"
-        @click="toggleDataset(d.label)"
-      >
-        <span class="legend-dot" :style="{ background: d.borderColor, boxShadow: `0 0 6px ${d.borderColor}` }"></span>
-        {{ d.label }}
-      </button>
-    </div>
+    <template v-if="!hasNoData">
+      <!-- CUSTOM LEGEND (Interactive Pills) -->
+      <div class="legend-container">
+        <button
+          v-for="d in chartData.datasets"
+          :key="d.label"
+          class="legend-pill"
+          :class="{ dimmed: hiddenSets.has(d.label) }"
+          @click="toggleDataset(d.label)"
+        >
+          <span class="legend-dot" :style="{ background: d.borderColor, boxShadow: `0 0 6px ${d.borderColor}` }"></span>
+          {{ d.label }}
+        </button>
+      </div>
 
-    <!-- CHART -->
-    <div class="chart-wrapper">
-      <Line
-        ref="chartRef"
-        :key="chartKey"
-        :data="visibleChartData"
-        :options="chartOptions"
-      />
+      <!-- CHART -->
+      <div class="chart-wrapper">
+        <Line
+          ref="chartRef"
+          :key="chartKey"
+          :data="visibleChartData"
+          :options="chartOptions"
+        />
+      </div>
+    </template>
+
+    <!-- EMPTY STATE -->
+    <div v-else class="empty-state-chart">
+      <div class="empty-icon-wrap-chart">
+        <i class='bx bx-line-chart'></i>
+      </div>
+      <p class="empty-title-chart">No trend data yet</p>
+      <p class="empty-subtitle-chart">Weekly emotion trends will appear here once data is available.</p>
     </div>
 
   </div>
@@ -99,6 +110,9 @@ const emotionColors = {
   angry:       { border: '#f97316', fill: 'rgba(249,115,22,1)' },
   hopeful:     { border: '#06b6d4', fill: 'rgba(6,182,212,1)' },
 }
+
+// --- Empty state: no emotion keys present in the incoming data ---
+const hasNoData = computed(() => !props.weeklyData || Object.keys(props.weeklyData).length === 0)
 
 const gradientFill = (color) => (context) => {
   const chart = context.chart
@@ -376,6 +390,50 @@ const chartOptions = {
   width: 100%;
 }
 
+/* ── Empty State ── */
+.empty-state-chart {
+  flex: 1;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 24px;
+}
+
+.empty-icon-wrap-chart {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #0E6008;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.empty-title-chart {
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.empty-subtitle-chart {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin: 0;
+  max-width: 260px;
+  line-height: 1.5;
+}
+
 /* ── 📱 RESPONSIVE BREAKPOINTS ── */
 
 @media (max-width: 1024px) {
@@ -437,5 +495,15 @@ const chartOptions = {
     width: 8px;
     height: 8px;
   }
+
+  .empty-icon-wrap-chart {
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
+    border-radius: 14px;
+  }
+
+  .empty-title-chart { font-size: 13px; }
+  .empty-subtitle-chart { font-size: 11.5px; }
 }
 </style>
