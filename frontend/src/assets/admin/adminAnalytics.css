@@ -172,6 +172,21 @@
   max-width: 160px;
 }
 
+.stat-meta {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.stat-value--alert {
+  color: #b91c1c;
+}
+
+.stat-value--age {
+  font-size: 22px;
+  font-weight: 700;
+}
+
 .stat-growth {
   display: inline-flex;
   align-items: center;
@@ -1232,4 +1247,29 @@
     width: 100%;
     justify-content: center;
   }
+
+/* ─── System Performance Card semantic classes ────────────────────── */
+}
+
+.perf-card {
+  background: #ffffff;
+}
+
+.perf-card-title {
+  color: #111827;
+}
+
+.perf-card-body {
+  color: #4b5563;
+}
+
+.perf-row {
+  border-bottom-color: #f3f4f6;
+  color: #111827;
+}
+
+.perf-privacy-notice {
+  background: #f9fafb;
+  border-color: #f3f4f6;
+  color: #6b7280;
 }

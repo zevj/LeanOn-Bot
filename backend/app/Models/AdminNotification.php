@@ -114,4 +114,26 @@ class AdminNotification extends Model
             ],
         ]);
     }
+
+    /**
+     * Create an "urgent help needed" notification.
+     */
+    public static function urgentHelpNeeded(\App\Models\User $user, int $severeCount): self
+    {
+        $maskedEmail = \App\Helpers\DataFormatter::maskEmail($user->email);
+        return self::create([
+            'type'    => 'multiple_severe_alerts',
+            'title'   => 'Urgent Wellness Check',
+            'message' => "Student ({$maskedEmail}) has accumulated {$severeCount} severe crisis alerts.",
+            'detail'  => 'This student requires immediate wellness checks and counselor intervention.',
+            'icon'    => 'bx bxs-error-circle',
+            'color'   => 'red',
+            'is_read' => false,
+            'meta'    => [
+                'user_id'      => $user->id,
+                'severe_count' => $severeCount,
+            ],
+        ]);
+    }
 }
+

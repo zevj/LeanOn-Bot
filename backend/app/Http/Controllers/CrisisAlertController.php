@@ -60,8 +60,26 @@ class CrisisAlertController extends Controller
         $unclassifiedCount = CrisisAlert::where('is_classified', false)->count();
 
         // ── Mask both collections ──
-        $anonymize = function ($alert) {
+        $userIds = collect($unclassified->items())->pluck('user_id')
+            ->merge(collect($classified->items())->pluck('user_id'))
+            ->filter()
+            ->unique();
+
+        $userCounts = CrisisAlert::whereIn('user_id', $userIds)
+            ->selectRaw('user_id, COUNT(*) as total_count, SUM(CASE WHEN severity = "severe" THEN 1 ELSE 0 END) as severe_count')
+            ->groupBy('user_id')
+            ->get()
+            ->keyBy('user_id');
+
+        $anonymize = function ($alert) use ($userCounts) {
             $data = $alert->toArray();
+            
+            $userId = $alert->user_id;
+            $countInfo = $userId ? $userCounts->get($userId) : null;
+            
+            $data['total_alerts_count'] = $countInfo ? (int) $countInfo->total_count : 0;
+            $data['severe_alerts_count'] = $countInfo ? (int) $countInfo->severe_count : 0;
+
             if ($alert->user) {
                 $data['masked_email']  = \App\Helpers\DataFormatter::maskEmail($alert->user->email);
                 $data['real_email']    = $alert->user->email;
@@ -101,6 +119,8 @@ class CrisisAlertController extends Controller
         $request->validate([
             'status'   => 'sometimes|in:new,reviewed,resolved',
             'severity' => 'sometimes|nullable|in:severe,moderate,low',
+            'appointment_date' => 'sometimes|nullable|date',
+            'appointment_time' => 'sometimes|nullable|string',
         ]);
 
         $alert = CrisisAlert::findOrFail($id);
@@ -116,7 +136,97 @@ class CrisisAlertController extends Controller
             $updates['is_classified'] = !is_null($request->severity);
         }
 
+        if ($request->has('appointment_date') || $request->has('appointment_time')) {
+            $newDate = $request->input('appointment_date');
+            $newTime = $request->input('appointment_time');
+
+            if (is_null($newDate) && is_null($newTime)) {
+                $updates['appointment_date'] = null;
+                $updates['appointment_time'] = null;
+                $updates['appointment_status'] = null;
+            } else {
+                $wasScheduled = !is_null($alert->appointment_date);
+                $statusType = $wasScheduled ? 'rescheduled' : 'scheduled';
+
+                $updates['appointment_date'] = $newDate;
+                $updates['appointment_time'] = $newTime;
+                $updates['appointment_status'] = $statusType;
+                $updates['admin_email_sent_at'] = now();
+                $updates['admin_email_notified'] = false;
+
+                if ($wasScheduled) {
+                    $alert->load('user');
+                    if ($alert->user && $alert->user->email) {
+                        $studentEmail = $alert->user->email;
+                        $subject = 'Updated: Your Wellness Appointment has been Rescheduled';
+                        $fromEmail = config('mail.from.address', env('MAIL_FROM_ADDRESS'));
+                        $fromName  = config('mail.from.name',    env('MAIL_FROM_NAME', 'LeanOn Bot Support'));
+                        $apiKey = env('BREVO_API_KEY');
+
+                        if ($apiKey) {
+                            $appointmentFormatted = \Carbon\Carbon::parse("{$newDate} {$newTime}")
+                                ->format('F j, Y \a\t g:i A');
+
+                            $htmlBody = \Illuminate\Support\Facades\View::make('emails.appointment_rescheduled', [
+                                'appointmentFormatted' => $appointmentFormatted,
+                            ])->render();
+
+                            try {
+                                Http::withHeaders([
+                                    'api-key'      => $apiKey,
+                                    'Content-Type' => 'application/json',
+                                    'Accept'       => 'application/json',
+                                ])->post('https://api.brevo.com/v3/smtp/email', [
+                                    'sender'      => ['name' => $fromName, 'email' => $fromEmail],
+                                    'to'          => [['email' => $studentEmail]],
+                                    'subject'     => $subject,
+                                    'htmlContent' => $htmlBody,
+                                ]);
+                                Log::info("Crisis alert reschedule email sent via Brevo to: {$studentEmail}");
+                            } catch (\Exception $e) {
+                                Log::error('Crisis alert reschedule email failed: ' . $e->getMessage());
+                            }
+                        } else {
+                            Log::error('Rescheduling email failed: BREVO_API_KEY is not configured.');
+                        }
+                    }
+                }
+            }
+        }
+
         $alert->update($updates);
+
+        if ($request->has('severity') && $request->severity === 'severe') {
+            $userId = $alert->user_id;
+            if ($userId) {
+                $severeCount = CrisisAlert::where('user_id', $userId)
+                    ->where('severity', 'severe')
+                    ->count();
+
+                if ($severeCount >= 2) {
+                    $user = User::find($userId);
+                    if ($user) {
+                        $notification = \App\Models\AdminNotification::where('type', 'multiple_severe_alerts')
+                            ->where('meta->user_id', $userId)
+                            ->first();
+
+                        if (!$notification) {
+                            \App\Models\AdminNotification::urgentHelpNeeded($user, $severeCount);
+                        } else {
+                            $maskedEmail = \App\Helpers\DataFormatter::maskEmail($user->email);
+                            $notification->update([
+                                'message' => "Student ({$maskedEmail}) has accumulated {$severeCount} severe crisis alerts.",
+                                'meta'    => [
+                                    'user_id'      => $userId,
+                                    'severe_count' => $severeCount,
+                                ],
+                                'is_read' => false,
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
 
         // Bust analytics cache so dashboard reflects new classification
         Cache::forget('analytics:dashboard:1d');
@@ -204,7 +314,12 @@ class CrisisAlertController extends Controller
                 Log::info("Crisis alert email sent via Brevo to: {$studentEmail}");
 
                 // Stamp the alert so the student's chat can show a notification
-                $alert->update(['admin_email_sent_at' => now()]);
+                $alert->update([
+                    'admin_email_sent_at' => now(),
+                    'appointment_date' => $appointmentDate,
+                    'appointment_time' => $appointmentTime,
+                    'appointment_status' => ($appointmentDate && $appointmentTime) ? 'scheduled' : null,
+                ]);
 
                 return response()->json(['message' => 'Email sent successfully.']);
             }
@@ -294,5 +409,40 @@ class CrisisAlertController extends Controller
         });
 
         return response()->json($data);
+    }
+
+    /**
+     * GET /api/admin/appointments
+     *
+     * Returns all crisis alerts that have scheduled appointments (where appointment_date is not null).
+     */
+    public function appointments()
+    {
+        $appointments = CrisisAlert::with(['user:id,first_name,last_name,email'])
+            ->whereNotNull('appointment_date')
+            ->orderBy('appointment_date', 'asc')
+            ->orderBy('appointment_time', 'asc')
+            ->get();
+
+        $anonymize = function ($alert) {
+            $data = $alert->toArray();
+            if ($alert->user) {
+                $data['masked_email']  = \App\Helpers\DataFormatter::maskEmail($alert->user->email);
+                $data['real_email']    = $alert->user->email;
+                $data['student_name']  = trim(($alert->user->first_name ?? '') . ' ' . ($alert->user->last_name ?? ''));
+                $data['user_display']  = 'Flagged #' . ($alert->id + 1000);
+            } else {
+                $data['masked_email']  = 'Flagged';
+                $data['real_email']    = null;
+                $data['student_name']  = 'Flagged Student';
+                $data['user_display']  = 'Flagged #' . ($alert->id + 1000);
+            }
+            unset($data['user']);
+            return $data;
+        };
+
+        $appointments->transform($anonymize);
+
+        return response()->json($appointments);
     }
 }

@@ -53,6 +53,8 @@ import {
   CategoryScale, LinearScale, Filler
 } from "chart.js"
 import { Line } from "vue-chartjs"
+import { useTheme } from '@/composables/useTheme.js'
+import { getChartTheme } from '@/utils/chartTheme.js'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
@@ -64,6 +66,8 @@ const props = defineProps({
 })
 
 const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+const { isDark } = useTheme()
+const themeColors = computed(() => getChartTheme(isDark.value))
 
 const filters = [
   { key: "all", label: "All Months" },
@@ -116,7 +120,7 @@ function buildDataset(r) {
       tension: 0.45,
       pointRadius: 4,
       pointHoverRadius: 7,
-      pointBackgroundColor: "#fff",
+      pointBackgroundColor: themeColors.value.pointBorder,
       pointBorderColor: "#0E6008",
       pointBorderWidth: 2.5,
       borderWidth: 3
@@ -130,27 +134,31 @@ watch(() => props.data, () => {
   chartData.value = buildDataset(rangesData.value[selectedRange.value])
 }, { deep: true })
 
+watch(isDark, () => {
+  chartData.value = buildDataset(rangesData.value[selectedRange.value])
+})
+
 function selectRange(f) {
   selectedRange.value = f.key
   chartData.value = buildDataset(rangesData.value[f.key])
 }
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: { duration: 800, easing: "easeOutExpo" },
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: "rgba(17, 24, 39, 0.95)",
-      titleColor: "#f3f4f6",
+      backgroundColor: themeColors.value.tooltipBg,
+      titleColor: themeColors.value.tooltipTitle,
       titleFont: { size: 13, weight: 'bold', family: "'DM Sans', sans-serif" },
-      bodyColor: "#a3e6a0",
+      bodyColor: themeColors.value.tooltipBody,
       bodyFont: { size: 12, family: "'DM Sans', sans-serif" },
       padding: 12,
       cornerRadius: 8,
       displayColors: false,
-      borderColor: "rgba(255,255,255,0.1)",
+      borderColor: themeColors.value.tooltipBorder,
       borderWidth: 1,
       callbacks: {
         title: (items) => items[0].label,
@@ -163,7 +171,7 @@ const chartOptions = {
       grid: { display: false },
       border: { display: false },
       ticks: {
-        color: "#6b7280",
+        color: themeColors.value.tickMuted,
         font: { size: 12, family: "'DM Sans', sans-serif" },
         padding: 6
       }
@@ -171,20 +179,20 @@ const chartOptions = {
     y: {
       beginAtZero: true,
       grid: { 
-        color: "rgba(0,0,0,0.04)", 
+        color: themeColors.value.grid,
         drawBorder: false,
         borderDash: [5, 5]
       },
       border: { display: false },
       ticks: {
-        color: "#9ca3af",
+        color: themeColors.value.tick,
         font: { size: 11, family: "'DM Sans', sans-serif" },
         padding: 10,
         maxTicksLimit: 6
       }
     }
   }
-}
+}))
 </script>
 
 <style scoped>

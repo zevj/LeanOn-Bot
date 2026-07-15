@@ -38,12 +38,20 @@
         <i class='bx bx-shield'></i>
       </router-link>
 
+      <router-link to="/AdminAppointments" class="rail-btn" title="Appointments" @click.stop>
+        <i class='bx bx-calendar'></i>
+      </router-link>
+
       <router-link to="/EmotionalTrends" class="rail-btn" title="Emotional Trends" @click.stop>
         <i class='bx bx-line-chart'></i>
       </router-link>
 
       <router-link to="/AdminAnalytics" class="rail-btn" title="AI Analytics" @click.stop>
         <i class='bx bx-brain'></i>
+      </router-link>
+
+      <router-link to="/AdminStudentInsights" class="rail-btn" title="Student Insights" @click.stop>
+        <i class='bx bx-user-pin'></i>
       </router-link>
 
       <router-link to="/AdminLogRecords" class="rail-btn" title="Log Records" @click.stop>
@@ -87,6 +95,11 @@
           <span>Crisis Alerts</span>
         </router-link>
 
+        <router-link to="/AdminAppointments" class="menu-item" active-class="active" @click="handleNavClick">
+          <i class='bx bx-calendar'></i>
+          <span>Appointments</span>
+        </router-link>
+
         <router-link to="/EmotionalTrends" class="menu-item" active-class="active" @click="handleNavClick">
           <i class='bx bx-line-chart'></i>
           <span>Emotional Trends</span>
@@ -95,6 +108,11 @@
         <router-link to="/AdminAnalytics" class="menu-item" active-class="active" @click="handleNavClick">
           <i class='bx bx-brain'></i>
           <span>AI Analytics</span>
+        </router-link>
+
+        <router-link to="/AdminStudentInsights" class="menu-item" active-class="active" @click="handleNavClick">
+          <i class='bx bx-user-pin'></i>
+          <span>Student Insights</span>
         </router-link>
 
         <router-link to="/AdminLogRecords" class="menu-item" active-class="active" @click="handleNavClick">

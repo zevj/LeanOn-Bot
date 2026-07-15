@@ -49,6 +49,84 @@ class AnalyticsController extends Controller
     }
 
     /**
+     * GET /api/admin/analytics/students?q=
+     *
+     * Anonymized student search for the Student Insights page.
+     */
+    public function students(Request $request)
+    {
+        $q = (string) $request->query('q', '');
+
+        try {
+            $students = $this->analytics->searchStudents($q);
+            return response()->json(['students' => $students]);
+        } catch (\Exception $e) {
+            Log::error('Analytics student search error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to search students.'], 500);
+        }
+    }
+
+    /**
+     * GET /api/admin/analytics/student/dashboard?user_id=&period=
+     *
+     * Per-student wellness dashboard (anonymized subject + live metrics).
+     */
+    public function studentDashboard(Request $request)
+    {
+        $userId = (int) $request->query('user_id', 0);
+        if ($userId < 1) {
+            return response()->json(['error' => 'user_id is required.'], 422);
+        }
+
+        $period = $request->query('period', '7d');
+        $allowed = ['1d', '7d', '14d', '30d', '90d'];
+        if (!in_array($period, $allowed)) {
+            $period = '7d';
+        }
+
+        try {
+            $stats = $this->analytics->getStudentDashboardStats($userId, $period);
+            if (!$stats) {
+                return response()->json(['error' => 'Student not found.'], 404);
+            }
+            return response()->json($stats);
+        } catch (\Exception $e) {
+            Log::error('Student analytics dashboard error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load student analytics.'], 500);
+        }
+    }
+
+    /**
+     * GET /api/admin/analytics/student/trends?user_id=&period=
+     *
+     * Per-student emotion / usage trends.
+     */
+    public function studentTrends(Request $request)
+    {
+        $userId = (int) $request->query('user_id', 0);
+        if ($userId < 1) {
+            return response()->json(['error' => 'user_id is required.'], 422);
+        }
+
+        $period = $request->query('period', '30d');
+        $allowed = ['7d', '14d', '30d', '90d'];
+        if (!in_array($period, $allowed)) {
+            $period = '30d';
+        }
+
+        try {
+            $trends = $this->analytics->getStudentTrends($userId, $period);
+            if (!$trends) {
+                return response()->json(['error' => 'Student not found.'], 404);
+            }
+            return response()->json($trends);
+        } catch (\Exception $e) {
+            Log::error('Student analytics trends error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load student trends.'], 500);
+        }
+    }
+
+    /**
      * GET /api/admin/analytics/trends
      *
      * Emotion/sentiment trends and weekly comparisons.

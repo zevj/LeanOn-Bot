@@ -68,6 +68,8 @@ import {
   LinearScale, PointElement, Filler
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
+import { useTheme } from '@/composables/useTheme.js'
+import { getChartTheme } from '@/utils/chartTheme.js'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, Filler)
 
@@ -84,6 +86,8 @@ const props = defineProps({
 
 const chartRef = ref(null)
 const chartKey = ref(0)
+const { isDark } = useTheme()
+const themeColors = computed(() => getChartTheme(isDark.value))
 
 const filters = [
   { key: 'all', label: 'All Weeks' },
@@ -183,9 +187,13 @@ watch(() => props.weeklyData, () => {
   chartKey.value++
 }, { deep: true })
 
+watch(isDark, () => {
+  chartKey.value++
+})
+
 onMounted(() => { chartKey.value++ })
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: { duration: 600, easing: 'easeOutQuart' },
@@ -194,11 +202,11 @@ const chartOptions = {
     tooltip: {
       mode: 'index',
       intersect: false,
-      backgroundColor: 'rgba(17, 24, 39, 0.95)', /* Dark glassmorphism tooltip */
-      borderColor: 'rgba(255, 255, 255, 0.1)',
+      backgroundColor: themeColors.value.tooltipBg, /* Dark glassmorphism tooltip */
+      borderColor: themeColors.value.tooltipBorder,
       borderWidth: 1,
-      titleColor: '#f3f4f6',
-      bodyColor: '#e5e7eb',
+      titleColor: themeColors.value.tooltipTitle,
+      bodyColor: themeColors.value.tooltipBody,
       padding: 14,
       cornerRadius: 12,
       boxPadding: 6,
@@ -213,13 +221,13 @@ const chartOptions = {
       beginAtZero: true,
       max: 100,
       grid: { 
-        color: 'rgba(0,0,0,0.04)', 
+        color: themeColors.value.grid,
         drawBorder: false,
         borderDash: [5, 5] /* Clean dashed grid lines */
       },
       border: { display: false },
       ticks: {
-        color: '#9ca3af',
+        color: themeColors.value.tick,
         font: { size: 11, family: "'DM Sans', sans-serif" },
         padding: 10,
         maxTicksLimit: 6,
@@ -230,13 +238,13 @@ const chartOptions = {
       grid: { display: false },
       border: { display: false },
       ticks: { 
-        color: '#6b7280', 
+        color: themeColors.value.tickMuted,
         font: { size: 12, family: "'DM Sans', sans-serif" }, 
         padding: 8 
       }
     }
   }
-}
+}))
 </script>
 
 <style scoped>

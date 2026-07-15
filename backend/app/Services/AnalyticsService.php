@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\DataFormatter;
 use App\Models\AnalyticsSnapshot;
 use App\Models\ChatMessage;
 use App\Models\Conversation;
@@ -148,6 +149,158 @@ class AnalyticsService
                 'period_end'           => $end->toDateString(),
             ];
         });
+    }
+
+    /**
+     * Search students for the Student Insights picker.
+     * Returns anonymized labels only — no real names.
+     */
+    public function searchStudents(string $q, int $limit = 15): array
+    {
+        $q = trim($q);
+        if ($q === '') {
+            return [];
+        }
+
+        $limit = min(max($limit, 1), 25);
+        $query = User::where('role', 'student');
+
+        if (preg_match('/(?:anonymous\s*#?\s*)?(\d+)/i', $q, $m)) {
+            $num = (int) $m[1];
+            $decodedId = $num > 1000 ? $num - 1000 : $num;
+
+            $query->where(function ($qb) use ($q, $num, $decodedId) {
+                $qb->where('id', $decodedId)
+                    ->orWhere('id', $num)
+                    ->orWhere('email', 'like', '%' . $q . '%')
+                    ->orWhere('department', 'like', '%' . $q . '%');
+            });
+        } else {
+            $query->where(function ($qb) use ($q) {
+                $qb->where('email', 'like', '%' . $q . '%')
+                    ->orWhere('department', 'like', '%' . $q . '%');
+            });
+        }
+
+        return $query->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'email', 'department'])
+            ->map(fn (User $user) => $this->formatStudentSubject($user))
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * Per-student dashboard stats (live queries — never uses school-wide snapshots).
+     */
+    public function getStudentDashboardStats(int $userId, string $period = '7d'): ?array
+    {
+        $user = User::where('id', $userId)->where('role', 'student')->first();
+        if (!$user) {
+            return null;
+        }
+
+        $cacheKey = "analytics:student:{$userId}:dashboard:{$period}";
+        $cacheTtl = 900; // 15 minutes
+
+        return Cache::remember($cacheKey, $cacheTtl, function () use ($user, $userId, $period) {
+            $end = Carbon::now();
+            $start = $this->periodToStart($period, $end);
+            $prevStart = $this->periodToStart($period, $start);
+
+            $currentConversations = Conversation::where('user_id', $userId)
+                ->whereBetween('created_at', [$start, $end])
+                ->count();
+
+            $prevConversations = Conversation::where('user_id', $userId)
+                ->whereBetween('created_at', [$prevStart, $start])
+                ->count();
+
+            $convGrowth = $prevConversations > 0
+                ? round((($currentConversations - $prevConversations) / $prevConversations) * 100, 1)
+                : 0;
+
+            $crisisCount = CrisisAlert::where('user_id', $userId)
+                ->whereBetween('created_at', [$start, $end])
+                ->count();
+
+            $crisisBySeverity = CrisisAlert::where('user_id', $userId)
+                ->whereBetween('created_at', [$start, $end])
+                ->where('is_classified', true)
+                ->selectRaw('severity, COUNT(*) as count')
+                ->groupBy('severity')
+                ->pluck('count', 'severity')
+                ->toArray();
+
+            $peakHours = $this->getPeakUsageHours($start, $end, $userId);
+            $peakHour = !empty($peakHours) ? $peakHours[0]['hour'] : null;
+
+            $sessionCount = SessionLog::where('user_id', $userId)
+                ->whereBetween('session_start', [$start, $end])
+                ->count();
+
+            $messageCount = ChatMessage::where('user_id', $userId)
+                ->whereBetween('created_at', [$start, $end])
+                ->count();
+
+            return [
+                'student'               => $this->formatStudentSubject($user),
+                'total_conversations'   => $currentConversations,
+                'conversation_growth'   => $convGrowth,
+                'peak_hour'             => $peakHour,
+                'peak_usage_hours'      => $peakHours,
+                'crisis_alert_count'    => $crisisCount,
+                'crisis_by_severity'    => $crisisBySeverity,
+                'fallback_count'        => $this->getFallbackCount($start, $end, $userId),
+                'session_count'         => $sessionCount,
+                'message_count'         => $messageCount,
+                'had_activity'          => ($currentConversations + $sessionCount + $messageCount + $crisisCount) > 0,
+                'period'                => $period,
+                'period_start'          => $start->toDateString(),
+                'period_end'            => $end->toDateString(),
+            ];
+        });
+    }
+
+    /**
+     * Per-student emotion / usage trends.
+     */
+    public function getStudentTrends(int $userId, string $period = '30d'): ?array
+    {
+        $user = User::where('id', $userId)->where('role', 'student')->first();
+        if (!$user) {
+            return null;
+        }
+
+        $cacheKey = "analytics:student:{$userId}:trends:{$period}";
+        $cacheTtl = 900;
+
+        return Cache::remember($cacheKey, $cacheTtl, function () use ($user, $userId, $period) {
+            $end = Carbon::now();
+            $start = $this->periodToStart($period, $end);
+
+            return [
+                'student'              => $this->formatStudentSubject($user),
+                'emotion_distribution' => $this->getEmotionDistribution($start, $end, $userId),
+                'sentiment_over_time'  => $this->getSentimentOverTime($start, $end, $userId),
+                'peak_usage_hours'     => $this->getPeakUsageHours($start, $end, $userId),
+                'period_start'         => $start->toDateString(),
+                'period_end'           => $end->toDateString(),
+            ];
+        });
+    }
+
+    /**
+     * Anonymized student subject payload for admin UI.
+     */
+    private function formatStudentSubject(User $user): array
+    {
+        return [
+            'id'           => $user->id,
+            'display'      => 'Anonymous #' . ($user->id + 1000),
+            'masked_email' => DataFormatter::maskEmail($user->email),
+            'department'   => $user->department,
+        ];
     }
 
     /**
@@ -468,10 +621,13 @@ class AnalyticsService
         return round($result ?? 0, 1);
     }
 
-    private function getPeakUsageHours(Carbon $start, Carbon $end): array
+    private function getPeakUsageHours(Carbon $start, Carbon $end, ?int $userId = null): array
     {
         $driver = DB::connection()->getDriverName();
         $query = ChatMessage::whereBetween('created_at', [$start, $end]);
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
 
         switch ($driver) {
             case 'pgsql':
@@ -493,10 +649,14 @@ class AnalyticsService
             ->toArray();
     }
 
-    private function getEmotionDistribution(Carbon $start, Carbon $end): array
+    private function getEmotionDistribution(Carbon $start, Carbon $end, ?int $userId = null): array
     {
-        return EmotionLog::whereBetween('created_at', [$start, $end])
-            ->selectRaw('emotion, COUNT(*) as count')
+        $query = EmotionLog::whereBetween('created_at', [$start, $end]);
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        return $query->selectRaw('emotion, COUNT(*) as count')
             ->groupBy('emotion')
             ->pluck('count', 'emotion')
             ->toArray();
@@ -591,11 +751,15 @@ class AnalyticsService
         ];
     }
 
-    private function getFallbackCount(Carbon $start, Carbon $end): int
+    private function getFallbackCount(Carbon $start, Carbon $end, ?int $userId = null): int
     {
-        return ChatMessage::whereBetween('created_at', [$start, $end])
-            ->where('is_fallback', true)
-            ->count();
+        $query = ChatMessage::whereBetween('created_at', [$start, $end])
+            ->where('is_fallback', true);
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        return $query->count();
     }
 
     private function getTrendMetrics(Carbon $start, Carbon $end): array
@@ -636,7 +800,7 @@ class AnalyticsService
         return round($messages / $conversations, 2);
     }
 
-    private function getSentimentOverTime(Carbon $start, Carbon $end): array
+    private function getSentimentOverTime(Carbon $start, Carbon $end, ?int $userId = null): array
     {
         $driver = DB::connection()->getDriverName();
 
@@ -652,8 +816,12 @@ class AnalyticsService
                 break;
         }
 
-        $emotionCounts = EmotionLog::whereBetween('created_at', [$start, $end])
-            ->selectRaw("$dateExpr as date, emotion, COUNT(*) as count")
+        $query = EmotionLog::whereBetween('created_at', [$start, $end]);
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        $emotionCounts = $query->selectRaw("$dateExpr as date, emotion, COUNT(*) as count")
             ->groupByRaw("$dateExpr, emotion")
             ->get()
             ->groupBy('date')

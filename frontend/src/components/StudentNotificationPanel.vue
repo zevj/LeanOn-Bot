@@ -37,17 +37,27 @@
               class="notif-item"
               :class="{ unread: !notif.dismissed }"
               v-for="notif in notifications"
-              :key="notif.alert_id"
+              :key="notif.alert_id + '-' + (notif.appointment_status || 'email')"
             >
-              <div class="notif-icon blue">
-                <i class="bx bx-envelope"></i>
+              <div class="notif-icon" :class="notif.appointment_status ? 'green' : 'blue'">
+                <i :class="notif.appointment_status ? 'bx bx-calendar' : 'bx bx-envelope'"></i>
               </div>
               <div class="notif-body">
                 <div class="notif-msg">
-                  <strong>Message from Guidance Office</strong>
+                  <strong v-if="notif.appointment_status === 'scheduled'">Appointment Scheduled</strong>
+                  <strong v-else-if="notif.appointment_status === 'rescheduled'">Appointment Rescheduled</strong>
+                  <strong v-else>Message from Guidance Office</strong>
                 </div>
                 <div class="notif-detail-text">
-                  A support email was sent to your registered email address. Please check your inbox.
+                  <template v-if="notif.appointment_status === 'scheduled'">
+                    Your wellness appointment has been scheduled for {{ formatDate(notif.appointment_date) }} at {{ formatAppointmentTime(notif.appointment_time) }}. Please check your email.
+                  </template>
+                  <template v-else-if="notif.appointment_status === 'rescheduled'">
+                    Your wellness appointment has been rescheduled to {{ formatDate(notif.appointment_date) }} at {{ formatAppointmentTime(notif.appointment_time) }}. Please check your email.
+                  </template>
+                  <template v-else>
+                    A support email was sent to your registered email address. Please check your inbox.
+                  </template>
                 </div>
                 <div class="notif-time">{{ formatTime(notif.sent_at) }}</div>
               </div>
@@ -93,10 +103,14 @@ const fetchNotifications = async () => {
   try {
     const res = await axios.get('/api/user/admin-email-notification', authHeaders())
     if (res.data.notification) {
-      // Merge — avoid duplicates
-      const existing = notifications.value.find(n => n.alert_id === res.data.notification.alert_id)
-      if (!existing) {
-        notifications.value.unshift({ ...res.data.notification, dismissed: false })
+      const incoming = res.data.notification
+      const existingIndex = notifications.value.findIndex(n => n.alert_id === incoming.alert_id)
+      if (existingIndex !== -1) {
+        if (notifications.value[existingIndex].sent_at !== incoming.sent_at) {
+          notifications.value[existingIndex] = { ...incoming, dismissed: false }
+        }
+      } else {
+        notifications.value.unshift({ ...incoming, dismissed: false })
       }
     }
   } catch (e) {
@@ -151,6 +165,26 @@ const formatTime = (iso) => {
     month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: true,
   })
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d)) return dateStr
+  return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const formatAppointmentTime = (timeStr) => {
+  if (!timeStr) return ''
+  try {
+    const [hours, minutes] = timeStr.split(':')
+    const h = parseInt(hours, 10)
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const h12 = h % 12 || 12
+    return `${h12}:${minutes} ${ampm}`
+  } catch (e) {
+    return timeStr
+  }
 }
 
 // ── Outside click ──────────────────────────────────────────────
@@ -285,6 +319,9 @@ onUnmounted(() => {
 .notif-icon.blue { background: #dbeafe; }
 .notif-icon.blue i { color: #1d4ed8; }
 
+.notif-icon.green { background: #dcfce7; }
+.notif-icon.green i { color: #16a34a; }
+
 /* ── Body ── */
 .notif-body { flex: 1; min-width: 0; }
 .notif-msg { font-size: 12.5px; color: #222; line-height: 1.45; }
@@ -405,6 +442,12 @@ onUnmounted(() => {
 }
 [data-theme="dark"] .notif-icon.blue i {
   color: #60a5fa;
+}
+[data-theme="dark"] .notif-icon.green {
+  background: #1a2e1a;
+}
+[data-theme="dark"] .notif-icon.green i {
+  color: #4ade80;
 }
 [data-theme="dark"] .notif-msg {
   color: #e2e8f0;

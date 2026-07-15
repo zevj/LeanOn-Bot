@@ -19,6 +19,8 @@
 <script setup>
 import { computed } from 'vue'
 import { Line } from 'vue-chartjs'
+import { useTheme } from '@/composables/useTheme.js'
+import { getChartTheme } from '@/utils/chartTheme.js'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -40,6 +42,8 @@ const props = defineProps({
 })
 
 const hasData = computed(() => props.data.length > 0)
+const { isDark } = useTheme()
+const themeColors = computed(() => getChartTheme(isDark.value))
 
 const chartData = computed(() => {
   const labels = props.data.map((d, i) => `Week ${i + 1}`)
@@ -57,7 +61,7 @@ const chartData = computed(() => {
         pointRadius: 4,
         pointHoverRadius: 6,
         pointBackgroundColor: '#10b981',
-        pointBorderColor: '#fff',
+        pointBorderColor: themeColors.value.pointBorder,
         pointBorderWidth: 2,
         borderWidth: 2.5,
       },
@@ -71,7 +75,7 @@ const chartData = computed(() => {
         pointRadius: 4,
         pointHoverRadius: 6,
         pointBackgroundColor: '#f59e0b',
-        pointBorderColor: '#fff',
+        pointBorderColor: themeColors.value.pointBorder,
         pointBorderWidth: 2,
         borderWidth: 2.5,
       },
@@ -85,7 +89,7 @@ const chartData = computed(() => {
         pointRadius: 4,
         pointHoverRadius: 6,
         pointBackgroundColor: '#ef4444',
-        pointBorderColor: '#fff',
+        pointBorderColor: themeColors.value.pointBorder,
         pointBorderWidth: 2,
         borderWidth: 2.5,
       },
@@ -105,7 +109,7 @@ const chartOptions = computed(() => ({
       position: 'top',
       align: 'end',
       labels: {
-        color: 'var(--text-secondary, #6b7280)',
+        color: themeColors.value.tick,
         usePointStyle: true,
         pointStyleWidth: 10,
         padding: 16,
@@ -116,7 +120,11 @@ const chartOptions = computed(() => ({
       },
     },
     tooltip: {
-      backgroundColor: 'rgba(17, 24, 39, 0.9)',
+      backgroundColor: themeColors.value.tooltipBg,
+      borderColor: themeColors.value.tooltipBorder,
+      borderWidth: 1,
+      titleColor: themeColors.value.tooltipTitle,
+      bodyColor: themeColors.value.tooltipBody,
       titleFont: { family: "'DM Sans', system-ui, sans-serif", weight: '600' },
       bodyFont: { family: "'DM Sans', system-ui, sans-serif" },
       padding: 12,
@@ -127,15 +135,15 @@ const chartOptions = computed(() => ({
     x: {
       grid: { display: false },
       ticks: {
-        color: '#9ca3af',
+        color: themeColors.value.tick,
         font: { family: "'DM Sans', system-ui, sans-serif", size: 11 },
       }
     },
     y: {
       beginAtZero: true,
-      grid: { color: 'rgba(0, 0, 0, 0.04)' },
+      grid: { color: themeColors.value.grid },
       ticks: {
-        color: '#9ca3af',
+        color: themeColors.value.tick,
         font: { family: "'DM Sans', system-ui, sans-serif", size: 11 },
         precision: 0,
       }

@@ -1015,3 +1015,174 @@ const getTrendIcon = (direction) => {
   }
 }
 </style>
+
+<style>
+/* Non-scoped dark mode — pierce scoped light card surfaces */
+[data-theme="dark"] .insights-panel {
+  background: #1e2533 !important;
+  border-color: #2d3748 !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28) !important;
+}
+
+[data-theme="dark"] .insights-header {
+  background: linear-gradient(135deg, #0b4a08 0%, #14532d 100%) !important;
+}
+
+[data-theme="dark"] .days-selector {
+  background: rgba(0, 0, 0, 0.28) !important;
+}
+
+[data-theme="dark"] .days-tab.active {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+[data-theme="dark"] .generate-btn {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+[data-theme="dark"] .generate-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, #1a2030 25%, #243044 50%, #1a2030 75%) !important;
+  background-size: 200% 100% !important;
+}
+
+[data-theme="dark"] .notice-banner {
+  background: #2d2410 !important;
+  border-color: #78500a !important;
+  color: #fde68a !important;
+}
+
+[data-theme="dark"] .wellness-card {
+  background: linear-gradient(135deg, #0d2818 0%, #122a1c 100%) !important;
+  border-color: #14532d !important;
+}
+
+[data-theme="dark"] .wellness-header {
+  color: #86efac !important;
+}
+
+[data-theme="dark"] .wellness-text {
+  color: #bbf7d0 !important;
+}
+
+[data-theme="dark"] .insights-panel .section-label {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .insights-panel .section-label i {
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .insights-panel .anomaly-label i {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .insight-card,
+[data-theme="dark"] .trend-item,
+[data-theme="dark"] .recommendation-item {
+  background: #161b27 !important;
+  border-color: #2d3748 !important;
+}
+
+[data-theme="dark"] .insight-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
+  border-color: #374151 !important;
+}
+
+[data-theme="dark"] .insight-card-title,
+[data-theme="dark"] .trend-metric {
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .insight-card-text,
+[data-theme="dark"] .rec-text {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .trend-desc {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .badge-usage {
+  background: #172554 !important;
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .badge-emotional {
+  background: #3b1028 !important;
+  color: #f9a8d4 !important;
+}
+[data-theme="dark"] .badge-crisis {
+  background: #3b1010 !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .badge-engagement {
+  background: #0d2818 !important;
+  color: #86efac !important;
+}
+[data-theme="dark"] .badge-academic {
+  background: #2d2410 !important;
+  color: #fde68a !important;
+}
+[data-theme="dark"] .badge-general {
+  background: #2d3748 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .dir-increasing {
+  background: #3b1010 !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .dir-decreasing {
+  background: #0d2818 !important;
+  color: #4ade80 !important;
+}
+[data-theme="dark"] .dir-stable {
+  background: #2d3748 !important;
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .rec-number {
+  background: #166534 !important;
+}
+
+[data-theme="dark"] .rec-priority-badge.priority-high {
+  background: #3b1010 !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .rec-priority-badge.priority-medium {
+  background: #2d2410 !important;
+  color: #fde68a !important;
+}
+[data-theme="dark"] .rec-priority-badge.priority-low {
+  background: #0d2818 !important;
+  color: #86efac !important;
+}
+
+[data-theme="dark"] .anomaly-critical {
+  background: #3b1010 !important;
+  border-color: #7f1d1d !important;
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .anomaly-warning {
+  background: #2d2410 !important;
+  border-color: #78500a !important;
+  color: #fde68a !important;
+}
+[data-theme="dark"] .anomaly-info {
+  background: #172554 !important;
+  border-color: #1e3a8a !important;
+  color: #93c5fd !important;
+}
+
+[data-theme="dark"] .insights-empty {
+  color: #6b7280 !important;
+}
+[data-theme="dark"] .insights-empty h3 {
+  color: #9ca3af !important;
+}
+</style>

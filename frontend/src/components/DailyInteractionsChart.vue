@@ -40,6 +40,8 @@ import {
 } from "chart.js"
 
 import { Bar } from "vue-chartjs"
+import { useTheme } from '@/composables/useTheme.js'
+import { getChartTheme } from '@/utils/chartTheme.js'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale, Filler)
 
@@ -51,6 +53,8 @@ const props = defineProps({
 })
 
 const total = computed(() => props.data.reduce((a, b) => a + b, 0))
+const { isDark } = useTheme()
+const themeColors = computed(() => getChartTheme(isDark.value))
 
 // --- Empty state: no data array, or every day is zero ---
 const hasNoData = computed(() => !props.data.length || props.data.every(v => Number(v) === 0))
@@ -86,7 +90,7 @@ const chartData = computed(() => ({
   ]
 }))
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: {
@@ -96,15 +100,15 @@ const chartOptions = {
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: "rgba(17, 24, 39, 0.95)",
-      titleColor: "#f3f4f6",
+      backgroundColor: themeColors.value.tooltipBg,
+      titleColor: themeColors.value.tooltipTitle,
       titleFont: { size: 13, weight: 'bold', family: "'DM Sans', sans-serif" },
-      bodyColor: "#a3e6a0",
+      bodyColor: themeColors.value.tooltipBody,
       bodyFont: { size: 12, family: "'DM Sans', sans-serif" },
       padding: 12,
       cornerRadius: 8,
       displayColors: false,
-      borderColor: "rgba(255,255,255,0.1)",
+      borderColor: themeColors.value.tooltipBorder,
       borderWidth: 1,
       callbacks: {
         label: (item) => `${item.raw} interactions`
@@ -115,13 +119,13 @@ const chartOptions = {
     y: {
       beginAtZero: true,
       grid: { 
-        color: "rgba(0,0,0,0.04)",
+        color: themeColors.value.grid,
         drawBorder: false,
         borderDash: [5, 5] // Dashed grid lines for a cleaner look
       },
       border: { display: false },
       ticks: {
-        color: "#9ca3af",
+        color: themeColors.value.tick,
         font: { size: 11, family: "'DM Sans', sans-serif" },
         padding: 8
       }
@@ -130,13 +134,13 @@ const chartOptions = {
       grid: { display: false },
       border: { display: false },
       ticks: {
-        color: "#6b7280",
+        color: themeColors.value.tickMuted,
         font: { size: 12, family: "'DM Sans', sans-serif" },
         padding: 6
       }
     }
   }
-}
+}))
 </script>
 
 <style scoped>

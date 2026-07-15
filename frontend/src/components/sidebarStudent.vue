@@ -123,7 +123,7 @@
             </transition>
 
             <div
-              v-for="(chat, index) in chats"
+              v-for="chat in chats"
               :key="chat.id"
               class="chat-convo-container"
               :class="{
@@ -150,11 +150,6 @@
                   <h4 class="chat-title">{{ chat.title }}</h4>
                   <p class="chat-time">{{ formatDate(chat.updated_at) }}</p>
                 </div>
-
-                <!-- Dots menu — hidden in bulk mode -->
-                <div class="menu-wrapper" v-if="!bulkMode">
-                  <i class="bx bx-dots-horizontal dots" @click.stop="openDropdown($event, index)"></i>
-                </div>
               </div>
             </div>
 
@@ -167,19 +162,6 @@
           </div>
         </transition>
 
-        <!-- ── DOTS DROPDOWN (Teleported to body) ── -->
-        <Teleport to="body">
-          <div
-            v-if="dropdown.visible"
-            class="dropdown-menu"
-            :style="{ top: dropdown.top + 'px', left: dropdown.left + 'px' }"
-            @click.stop
-          >
-            <div class="dropdown-item" @click="saveChat(dropdown.index)"><i class='bx bx-save'></i> Save</div>
-            <div class="dropdown-item" @click="archiveChat(dropdown.index)"><i class='bx bx-archive'></i> Archive</div>
-            <div class="dropdown-item delete" @click="deleteChat(dropdown.index)"><i class='bx bx-trash'></i> Delete</div>
-          </div>
-        </Teleport>
 
       </nav>
 
@@ -490,12 +472,10 @@ onMounted(() => {
   fetchConversations()
   fetchUserProfile()
   window.addEventListener('resize', handleResize)
-  window.addEventListener('click', closeDropdown)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-  window.removeEventListener('click', closeDropdown)
 })
 
 // ── SAVED ──
@@ -587,14 +567,6 @@ const deleteArchivedChat = (index) => {
   })
 }
 
-// ── DROPDOWN ──
-const dropdown = ref({ visible: false, top: 0, left: 0, index: null })
-const openDropdown = (event, index) => {
-  event.stopPropagation()
-  const rect = event.target.getBoundingClientRect()
-  dropdown.value = { visible: true, top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, index }
-}
-const closeDropdown = () => { dropdown.value.visible = false }
 
 // ── CHAT ACTIONS ──
 const createNewChat = async () => {
@@ -628,52 +600,6 @@ const executeConfirm = async () => {
   confirmModal.value.visible = false
 }
 
-const archiveChat = (index) => {
-  if (index == null) return
-  const chat = chats.value[index]
-  openConfirmModal({
-    title: 'Archive Chat', message: 'Are you sure you want to archive this chat?', confirmText: 'Archive', type: 'primary',
-    actionCallback: async () => {
-      try {
-        const token = localStorage.getItem('token')
-        await axios.patch(`/api/conversations/${chat.id}`, { is_archived: true }, { headers: { Authorization: `Bearer ${token}` } })
-        removeConversation(chat.id); toast.success('Chat archived!'); closeDropdown()
-      } catch (error) { handleConversationError(error, 'Failed to archive chat') }
-    }
-  })
-}
-
-const deleteChat = (index) => {
-  if (index == null) return
-  const id = chats.value[index].id
-  openConfirmModal({
-    title: 'Delete Chat', message: 'Are you sure you want to permanently delete this chat?', confirmText: 'Delete', type: 'danger',
-    actionCallback: async () => {
-      try {
-        await axios.delete(`/api/conversations/${id}`, { data: {} })
-        removeConversation(id)
-        closeDropdown()
-        if (route.query.conversation_id == id) router.push('/ChatConvo')
-        toast.success('Chat deleted successfully!')
-      } catch { toast.error('Failed to delete chat') }
-    }
-  })
-}
-
-const saveChat = (index) => {
-  if (index == null) return
-  const chat = chats.value[index]
-  if (chat.is_saved) { toast.info('Already saved!'); closeDropdown(); return }
-  openConfirmModal({
-    title: 'Save Chat', message: 'Do you want to save this chat to your bookmarks?', confirmText: 'Save', type: 'primary',
-    actionCallback: async () => {
-      try {
-        await axios.patch(`/api/conversations/${chat.id}`, { is_saved: true })
-        updateConversation(chat.id, { is_saved: true }); toast.success('Chat saved successfully!'); closeDropdown()
-      } catch { toast.error('Failed to save chat') }
-    }
-  })
-}
 
 const deleteSavedChat = (index) => {
   const chat = savedChats.value[index]
