@@ -507,7 +507,7 @@ onUnmounted(() => {
 .header-datetime {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 2px;
   padding: 10px 16px;
   background: #f0fdf4;
@@ -1137,6 +1137,196 @@ onUnmounted(() => {
 .sc-low::before   { background: #10b981; }
 .sc-low:hover     { box-shadow: 0 12px 20px -8px rgba(16, 185, 129, 0.4); }
 .sc-low .sc-icon  { background: #f0fdf4; color: #10b981; border: 1px solid #a7f3d0; }
+
+
+/* ─────────────────────────────────────────────────────────────
+   RESPONSIVENESS — header datetime + table
+───────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .page-header-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .header-datetime {
+    align-items: flex-start;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .log-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .filters-wrapper {
+    width: 100%;
+  }
+
+  .select-box,
+  .select-box select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  /* ── Header datetime: compact horizontal chip row ── */
+  .header-datetime {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px 14px;
+    padding: 10px 14px;
+  }
+
+  .header-day {
+    width: 100%;
+    font-size: 14px;
+  }
+
+  .header-date,
+  .header-time {
+    font-size: 12.5px;
+  }
+
+  .filters-wrapper {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* ── Table → stacked cards, driven by existing data-label attrs ── */
+  .log-table thead { display: none; }
+
+  .log-table,
+  .log-table tbody,
+  .log-table tr,
+  .log-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .log-table { min-width: 0; }
+
+  .log-table tbody tr {
+    margin-bottom: 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px 16px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    position: relative;
+  }
+
+  /* Keep severity indicator, now as a left border on the whole card */
+  .log-table tbody tr.row-severe   { border-left: 4px solid #ef4444; }
+  .log-table tbody tr.row-moderate { border-left: 4px solid #9F7A00; }
+  .log-table tbody tr.row-low      { border-left: 4px solid #0A9569; }
+
+  /* Neutralize the desktop color-bar ::before instead of hiding it —
+     that pseudo-element is reused below for the mobile field label,
+     so it must keep rendering content, just without the bar background */
+  .log-table tbody tr td:first-child::before {
+    background: none !important;
+    width: auto !important;
+    height: auto !important;
+    position: static !important;
+  }
+
+  .log-table td {
+    padding: 8px 0;
+    border: none;
+    border-bottom: 1px dashed #f3f4f6;
+    text-align: left !important;
+  }
+  .log-table td:last-child { border-bottom: none; padding-top: 12px; }
+
+  .log-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+    margin-bottom: 4px;
+  }
+
+  /* ── Force every field's content to sit flush-left, evenly stacked ── */
+  .appt-time-cell,
+  .student-details-cell,
+  .flagged-message-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+    text-align: left;
+  }
+
+  .appt-time-cell > *,
+  .student-details-cell > *,
+  .flagged-message-cell > * {
+    align-self: flex-start !important;
+    margin: 0 !important;
+    float: none !important;
+    text-align: left !important;
+  }
+
+  .log-table td > .badge {
+    align-self: flex-start;
+    margin: 0;
+  }
+
+  /* Actions become a full-width row of two buttons instead of a narrow column */
+  .actions-cell {
+    width: 100%;
+    flex-direction: row;
+    gap: 8px;
+  }
+  .actions-cell .action-btn {
+    flex: 1;
+  }
+
+  .message-text {
+    font-size: 13px;
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-datetime {
+    width: 100%;
+  }
+
+  .actions-cell {
+    flex-direction: column;
+  }
+
+  .email-modal-footer {
+    flex-direction: column-reverse;
+  }
+  .email-modal-footer .action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── Dark mode: card rows on mobile ── */
+[data-theme="dark"] .log-table tbody tr {
+  background: #1e2533;
+  border-color: #2d3748;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+[data-theme="dark"] .log-table td {
+  border-bottom-color: #2d3748;
+}
+[data-theme="dark"] .log-table td::before {
+  color: #6b7280;
+}
 
 /* Table Left Border Indicators matching severity */
 .log-table tbody tr.row-severe td:first-child::before { background-color: #ef4444; }
