@@ -15,8 +15,32 @@
 
         <div class="notif-header">
           <span class="notif-title">Notifications</span>
-          <button class="mark-all" @click="dismissAll" :disabled="notifications.length === 0 || allDismissed">
-            Clear all
+          <div class="notif-header-actions">
+            <button class="refresh-btn" @click="refreshNotifications" :disabled="loading" title="Refresh">
+              <i class="bx bx-refresh" :class="{ spinning: loading }"></i>
+            </button>
+            <button class="mark-all" @click="dismissAll" :disabled="notifications.length === 0 || allDismissed">
+              Clear all
+            </button>
+          </div>
+        </div>
+
+        <!-- Unread filter -->
+        <div class="notif-filter-tabs" v-if="!loading">
+          <button
+            class="filter-tab"
+            :class="{ active: filterMode === 'all' }"
+            @click="setFilter('all')"
+          >
+            All
+          </button>
+          <button
+            class="filter-tab"
+            :class="{ active: filterMode === 'unread' }"
+            @click="setFilter('unread')"
+          >
+            Unread
+            <span class="filter-count" v-if="unreadCount > 0">{{ unreadCount }}</span>
           </button>
         </div>
 
@@ -32,11 +56,11 @@
         </div>
 
         <div v-else class="notif-list">
-          <template v-if="notifications.length > 0">
+          <template v-if="filteredNotifications.length > 0">
             <div
               class="notif-item"
               :class="{ unread: !notif.dismissed }"
-              v-for="notif in notifications"
+              v-for="notif in filteredNotifications"
               :key="notif.alert_id + '-' + (notif.appointment_status || 'email')"
             >
               <div class="notif-icon" :class="notif.appointment_status ? 'green' : 'blue'">
@@ -72,7 +96,7 @@
 
           <div class="notif-empty" v-else>
             <i class='bx bx-bell-off'></i>
-            <p>No notifications yet</p>
+            <p>{{ filterMode === 'unread' ? 'No unread notifications' : 'No notifications yet' }}</p>
           </div>
         </div>
 
@@ -90,8 +114,27 @@ const wrapperRef = ref(null)
 const loading    = ref(false)
 const notifications = ref([]) // array of { alert_id, sent_at, dismissed }
 
+/* NOTIF FILTER */
 const unreadCount = computed(() => notifications.value.filter(n => !n.dismissed).length)
 const allDismissed = computed(() => notifications.value.every(n => n.dismissed))
+
+// ── Unread filter ────────────────────────────────────────────
+const filterMode = ref('all') // 'all' | 'unread'
+
+const filteredNotifications = computed(() =>
+  filterMode.value === 'unread'
+    ? notifications.value.filter(n => !n.dismissed)
+    : notifications.value
+)
+
+const setFilter = (mode) => {
+  filterMode.value = mode
+}
+
+// ── Manual refresh ───────────────────────────────────────────
+const refreshNotifications = async () => {
+  await fetchNotifications()
+}
 
 const authHeaders = () => ({
   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -271,6 +314,52 @@ onUnmounted(() => {
 .notif-list { max-height: 300px; overflow-y: auto; }
 .notif-list::-webkit-scrollbar { width: 3px; }
 .notif-list::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 4px; }
+
+/* ── Header actions / refresh ── */
+.notif-header-actions { display: flex; align-items: center; gap: 8px; }
+
+.refresh-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  border: none; background: none; cursor: pointer;
+  color: #94a3b8; font-size: 15px; padding: 0;
+  transition: color 0.15s;
+}
+.refresh-btn:hover:not(:disabled) { color: #2563eb; }
+.refresh-btn:disabled { cursor: default; opacity: 0.6; }
+.refresh-btn i.spinning { animation: notif-spin 0.7s linear infinite; }
+@keyframes notif-spin { to { transform: rotate(360deg); } }
+
+/* ── Filter tabs ── */
+.notif-filter-tabs {
+  display: flex; gap: 6px;
+  padding: 8px 16px 10px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.filter-tab {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; color: #888;
+  padding: 4px 10px; border-radius: 20px;
+  border: none; background: #f5f5f5; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.filter-tab:hover { background: #ececec; }
+.filter-tab.active { background: #eff6ff; color: #2563eb; }
+.filter-count {
+  font-size: 10px; font-weight: 700;
+  background: #2563eb; color: #fff;
+  border-radius: 10px; padding: 1px 5px;
+  line-height: 1.3;
+}
+.filter-tab.active .filter-count { background: #2563eb; }
+
+/* ── Dark Mode: header actions / filter tabs ── */
+[data-theme="dark"] .refresh-btn { color: #64748b; }
+[data-theme="dark"] .refresh-btn:hover:not(:disabled) { color: #60a5fa; }
+[data-theme="dark"] .notif-filter-tabs { border-bottom-color: #334155; }
+[data-theme="dark"] .filter-tab { background: #263548; color: #94a3b8; }
+[data-theme="dark"] .filter-tab:hover { background: #2d3f56; }
+[data-theme="dark"] .filter-tab.active { background: #1e3a5f; color: #60a5fa; }
 
 /* ── Skeleton ── */
 .notif-skeleton {
