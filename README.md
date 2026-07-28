@@ -3,7 +3,7 @@ An AI-Assisted Mental Health Wellness Support System for Students
 
 📖 **Project Overview**
 
-LeanOn Bot is a web-based, AI-assisted mental health support system designed specifically for students of Gordon College. 
+LeanOn Bot is a web-based, AI-assisted mental health support system designed specifically for students of GC. 
 It provides a safe, confidential, and judgment-free platform where students can express their concerns and receive immediate, wellness-focused responses.
 
 The system aims to improve accessibility to mental health support by offering 24/7 digital assistance, 
@@ -164,12 +164,6 @@ The system will be evaluated using:
 User Acceptance Testing (UAT)
 
 System Usability Scale (SUS)
-
-Test participants include:
-
-Gordon College students
-
-Guidance Office representatives
 
 🔐 **Data Privacy & Ethics**
 
