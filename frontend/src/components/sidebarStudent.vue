@@ -468,6 +468,10 @@ const { chats, fetchConversations, addConversation, removeConversation, updateCo
 const isChatHistoryExpanded = ref(true)
 const toggleChatHistory = () => { isChatHistoryExpanded.value = !isChatHistoryExpanded.value }
 
+// ── Tracks the last "New Chat" created so repeated clicks
+// while still on that empty chat don't create duplicates ──
+const lastCreatedChatId = ref(null)
+
 onMounted(() => {
   fetchConversations()
   fetchUserProfile()
@@ -570,9 +574,15 @@ const deleteArchivedChat = (index) => {
 
 // ── CHAT ACTIONS ──
 const createNewChat = async () => {
+  // Already sitting on the new chat we just created? Don't spawn another one.
+  if (lastCreatedChatId.value && route.query.conversation_id == lastCreatedChatId.value) {
+    if (isMobile.value) mobileOpen.value = false
+    return
+  }
   try {
     const res = await axios.post('/api/conversations', {})
     addConversation(res.data)
+    lastCreatedChatId.value = res.data.id
     emit('select-chat', res.data.id)
     if (isMobile.value) mobileOpen.value = false
     router.currentRoute.value.path !== '/ChatConvo'
@@ -582,6 +592,7 @@ const createNewChat = async () => {
 }
 
 const selectChat = (id) => {
+  if (id !== lastCreatedChatId.value) lastCreatedChatId.value = null
   emit('select-chat', id)
   if (isMobile.value) mobileOpen.value = false
   router.currentRoute.value.path !== '/ChatConvo'

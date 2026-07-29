@@ -389,6 +389,109 @@
                         <p v-if="loading" class="no-alerts">Loading alerts…</p>
                     </div>
 
+                    <!-- Mobile card view — classified alerts (shown <=768px via CSS) -->
+                    <div class="classified-mobile-list">
+                        <div
+                            v-for="alert in pagedClassified"
+                            :key="'m-' + alert.id"
+                            class="mobile-alert-card"
+                            :class="[`mac-${alert.severity}`, { 'mac-expanded': expandedRow === alert.id, 'is-assigning': assigningId === alert.id }]"
+                            @click="toggleRow(alert.id)"
+                        >
+                            <div class="mac-top">
+                                <span class="badge" :class="`b-${alert.severity}`">
+                                    <i v-if="alert.severity === 'severe'" class="bx bxs-bell-ring"></i>
+                                    <i v-else-if="alert.severity === 'moderate'" class="bx bx-info-circle"></i>
+                                    <i v-else class="bx bx-check-shield"></i>
+                                    {{ capitalize(alert.severity) }}
+                                </span>
+                                <span class="badge" :class="`b-${alert.status}`">
+                                    {{ alert.status === 'reviewed' ? 'Under review' : capitalize(alert.status) }}
+                                </span>
+                            </div>
+
+                            <div class="mac-student">
+                                <span class="student-name">{{ alert.user_display }}</span>
+                                <span v-if="alert.total_alerts_count !== undefined" class="student-alert-badge" :class="{ 'has-severe': alert.severe_alerts_count > 0 }">
+                                    {{ alert.total_alerts_count }}x
+                                    <template v-if="alert.severe_alerts_count > 0"> · {{ alert.severe_alerts_count }}⚠</template>
+                                </span>
+                            </div>
+
+                            <p class="mac-message">"{{ alert.message }}"</p>
+                            <div v-if="alert.severe_alerts_count >= 2" class="urgent-inline">
+                                <i class="bx bxs-error-circle"></i> Urgent
+                            </div>
+
+                            <div class="mac-keywords">
+                                <span
+                                    v-for="kw in (alert.detected_keywords || []).slice(0, 3)"
+                                    :key="kw"
+                                    class="alert-keyword-tag"
+                                    :class="`keyword--${alert.severity}`"
+                                >{{ kw }}</span>
+                                <span v-if="(alert.detected_keywords || []).length > 3" class="kw-more">+{{ alert.detected_keywords.length - 3 }}</span>
+                            </div>
+
+                            <div class="mac-time"><i class="bx bx-time-five"></i> {{ formatTime(alert.created_at) }}</div>
+
+                            <!-- Expanded detail -->
+                            <div v-if="expandedRow === alert.id" class="mac-detail" @click.stop>
+                                <p class="alert-user">
+                                    {{ alert.user_display }} ·
+                                    <span class="alert-email-text">{{ revealedEmails.has(alert.id) ? alert.real_email : alert.masked_email }}</span>
+                                    <button v-if="alert.real_email" class="reveal-email-btn" @click="toggleEmail(alert.id)">
+                                        <i :class="revealedEmails.has(alert.id) ? 'bx bx-hide' : 'bx bx-show'"></i>
+                                    </button>
+                                </p>
+
+                                <div class="severity-assign-row">
+                                    <div class="severity-assign-header">
+                                        <span class="severity-assign-label">Change severity:</span>
+                                        <span v-if="isHighRisk(alert)" class="severity-lock-notice">
+                                            <i class="bx bx-lock-alt"></i> High-risk — locked to <strong>Severe</strong>
+                                        </span>
+                                    </div>
+                                    <div class="severity-assign-controls">
+                                        <div class="severity-assign-buttons">
+                                            <button class="severity-assign-btn severity-assign-btn--severe" :disabled="isHighRisk(alert)"
+                                                :class="{ selected: pendingSeverity[alert.id] === 'severe' || (!pendingSeverity[alert.id] && alert.severity === 'severe') }"
+                                                @click="setPendingSeverity(alert.id, 'severe')">
+                                                <i class="bx bxs-bell-ring"></i> Severe
+                                            </button>
+                                            <button class="severity-assign-btn severity-assign-btn--moderate" :disabled="isHighRisk(alert)"
+                                                :class="{ selected: pendingSeverity[alert.id] === 'moderate' || (!pendingSeverity[alert.id] && alert.severity === 'moderate') }"
+                                                @click="setPendingSeverity(alert.id, 'moderate')">
+                                                <i class="bx bx-info-circle"></i> Moderate
+                                            </button>
+                                            <button class="severity-assign-btn severity-assign-btn--low" :disabled="isHighRisk(alert)"
+                                                :class="{ selected: pendingSeverity[alert.id] === 'low' || (!pendingSeverity[alert.id] && alert.severity === 'low') }"
+                                                @click="setPendingSeverity(alert.id, 'low')">
+                                                <i class="bx bx-check-shield"></i> Low
+                                            </button>
+                                        </div>
+                                        <button v-if="pendingSeverity[alert.id] && pendingSeverity[alert.id] !== alert.severity" class="severity-confirm-btn" :disabled="assigningId === alert.id" @click="confirmSeverity(alert)">
+                                            <i class="bx bx-check"></i> {{ assigningId === alert.id ? 'Saving…' : 'Confirm' }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="mac-actions">
+                                    <button class="action-btn action-btn--email" @click="openEmailModal(alert)"><i class="bx bx-send"></i> Email</button>
+                                    <button class="action-btn action-btn--review" @click="updateStatus(alert, 'reviewed')" :disabled="alert.status === 'reviewed' || alert.status === 'resolved'"><i class="bx bx-search-alt"></i> Review</button>
+                                    <button class="action-btn action-btn--resolve" @click="openResolveModal(alert)" :disabled="alert.status !== 'reviewed'"><i class="bx bx-check"></i> Resolve</button>
+                                </div>
+                            </div>
+
+                            <div class="mac-expand-hint" v-if="expandedRow !== alert.id">
+                                <i class="bx bx-chevron-down"></i> Tap for details
+                            </div>
+                        </div>
+
+                        <p v-if="sortedClassifiedAlerts.length === 0 && !loading" class="no-alerts">No matching alerts</p>
+                        <p v-if="loading" class="no-alerts">Loading alerts…</p>
+                    </div>
+
                     <!-- Pagination — Classified Alerts -->
                     <div class="pagination-row">
                         <button class="page-btn" :disabled="classifiedPage === 1" @click="classifiedPage--"><i class="bx bx-chevron-left"></i></button>
@@ -1912,6 +2015,18 @@ const todayDate = computed(() => new Date().toISOString().split('T')[0]);
   0%, 100% { background: #2d1010; border-color: #7f1d1d; }
   50%       { background: #3b1515; border-color: #ef4444; }
 }
+
+[data-theme="dark"] .mobile-alert-card {
+  background: #1e2533 !important;
+  border-color: #2d3748 !important;
+}
+[data-theme="dark"] .mobile-alert-card:active {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+}
+[data-theme="dark"] .mac-message { color: #e2e8f0 !important; }
+[data-theme="dark"] .mac-time,
+[data-theme="dark"] .mac-expand-hint { color: #6b7280 !important; }
+[data-theme="dark"] .mac-detail { border-top-color: #2d3748 !important; }
 
 [data-theme="dark"] .severity-lock-notice,
 [data-theme="dark"] .alert-urgent-warning {

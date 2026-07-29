@@ -55,7 +55,44 @@
             </button>
           </div>
 
-          <div v-if="showDropdown && (searchResults.length > 0 || searching)" class="student-dropdown">
+<div v-if="showDropdown" class="student-dropdown">
+  <div v-if="searching" class="student-dropdown-empty">
+    <div class="dropdown-spinner"></div>
+    Loading…
+  </div>
+
+  <template v-else>
+    <div v-if="!searchQuery.trim() && searchResults.length > 0" class="student-dropdown-heading">
+      <i class="bx bx-flag"></i> Flagged Students
+    </div>
+
+    <button
+      v-for="s in searchResults"
+      :key="s.id"
+      type="button"
+      class="student-dropdown-item"
+      :class="{ 'is-flagged': s.has_crisis_flag }"
+      @click="selectStudent(s)"
+    >
+      <span class="student-item-top">
+        <span class="student-item-display">{{ s.display }}</span>
+        <span v-if="s.has_crisis_flag" class="student-flag-badge" title="Recent crisis alert">
+          <i class="bx bxs-flag"></i> Flagged
+        </span>
+      </span>
+      <span class="student-item-meta">{{ s.masked_email }} · {{ s.department || 'No department' }}</span>
+    </button>
+
+    <div v-if="searchQuery.trim() && searchResults.length === 0" class="student-dropdown-empty">
+      No students found
+    </div>
+    <div v-if="!searchQuery.trim() && searchResults.length === 0" class="student-dropdown-empty">
+      No flagged students right now
+    </div>
+  </template>
+</div> <!-- END -->
+
+          <!-- <div v-if="showDropdown && (searchResults.length > 0 || searching)" class="student-dropdown">
             <div v-if="searching" class="student-dropdown-empty">Searching…</div>
             <button
               v-for="s in searchResults"
@@ -72,7 +109,7 @@
             <div v-if="!searching && searchQuery.trim() && searchResults.length === 0" class="student-dropdown-empty">
               No students found
             </div>
-          </div>
+          </div> -->
 
           <div v-if="selectedStudent" class="selected-student-banner">
             <div class="selected-student-left">
@@ -253,17 +290,26 @@ const onSearchInput = () => {
   searchTimer = setTimeout(runSearch, 300)
 }
 
+/* DINAGDAG */
+const onSearchFocus = () => {
+  showDropdown.value = true
+  // wala pang laman ang search? kunin yung default/flagged list
+  if (!searchQuery.value.trim() && searchResults.value.length === 0) {
+    runSearch()
+  }
+}
+
 const runSearch = async () => {
   const q = searchQuery.value.trim()
-  if (q.length < 1) {
-    searchResults.value = []
-    searching.value = false
-    return
-  }
 
   searching.value = true
   try {
-    const res = await axios.get(`/api/admin/analytics/students?q=${encodeURIComponent(q)}`, authConfig())
+    // walang q -> default list (e.g. flagged students)
+    const url = q
+      ? `/api/admin/analytics/students?q=${encodeURIComponent(q)}`
+      : `/api/admin/analytics/students?flagged=true`
+
+    const res = await axios.get(url, authConfig())
     searchResults.value = res.data.students || []
   } catch (err) {
     console.error('Student search failed:', err)
@@ -272,6 +318,8 @@ const runSearch = async () => {
     searching.value = false
   }
 }
+
+/* END */
 
 const selectStudent = (student) => {
   selectedStudent.value = student
@@ -709,5 +757,206 @@ onUnmounted(() => {
 [data-theme="dark"] .student-context-card .perf-row {
   border-bottom-color: #374151;
   color: #9ca3af;
+}
+
+/* --- Responsive stat cards + layout fix (equal width, no right gap) --- */
+.stat-cards-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+  width: 100%;
+}
+
+.stat-cards-grid .stat-card {
+  width: 100% !important;
+  min-width: 0; /* prevents flex/grid overflow from long numbers */
+}
+
+.charts-section,
+.charts-section-bottom {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+  width: 100%;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .stat-cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .stat-cards-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .charts-section,
+  .charts-section-bottom {
+    grid-template-columns: 1fr !important;
+  }
+
+  .page-header-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .header-actions,
+  .period-selector {
+    width: 100%;
+  }
+
+  .period-dropdown {
+    width: 100%;
+  }
+
+  .student-search-wrap {
+    flex-wrap: wrap;
+  }
+
+  .clear-student-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .selected-student-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .privacy-chip {
+    align-self: flex-start;
+  }
+
+  .student-context-card .perf-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .student-context-card .perf-row strong {
+    text-align: left;
+  }
+}
+
+.search-input-group {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0; /* para hindi mag-overflow sa mobile pag naka-wrap */
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.search-input-group .student-search-input {
+  width: 100%;
+}
+
+
+/* DINAGDAG */
+.student-dropdown {
+  scrollbar-width: thin;
+  scrollbar-color: #a7f3d0 transparent;
+}
+
+.student-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.student-dropdown::-webkit-scrollbar-thumb {
+  background: #a7f3d0;
+  border-radius: 999px;
+}
+
+.student-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #86efac;
+}
+
+.student-dropdown-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b45309;
+}
+
+.student-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.student-flag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 650;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+
+.student-dropdown-item.is-flagged {
+  background: #fffbeb;
+}
+
+.student-dropdown-item.is-flagged:hover {
+  background: #fef3c7;
+}
+
+.dropdown-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #16a34a;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+  animation: dropdown-spin 0.6s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes dropdown-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* dark mode */
+[data-theme="dark"] .student-dropdown-heading {
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .student-flag-badge {
+  background: #2d2010;
+  border-color: #78500a;
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .student-dropdown-item.is-flagged {
+  background: #2d2010;
+}
+
+[data-theme="dark"] .student-dropdown-item.is-flagged:hover {
+  background: #3a2812;
 }
 </style>
