@@ -153,7 +153,7 @@ class AnalyticsService
 
     /**
      * Search students for the Student Insights picker.
-     * Returns anonymized labels only — no real names.
+     * Returns student identity data for admin picker/search.
      */
     public function searchStudents(string $q, int $limit = 15): array
     {
@@ -165,26 +165,32 @@ class AnalyticsService
         $limit = min(max($limit, 1), 25);
         $query = User::where('role', 'student');
 
-        if (preg_match('/(?:anonymous\s*#?\s*)?(\d+)/i', $q, $m)) {
-            $num = (int) $m[1];
-            $decodedId = $num > 1000 ? $num - 1000 : $num;
-
-            $query->where(function ($qb) use ($q, $num, $decodedId) {
-                $qb->where('id', $decodedId)
-                    ->orWhere('id', $num)
-                    ->orWhere('email', 'like', '%' . $q . '%')
-                    ->orWhere('department', 'like', '%' . $q . '%');
-            });
-        } else {
-            $query->where(function ($qb) use ($q) {
-                $qb->where('email', 'like', '%' . $q . '%')
-                    ->orWhere('department', 'like', '%' . $q . '%');
-            });
+        $domainQuery = $q;
+        if (str_contains($q, '@')) {
+            $parts = explode('@', $q);
+            $domainQuery = end($parts);
         }
+
+        // Match by:
+        // - name (first_name / last_name)
+        // - email (full or domain part)
+        // - department (optional convenience)
+        $query->where(function ($qb) use ($q, $domainQuery) {
+            $qb->where('first_name', 'like', '%' . $q . '%')
+                ->orWhere('last_name', 'like', '%' . $q . '%')
+                ->orWhere('email', 'like', '%' . $q . '%')
+                // Domain-only search (e.g. "gmail.com")
+                ->orWhere('email', 'like', '%@' . $domainQuery . '%')
+                ->orWhere('department', 'like', '%' . $q . '%');
+
+            if (preg_match('/^\d+$/', $q)) {
+                $qb->orWhere('id', (int) $q);
+            }
+        });
 
         return $query->orderBy('id')
             ->limit($limit)
-            ->get(['id', 'email', 'department'])
+            ->get(['id', 'email', 'department', 'first_name', 'last_name'])
             ->map(fn (User $user) => $this->formatStudentSubject($user))
             ->values()
             ->toArray();
@@ -201,6 +207,8 @@ class AnalyticsService
         }
 
         $cacheKey = "analytics:student:{$userId}:dashboard:{$period}";
+        // Bump version because student identity payload has changed (picker no longer uses anonymized labels).
+        $cacheKey .= ':v2';
         $cacheTtl = 900; // 15 minutes
 
         return Cache::remember($cacheKey, $cacheTtl, function () use ($user, $userId, $period) {
@@ -291,14 +299,15 @@ class AnalyticsService
     }
 
     /**
-     * Anonymized student subject payload for admin UI.
+     * Student subject payload for admin UI.
      */
     private function formatStudentSubject(User $user): array
     {
         return [
             'id'           => $user->id,
-            'display'      => 'Anonymous #' . ($user->id + 1000),
-            'masked_email' => DataFormatter::maskEmail($user->email),
+            'display'      => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Student',
+            'email'        => $user->email,
+            'domain_email' => $user->email ? explode('@', $user->email, 2)[1] : null,
             'department'   => $user->department,
         ];
     }

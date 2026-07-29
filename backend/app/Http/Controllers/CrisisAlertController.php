@@ -66,7 +66,7 @@ class CrisisAlertController extends Controller
             ->unique();
 
         $userCounts = CrisisAlert::whereIn('user_id', $userIds)
-            ->selectRaw('user_id, COUNT(*) as total_count, SUM(CASE WHEN severity = "severe" THEN 1 ELSE 0 END) as severe_count')
+            ->selectRaw('user_id, COUNT(*) as total_count, SUM(CASE WHEN severity = \'severe\' AND is_classified = 1 THEN 1 ELSE 0 END) as severe_count')
             ->groupBy('user_id')
             ->get()
             ->keyBy('user_id');
@@ -121,6 +121,7 @@ class CrisisAlertController extends Controller
             'severity' => 'sometimes|nullable|in:severe,moderate,low',
             'appointment_date' => 'sometimes|nullable|date',
             'appointment_time' => 'sometimes|nullable|string',
+            'appointment_status' => 'sometimes|nullable|in:scheduled,rescheduled,done,did_not_attend',
         ]);
 
         $alert = CrisisAlert::findOrFail($id);
@@ -128,12 +129,29 @@ class CrisisAlertController extends Controller
         $updates = [];
 
         if ($request->has('status')) {
+            if ($request->status === 'resolved') {
+                if ($alert->status !== 'reviewed') {
+                    return response()->json([
+                        'message' => 'Alert must be marked under review before it can be resolved.',
+                    ], 422);
+                }
+                if ($alert->appointment_date && $alert->appointment_status !== 'done') {
+                    return response()->json([
+                        'message' => 'Mark the appointment as done on the Appointments page before resolving this alert.',
+                    ], 422);
+                }
+            }
             $updates['status'] = $request->status;
         }
 
         if ($request->has('severity')) {
             $updates['severity']      = $request->severity;
             $updates['is_classified'] = !is_null($request->severity);
+        }
+
+        // Appointment outcome (done / did not attend) — independent of alert resolve status
+        if ($request->has('appointment_status') && !$request->has('appointment_date') && !$request->has('appointment_time')) {
+            $updates['appointment_status'] = $request->appointment_status;
         }
 
         if ($request->has('appointment_date') || $request->has('appointment_time')) {
@@ -196,36 +214,8 @@ class CrisisAlertController extends Controller
 
         $alert->update($updates);
 
-        if ($request->has('severity') && $request->severity === 'severe') {
-            $userId = $alert->user_id;
-            if ($userId) {
-                $severeCount = CrisisAlert::where('user_id', $userId)
-                    ->where('severity', 'severe')
-                    ->count();
-
-                if ($severeCount >= 2) {
-                    $user = User::find($userId);
-                    if ($user) {
-                        $notification = \App\Models\AdminNotification::where('type', 'multiple_severe_alerts')
-                            ->where('meta->user_id', $userId)
-                            ->first();
-
-                        if (!$notification) {
-                            \App\Models\AdminNotification::urgentHelpNeeded($user, $severeCount);
-                        } else {
-                            $maskedEmail = \App\Helpers\DataFormatter::maskEmail($user->email);
-                            $notification->update([
-                                'message' => "Student ({$maskedEmail}) has accumulated {$severeCount} severe crisis alerts.",
-                                'meta'    => [
-                                    'user_id'      => $userId,
-                                    'severe_count' => $severeCount,
-                                ],
-                                'is_read' => false,
-                            ]);
-                        }
-                    }
-                }
-            }
+        if ($request->has('severity') && $request->severity === 'severe' && $alert->user_id) {
+            $this->notifyIfMultipleSevereAlerts($alert->user_id);
         }
 
         // Bust analytics cache so dashboard reflects new classification
@@ -444,5 +434,50 @@ class CrisisAlertController extends Controller
         $appointments->transform($anonymize);
 
         return response()->json($appointments);
+    }
+
+    /**
+     * Notify admins when a student accumulates 2+ classified severe crisis alerts.
+     */
+    private function notifyIfMultipleSevereAlerts(int $userId): void
+    {
+        $severeCount = CrisisAlert::where('user_id', $userId)
+            ->where('severity', 'severe')
+            ->where('is_classified', true)
+            ->count();
+
+        if ($severeCount < 2) {
+            return;
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            return;
+        }
+
+        try {
+            $notification = \App\Models\AdminNotification::where('type', 'multiple_severe_alerts')
+                ->where('meta->user_id', $userId)
+                ->first();
+
+            if (!$notification) {
+                \App\Models\AdminNotification::urgentHelpNeeded($user, $severeCount);
+            } else {
+                $maskedEmail = \App\Helpers\DataFormatter::maskEmail($user->email);
+                $totalCount = CrisisAlert::where('user_id', $userId)->count();
+                $notification->update([
+                    'message' => "Student ({$maskedEmail}) has {$totalCount} crisis alert(s) — {$severeCount} classified severe.",
+                    'detail'  => 'This student requires immediate wellness checks and counselor intervention.',
+                    'meta'    => [
+                        'user_id'      => $userId,
+                        'severe_count' => $severeCount,
+                        'total_count'  => $totalCount,
+                    ],
+                    'is_read' => false,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to create urgent help notification: ' . $e->getMessage());
+        }
     }
 }

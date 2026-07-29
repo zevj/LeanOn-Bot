@@ -12,7 +12,7 @@
         <div class="page-header-wrapper">
           <div class="header-title">
             <h1 class="title">Student Insights</h1>
-            <p class="subtext">Anonymized wellness metrics for an individual student case. AI Insights stay on the school-wide Analytics page.</p>
+            <p class="subtext">Student-specific wellness metrics for an individual student case. AI Insights stay on the school-wide Analytics page.</p>
           </div>
 
           <div class="header-actions">
@@ -40,7 +40,7 @@
               v-model="searchQuery"
               type="text"
               class="student-search-input"
-              placeholder="Search by Anonymous # or email..."
+                placeholder="Search by name or domain email..."
               @input="onSearchInput"
               @focus="showDropdown = searchResults.length > 0"
             />
@@ -65,7 +65,9 @@
               @click="selectStudent(s)"
             >
               <span class="student-item-display">{{ s.display }}</span>
-              <span class="student-item-meta">{{ s.masked_email }} · {{ s.department || 'No department' }}</span>
+                <span class="student-item-meta">
+                  {{ s.domain_email ? '@' + s.domain_email : s.email }} · {{ s.department || 'No department' }}
+                </span>
             </button>
             <div v-if="!searching && searchQuery.trim() && searchResults.length === 0" class="student-dropdown-empty">
               No students found
@@ -77,12 +79,14 @@
               <i class="bx bx-user-circle"></i>
               <div>
                 <strong>{{ selectedStudent.display }}</strong>
-                <span>{{ selectedStudent.masked_email }} · {{ selectedStudent.department || 'No department' }}</span>
+                <span>
+                  {{ selectedStudent.domain_email ? '@' + selectedStudent.domain_email : selectedStudent.email }} · {{ selectedStudent.department || 'No department' }}
+                </span>
               </div>
             </div>
             <p class="privacy-chip">
               <i class="bx bx-lock-alt"></i>
-              Case view — anonymized metrics only
+              Case view — student metrics
             </p>
           </div>
         </div>
@@ -91,7 +95,7 @@
         <div v-if="!selectedStudent" class="empty-state-card">
           <i class="bx bx-user-pin"></i>
           <h3>Select a student to begin</h3>
-          <p>Search by Anonymous # (e.g. 1123) or masked email to view conversations, mood, usage hours, and crisis alerts for that student.</p>
+          <p>Search by student name or domain email to view conversations, mood, usage hours, and crisis alerts for that student.</p>
         </div>
 
         <!-- Loading -->

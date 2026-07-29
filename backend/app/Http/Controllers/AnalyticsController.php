@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
  * Analytics Controller
  *
  * All endpoints are protected by auth:sanctum + role:guidance middleware.
- * All data returned is anonymized — no student PII is ever exposed.
+ * Admin UI can access student identity for searching/picker purposes.
  */
 class AnalyticsController extends Controller
 {

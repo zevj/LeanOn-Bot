@@ -184,22 +184,52 @@
 
                 <!-- Status -->
                 <td data-label="Status">
-                  <span class="badge" :class="`b-${appt.status}`">
-                    <i v-if="appt.status === 'new'" class="bx bx-error-circle"></i>
-                    <i v-else-if="appt.status === 'reviewed'" class="bx bx-search-alt"></i>
-                    <i v-else-if="appt.status === 'resolved'" class="bx bx-check-circle"></i>
-                    {{ appt.status === 'reviewed' ? 'Under review' : capitalize(appt.status) }}
-                  </span>
+                  <div class="status-stack">
+                    <span class="badge" :class="`b-${appt.status}`">
+                      <i v-if="appt.status === 'new'" class="bx bx-error-circle"></i>
+                      <i v-else-if="appt.status === 'reviewed'" class="bx bx-search-alt"></i>
+                      <i v-else-if="appt.status === 'resolved'" class="bx bx-check-circle"></i>
+                      {{ appt.status === 'reviewed' ? 'Under review' : capitalize(appt.status) }}
+                    </span>
+                    <span
+                      v-if="appt.appointment_status"
+                      class="badge"
+                      :class="`b-appt-${appt.appointment_status}`"
+                    >
+                      <i v-if="appt.appointment_status === 'done'" class="bx bx-check-circle"></i>
+                      <i v-else-if="appt.appointment_status === 'did_not_attend'" class="bx bx-user-x"></i>
+                      <i v-else class="bx bx-calendar"></i>
+                      {{ formatApptStatus(appt.appointment_status) }}
+                    </span>
+                  </div>
                 </td>
 
                 <!-- Actions -->
                 <td data-label="Actions">
                   <div class="actions-cell">
-                    <button class="action-btn action-btn--edit" title="Reschedule" @click="openRescheduleModal(appt)" :disabled="appt.status === 'resolved'">
+                    <button
+                      class="action-btn action-btn--edit"
+                      title="Reschedule"
+                      @click="openRescheduleModal(appt)"
+                      :disabled="appt.status === 'resolved' || appt.appointment_status === 'done'"
+                    >
                       <i class="bx bx-edit-alt"></i> Reschedule
                     </button>
-                    <button class="action-btn action-btn--resolve" title="Resolve Alert" @click="openResolveModal(appt)" :disabled="appt.status === 'resolved'">
-                      <i class="bx bx-check-shield"></i> Resolve
+                    <button
+                      class="action-btn action-btn--done"
+                      title="Done"
+                      @click="openOutcomeModal(appt, 'done')"
+                      :disabled="!canSetOutcome(appt) || appt.appointment_status === 'done'"
+                    >
+                      <i class="bx bx-check-circle"></i> Done
+                    </button>
+                    <button
+                      class="action-btn action-btn--no-show"
+                      title="Did Not Attend"
+                      @click="openOutcomeModal(appt, 'did_not_attend')"
+                      :disabled="!canSetOutcome(appt) || appt.appointment_status === 'did_not_attend'"
+                    >
+                      <i class="bx bx-user-x"></i> Did Not Attend
                     </button>
                   </div>
                 </td>
@@ -251,7 +281,6 @@
               </div>
             </div>
             <div class="email-modal-footer">
-              <button class="action-btn" @click="closeRescheduleModal">Cancel</button>
               <button class="action-btn action-btn--confirm-reschedule" @click="saveReschedule" :disabled="saving">
                 <i class="bx bx-save"></i> {{ saving ? 'Saving...' : 'Save Changes' }}
               </button>
@@ -261,35 +290,61 @@
       </transition>
     </Teleport>
 
-    <!-- Resolve Confirmation Modal -->
+    <!-- Appointment Outcome Confirmation Modal -->
     <Teleport to="body">
       <transition name="modal-fade">
-        <div v-if="resolveModal.visible" class="email-modal-overlay" @click.self="closeResolveModal">
+        <div v-if="outcomeModal.visible" class="email-modal-overlay" @click.self="closeOutcomeModal">
           <div class="email-modal resolve-modal">
             <div class="email-modal-header">
               <div class="email-modal-header-left">
-                <div class="email-modal-icon icon-resolve"><i class="bx bx-check-shield"></i></div>
+                <div
+                  class="email-modal-icon"
+                  :class="outcomeModal.outcome === 'done' ? 'icon-resolve' : 'icon-no-show'"
+                >
+                  <i :class="outcomeModal.outcome === 'done' ? 'bx bx-check-circle' : 'bx bx-user-x'"></i>
+                </div>
                 <div>
-                  <p class="email-modal-title">Resolve Alert</p>
-                  <p class="email-modal-subtitle">Confirm resolution status</p>
+                  <p class="email-modal-title">
+                    {{ outcomeModal.outcome === 'done' ? 'Mark as Done' : 'Did Not Attend' }}
+                  </p>
+                  <p class="email-modal-subtitle">Confirm appointment outcome</p>
                 </div>
               </div>
-              <button class="email-modal-close" @click="closeResolveModal">
+              <button class="email-modal-close" @click="closeOutcomeModal">
                 <i class="bx bx-x"></i>
               </button>
             </div>
             <div class="email-modal-body resolve-body">
-              <div class="resolve-icon-large"><i class="bx bx-check-circle"></i></div>
-              <p class="resolve-text">
-                Are you sure you want to mark the alert for
-                <strong>{{ resolveModal.appt?.user_display }}</strong> as resolved?
+              <div
+                class="resolve-icon-large"
+                :class="{ 'icon-no-show-large': outcomeModal.outcome === 'did_not_attend' }"
+              >
+                <i :class="outcomeModal.outcome === 'done' ? 'bx bx-check-circle' : 'bx bx-user-x'"></i>
+              </div>
+              <p class="resolve-text" v-if="outcomeModal.outcome === 'done'">
+                Mark the appointment for
+                <strong>{{ outcomeModal.appt?.user_display }}</strong> as done?
               </p>
-              <p class="resolve-subtext">This action indicates that the crisis has been properly addressed and handled.</p>
+              <p class="resolve-text" v-else>
+                Mark that
+                <strong>{{ outcomeModal.appt?.user_display }}</strong> did not attend this appointment?
+              </p>
+              <p class="resolve-subtext" v-if="outcomeModal.outcome === 'done'">
+                Once marked done, this crisis alert can be resolved from the Crisis Alerts page.
+              </p>
+              <p class="resolve-subtext" v-else>
+                You can reschedule a new appointment if needed. The crisis alert stays open until an appointment is marked done and resolved.
+              </p>
             </div>
             <div class="email-modal-footer">
-              <button class="action-btn" @click="closeResolveModal">Cancel</button>
-              <button class="action-btn action-btn--confirm-resolve" @click="executeResolve" :disabled="saving">
-                <i class="bx bx-check"></i> {{ saving ? 'Resolving...' : 'Confirm Resolution' }}
+              <button
+                class="action-btn"
+                :class="outcomeModal.outcome === 'done' ? 'action-btn--confirm-resolve' : 'action-btn--confirm-no-show'"
+                @click="executeOutcome"
+                :disabled="saving"
+              >
+                <i :class="outcomeModal.outcome === 'done' ? 'bx bx-check' : 'bx bx-user-x'"></i>
+                {{ saving ? 'Saving...' : (outcomeModal.outcome === 'done' ? 'Confirm Done' : 'Confirm No Show') }}
               </button>
             </div>
           </div>
@@ -408,6 +463,21 @@ const formatTime = (timeStr) => {
 
 const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
 
+const formatApptStatus = (status) => {
+  const map = {
+    scheduled: 'Scheduled',
+    rescheduled: 'Rescheduled',
+    done: 'Done',
+    did_not_attend: 'Did not attend',
+  };
+  return map[status] || capitalize(status);
+};
+
+const canSetOutcome = (appt) => {
+  if (!appt || appt.status === 'resolved') return false;
+  return true;
+};
+
 // Actions
 const goToCrisisAlert = (appt) => {
   router.push('/AdminCrisisAlerts');
@@ -455,34 +525,41 @@ const saveReschedule = async () => {
   }
 };
 
-// Resolve
-const resolveModal = ref({ visible: false, appt: null });
+// Appointment outcome (done / did not attend)
+const outcomeModal = ref({ visible: false, appt: null, outcome: null });
 
-const openResolveModal = (appt) => {
-  resolveModal.value = { visible: true, appt };
+const openOutcomeModal = (appt, outcome) => {
+  if (!canSetOutcome(appt)) return;
+  outcomeModal.value = { visible: true, appt, outcome };
 };
 
-const closeResolveModal = () => {
-  resolveModal.value.visible = false;
-  setTimeout(() => { if (!resolveModal.value.visible) resolveModal.value.appt = null; }, 200);
+const closeOutcomeModal = () => {
+  outcomeModal.value.visible = false;
+  setTimeout(() => {
+    if (!outcomeModal.value.visible) {
+      outcomeModal.value.appt = null;
+      outcomeModal.value.outcome = null;
+    }
+  }, 200);
 };
 
-const executeResolve = async () => {
-  if (!resolveModal.value.appt) return;
+const executeOutcome = async () => {
+  if (!outcomeModal.value.appt || !outcomeModal.value.outcome) return;
   saving.value = true;
   try {
     const token = localStorage.getItem('token');
-    await axios.patch(`/api/admin/crisis-alerts/${resolveModal.value.appt.id}`, {
-      status: 'resolved'
+    await axios.patch(`/api/admin/crisis-alerts/${outcomeModal.value.appt.id}`, {
+      appointment_status: outcomeModal.value.outcome,
     }, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    toast.success(`Alert resolved for ${resolveModal.value.appt.user_display}`);
-    closeResolveModal();
+    const label = outcomeModal.value.outcome === 'done' ? 'done' : 'did not attend';
+    toast.success(`Appointment marked as ${label} for ${outcomeModal.value.appt.user_display}`);
+    closeOutcomeModal();
     fetchAppointments();
   } catch (err) {
-    console.error('Failed to resolve alert:', err);
-    toast.error('Failed to resolve alert.');
+    console.error('Failed to update appointment outcome:', err);
+    toast.error('Failed to update appointment outcome.');
   } finally {
     saving.value = false;
   }
@@ -865,7 +942,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: 130px;
+  width: 150px;
 }
 
 .actions-cell .action-btn {
@@ -967,6 +1044,82 @@ onUnmounted(() => {
   cursor: not-allowed;
 }
 
+.action-btn--done {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.action-btn--done:hover:not(:disabled) {
+  background: #dcfce7;
+}
+
+.action-btn--done:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn--no-show {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.action-btn--no-show:hover:not(:disabled) {
+  background: #ffedd5;
+}
+
+.action-btn--no-show:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.status-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.b-appt-scheduled,
+.b-appt-rescheduled {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.b-appt-done {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.b-appt-did_not_attend {
+  background: #fff7ed;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.icon-no-show {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+}
+
+.icon-no-show-large {
+  color: #c2410c !important;
+}
+
+.action-btn--confirm-no-show {
+  background: #ea580c;
+  color: #fff;
+  border: 1px solid #ea580c;
+}
+
+.action-btn--confirm-no-show:hover {
+  background: #c2410c;
+}
+
 .icon-resolve {
   background: #f0fdf4;
   border: 1px solid #bbf7d0;
@@ -1017,20 +1170,57 @@ onUnmounted(() => {
 }
 
 /* Dark Mode Overrides */
-[data-theme="dark"] .action-btn--resolve {
+[data-theme="dark"] .action-btn--resolve,
+[data-theme="dark"] .action-btn--done {
   background: #14532d;
   color: #4ade80;
   border-color: #166534;
 }
 
-[data-theme="dark"] .action-btn--resolve:hover:not(:disabled) {
+[data-theme="dark"] .action-btn--resolve:hover:not(:disabled),
+[data-theme="dark"] .action-btn--done:hover:not(:disabled) {
   background: #166534;
+}
+
+[data-theme="dark"] .action-btn--no-show {
+  background: #431407;
+  color: #fdba74;
+  border-color: #9a3412;
+}
+
+[data-theme="dark"] .action-btn--no-show:hover:not(:disabled) {
+  background: #7c2d12;
 }
 
 [data-theme="dark"] .icon-resolve {
   background: #14532d;
   border-color: #166534;
   color: #4ade80;
+}
+
+[data-theme="dark"] .icon-no-show {
+  background: #431407;
+  border-color: #9a3412;
+  color: #fdba74;
+}
+
+[data-theme="dark"] .b-appt-scheduled,
+[data-theme="dark"] .b-appt-rescheduled {
+  background: #1e2d4d;
+  color: #93c5fd;
+  border-color: #1e3a5f;
+}
+
+[data-theme="dark"] .b-appt-done {
+  background: #14532d;
+  color: #4ade80;
+  border-color: #166534;
+}
+
+[data-theme="dark"] .b-appt-did_not_attend {
+  background: #431407;
+  color: #fdba74;
+  border-color: #9a3412;
 }
 
 [data-theme="dark"] .resolve-text {

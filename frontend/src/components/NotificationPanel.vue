@@ -48,7 +48,7 @@
           <template v-if="filteredNotifications.length > 0">
             <div
               class="notif-item"
-              :class="{ unread: !notif.is_read, expanded: expandedId === notif.id }"
+              :class="{ unread: !notif.is_read, expanded: expandedId === notif.id, 'notif-item--urgent': notif.type === 'multiple_severe_alerts' }"
               v-for="notif in filteredNotifications"
               :key="notif.id"
               @click="handleExpand(notif)"
@@ -87,7 +87,10 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
+
+const router = useRouter()
 
 const showPanel   = ref(false)
 const wrapperRef  = ref(null)
@@ -141,6 +144,11 @@ const handleExpand = async (notif) => {
     } catch {
       notif.is_read = false // revert on failure
     }
+  }
+
+  if (notif.type === 'multiple_severe_alerts') {
+    showPanel.value = false
+    router.push('/AdminCrisisAlerts')
   }
 }
 
@@ -310,6 +318,11 @@ defineEmits(['view-all'])
 .notif-item:hover { background: #fafafa; }
 .notif-item.unread { background: #f7fbf6; }
 .notif-item.expanded { background: #f4f9f3; }
+.notif-item.notif-item--urgent {
+  background: #fff5f5;
+  border-left: 3px solid #ef4444;
+}
+.notif-item.notif-item--urgent.unread { background: #fef2f2; }
 
 /* ── Icon ── */
 .notif-icon {

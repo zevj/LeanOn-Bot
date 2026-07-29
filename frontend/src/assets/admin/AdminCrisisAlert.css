@@ -387,7 +387,7 @@
 
 /* ── Column widths ── */
 .col-severity  { width: 110px; }
-.col-student   { width: 180px; }
+.col-student   { width: 160px; }
 .col-message   { min-width: 220px; }
 .col-keywords  { width: 160px; }
 .col-status    { width: 120px; }
@@ -415,6 +415,8 @@
 .alert-row.row-severe   { border-left: 3px solid #ef4444; }
 .alert-row.row-moderate { border-left: 3px solid #9F7A00; }
 .alert-row.row-low      { border-left: 3px solid #0A9569; }
+.alert-row.row-urgent   { background: #fff1f2; border-left: 3px solid #ef4444; }
+.alert-row.row-urgent:hover { background: #fee2e2; }
 
 /* Expanded row highlight */
 .alert-row.row-expanded { background: #f0fdf4; }

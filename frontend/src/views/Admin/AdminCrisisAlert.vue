@@ -138,7 +138,7 @@
 
                                 <p class="alert-user">
                                     {{ alert.user_display }}
-                                    <span v-if="alert.total_alerts_count !== undefined" class="student-alert-badge" :class="{ 'has-severe': alert.severe_alerts_count > 0 }">
+                                    <span v-if="alert.total_alerts_count !== undefined" class="student-alert-badge" :class="studentAlertBadgeClass(alert)">
                                         {{ alert.total_alerts_count }} alert{{ alert.total_alerts_count !== 1 ? 's' : '' }}
                                         <template v-if="alert.severe_alerts_count > 0">
                                             · {{ alert.severe_alerts_count }} severe
@@ -296,160 +296,88 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <template v-for="alert in pagedClassified" :key="alert.id">
-                                    <!-- Main row -->
-                                    <tr
-                                        class="alert-row"
-                                        :class="[`row-${alert.severity}`, { 'row-expanded': expandedRow === alert.id, 'is-assigning': assigningId === alert.id }]"
-                                        @click="toggleRow(alert.id)"
-                                    >
-                                        <td class="col-severity">
-                                            <span class="badge" :class="`b-${alert.severity}`">
-                                                <i v-if="alert.severity === 'severe'" class="bx bxs-bell-ring"></i>
-                                                <i v-else-if="alert.severity === 'moderate'" class="bx bx-info-circle"></i>
-                                                <i v-else class="bx bx-check-shield"></i>
-                                                {{ capitalize(alert.severity) }}
-                                            </span>
-                                        </td>
-                                        <td class="col-student">
-                                            <div class="student-cell">
-                                                <span class="student-name">{{ alert.user_display }}</span>
-                                                <span v-if="alert.total_alerts_count !== undefined" class="student-alert-badge" :class="{ 'has-severe': alert.severe_alerts_count > 0 }">
-                                                    {{ alert.total_alerts_count }}x
-                                                    <template v-if="alert.severe_alerts_count > 0"> · {{ alert.severe_alerts_count }}⚠</template>
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td class="col-message">
-                                            <span class="message-preview">"{{ alert.message }}"</span>
-                                            <div v-if="alert.severe_alerts_count >= 2" class="urgent-inline">
-                                                <i class="bx bxs-error-circle"></i> Urgent
-                                            </div>
-                                        </td>
-                                        <td class="col-keywords">
-                                            <div class="kw-cell">
-                                                <span
-                                                    v-for="kw in (alert.detected_keywords || []).slice(0, 2)"
-                                                    :key="kw"
-                                                    class="alert-keyword-tag"
-                                                    :class="`keyword--${alert.severity}`"
-                                                >{{ kw }}</span>
-                                                <span v-if="(alert.detected_keywords || []).length > 2" class="kw-more">+{{ alert.detected_keywords.length - 2 }}</span>
-                                            </div>
-                                        </td>
-                                        <td class="col-status">
+                                <tr
+                                    v-for="alert in pagedClassified"
+                                    :key="alert.id"
+                                    class="alert-row"
+                                    :class="[`row-${alert.severity}`, { 'is-assigning': assigningId === alert.id }]"
+                                    @click="openDetailModal(alert)"
+                                >
+                                    <td class="col-severity">
+                                        <span class="badge" :class="`b-${alert.severity}`">
+                                            <i v-if="alert.severity === 'severe'" class="bx bxs-bell-ring"></i>
+                                            <i v-else-if="alert.severity === 'moderate'" class="bx bx-info-circle"></i>
+                                            <i v-else class="bx bx-check-shield"></i>
+                                            {{ capitalize(alert.severity) }}
+                                        </span>
+                                    </td>
+                                    <td class="col-student">
+                                        <div class="student-cell">
+                                            <span class="student-name">{{ alert.user_display }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="col-message">
+                                        <span class="message-preview">"{{ alert.message }}"</span>
+                                    </td>
+                                    <td class="col-keywords">
+                                        <div class="kw-cell">
+                                            <span
+                                                v-for="kw in (alert.detected_keywords || []).slice(0, 2)"
+                                                :key="kw"
+                                                class="alert-keyword-tag"
+                                                :class="`keyword--${alert.severity}`"
+                                            >{{ kw }}</span>
+                                            <span v-if="(alert.detected_keywords || []).length > 2" class="kw-more">+{{ alert.detected_keywords.length - 2 }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="col-status">
+                                        <div class="status-cell">
                                             <span class="badge" :class="`b-${alert.status}`">
                                                 <i v-if="alert.status === 'new'" class="bx bx-error-circle"></i>
                                                 <i v-else-if="alert.status === 'reviewed'" class="bx bx-search-alt"></i>
                                                 <i v-else-if="alert.status === 'resolved'" class="bx bx-check-circle"></i>
                                                 {{ alert.status === 'reviewed' ? 'Under review' : capitalize(alert.status) }}
                                             </span>
-                                        </td>
-                                        <td class="col-time">
-                                            <span class="alert-time">
-                                                <i class="bx bx-time-five"></i> {{ formatTime(alert.created_at) }}
+                                            <span
+                                                v-if="hasAppointment(alert)"
+                                                class="appt-linked-badge"
+                                                :class="{ 'appt-linked-badge--done': isAppointmentDone(alert), 'appt-linked-badge--noshow': alert.appointment_status === 'did_not_attend' }"
+                                                :title="isAppointmentDone(alert) ? 'Appointment done — can resolve' : (alert.appointment_status === 'did_not_attend' ? 'Did not attend' : 'Has scheduled appointment')"
+                                            >
+                                                <i :class="isAppointmentDone(alert) ? 'bx bx-check-circle' : (alert.appointment_status === 'did_not_attend' ? 'bx bx-user-x' : 'bx bx-calendar')"></i>
+                                                {{ isAppointmentDone(alert) ? 'Done' : (alert.appointment_status === 'did_not_attend' ? 'No show' : 'Appt') }}
                                             </span>
-                                        </td>
-                                        <td class="col-actions" @click.stop>
-                                            <div class="row-actions">
-                                                <button class="action-btn action-btn--email" title="Send email" @click="openEmailModal(alert)">
-                                                    <i class="bx bx-send"></i>
-                                                </button>
-                                                <button
-                                                    class="action-btn action-btn--review"
-                                                    title="Mark under review"
-                                                    @click="updateStatus(alert, 'reviewed')"
-                                                    :disabled="alert.status === 'reviewed' || alert.status === 'resolved'"
-                                                >
-                                                    <i class="bx bx-search-alt"></i>
-                                                </button>
-                                                <button
-                                                    class="action-btn action-btn--resolve"
-                                                    title="Resolve"
-                                                    @click="openResolveModal(alert)"
-                                                    :disabled="alert.status !== 'reviewed'"
-                                                >
-                                                    <i class="bx bx-check"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <!-- Expanded detail row -->
-                                    <tr v-if="expandedRow === alert.id" class="detail-row" :class="`row-${alert.severity}`">
-                                        <td colspan="7">
-                                            <div class="detail-panel">
-                                                <div class="detail-left">
-                                                    <div v-if="alert.severe_alerts_count >= 2" class="alert-urgent-warning">
-                                                        <i class="bx bxs-error-circle"></i>
-                                                        <span>Urgent Support Needed: This student has accumulated {{ alert.severe_alerts_count }} severe alerts!</span>
-                                                    </div>
-                                                    <p class="alert-message">"{{ alert.message }}"</p>
-                                                    <div class="alert-keywords-row">
-                                                        <span class="alert-keywords-label">Keywords:</span>
-                                                        <span
-                                                            v-for="kw in (alert.detected_keywords || [])"
-                                                            :key="kw"
-                                                            class="alert-keyword-tag"
-                                                            :class="`keyword--${alert.severity}`"
-                                                        >{{ kw }}</span>
-                                                    </div>
-                                                    <p class="alert-user">
-                                                        {{ alert.user_display }} ·
-                                                        <span class="alert-email-text">
-                                                            {{ revealedEmails.has(alert.id) ? alert.real_email : alert.masked_email }}
-                                                        </span>
-                                                        <button v-if="alert.real_email" class="reveal-email-btn" :title="revealedEmails.has(alert.id) ? 'Hide email' : 'Show email'" @click="toggleEmail(alert.id)">
-                                                            <i :class="revealedEmails.has(alert.id) ? 'bx bx-hide' : 'bx bx-show'"></i>
-                                                        </button>
-                                                    </p>
-                                                </div>
-                                                <div class="detail-right">
-                                                    <div class="severity-assign-row">
-                                                        <div class="severity-assign-header">
-                                                            <span class="severity-assign-label">Change severity:</span>
-                                                            <span v-if="isHighRisk(alert)" class="severity-lock-notice">
-                                                                <i class="bx bx-lock-alt"></i>
-                                                                High-risk — severity locked to <strong>Severe</strong>
-                                                            </span>
-                                                        </div>
-                                                        <div class="severity-assign-controls">
-                                                            <div class="severity-assign-buttons">
-                                                                <button
-                                                                    class="severity-assign-btn severity-assign-btn--severe"
-                                                                    :disabled="isHighRisk(alert)"
-                                                                    :class="{ selected: pendingSeverity[alert.id] === 'severe' || (!pendingSeverity[alert.id] && alert.severity === 'severe') }"
-                                                                    @click="setPendingSeverity(alert.id, 'severe')"
-                                                                >
-                                                                    <i class="bx bxs-bell-ring"></i> Severe
-                                                                </button>
-                                                                <button
-                                                                    class="severity-assign-btn severity-assign-btn--moderate"
-                                                                    :disabled="isHighRisk(alert)"
-                                                                    :class="{ selected: pendingSeverity[alert.id] === 'moderate' || (!pendingSeverity[alert.id] && alert.severity === 'moderate') }"
-                                                                    @click="setPendingSeverity(alert.id, 'moderate')"
-                                                                >
-                                                                    <i class="bx bx-info-circle"></i> Moderate
-                                                                </button>
-                                                                <button
-                                                                    class="severity-assign-btn severity-assign-btn--low"
-                                                                    :disabled="isHighRisk(alert)"
-                                                                    :class="{ selected: pendingSeverity[alert.id] === 'low' || (!pendingSeverity[alert.id] && alert.severity === 'low') }"
-                                                                    @click="setPendingSeverity(alert.id, 'low')"
-                                                                >
-                                                                    <i class="bx bx-check-shield"></i> Low
-                                                                </button>
-                                                            </div>
-                                                            <button v-if="pendingSeverity[alert.id] && pendingSeverity[alert.id] !== alert.severity" class="severity-confirm-btn" :disabled="assigningId === alert.id" @click="confirmSeverity(alert)">
-                                                                <i class="bx bx-check"></i>
-                                                                {{ assigningId === alert.id ? 'Saving…' : 'Confirm' }}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </template>
+                                        </div>
+                                    </td>
+                                    <td class="col-time">
+                                        <span class="alert-time">
+                                            <i class="bx bx-time-five"></i> {{ formatTime(alert.created_at) }}
+                                        </span>
+                                    </td>
+                                    <td class="col-actions" @click.stop>
+                                        <div class="row-actions">
+                                            <button class="action-btn action-btn--email" title="Send email" @click="openEmailModal(alert)">
+                                                <i class="bx bx-send"></i>
+                                            </button>
+                                            <button
+                                                class="action-btn action-btn--review"
+                                                title="Mark under review"
+                                                @click="updateStatus(alert, 'reviewed')"
+                                                :disabled="alert.status === 'reviewed' || alert.status === 'resolved'"
+                                            >
+                                                <i class="bx bx-search-alt"></i>
+                                            </button>
+                                            <button
+                                                class="action-btn action-btn--resolve"
+                                                :title="resolveButtonTitle(alert)"
+                                                @click="openResolveModal(alert)"
+                                                :disabled="!canResolveOnCrisisPage(alert)"
+                                            >
+                                                <i class="bx bx-check"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
 
@@ -483,6 +411,202 @@
 
         <!-- Modals -->
         <Teleport to="body">
+            <!-- ALERT DETAIL MODAL -->
+            <Transition name="modal-fade">
+                <div v-if="detailModal.visible" class="email-modal-overlay" @click.self="closeDetailModal">
+                    <div class="email-modal detail-modal" :class="detailModal.alert ? `detail-modal--${detailModal.alert.severity}` : ''">
+                        <div class="email-modal-header">
+                            <div class="email-modal-header-left">
+                                <div class="email-modal-icon" :class="detailModal.alert ? `icon-${detailModal.alert.severity}` : ''">
+                                    <i v-if="detailModal.alert?.severity === 'severe'" class="bx bxs-bell-ring"></i>
+                                    <i v-else-if="detailModal.alert?.severity === 'moderate'" class="bx bx-info-circle"></i>
+                                    <i v-else class="bx bx-check-shield"></i>
+                                </div>
+                                <div>
+                                    <p class="email-modal-title">Alert Details</p>
+                                    <p class="email-modal-subtitle">
+                                        {{ detailModal.alert?.user_display }}
+                                        <template v-if="detailModal.alert">
+                                            · {{ capitalize(detailModal.alert.severity) }}
+                                            · {{ detailModal.alert.status === 'reviewed' ? 'Under review' : capitalize(detailModal.alert.status) }}
+                                        </template>
+                                    </p>
+                                </div>
+                            </div>
+                            <button class="email-modal-close" @click="closeDetailModal">
+                                <i class="bx bx-x"></i>
+                            </button>
+                        </div>
+                        <div class="email-modal-body" v-if="detailModal.alert">
+                            <div v-if="detailModal.alert.severe_alerts_count >= 2" class="alert-urgent-warning">
+                                <i class="bx bxs-error-circle"></i>
+                                <span>Urgent Support Needed: This student has accumulated {{ detailModal.alert.severe_alerts_count }} severe alerts!</span>
+                            </div>
+
+                            <div class="email-field-group">
+                                <span class="email-field-label">Flagged message</span>
+                                <p class="alert-message detail-modal-message">"{{ detailModal.alert.message }}"</p>
+                            </div>
+
+                            <div class="email-field-group" v-if="(detailModal.alert.detected_keywords || []).length">
+                                <span class="email-field-label">Keywords</span>
+                                <div class="alert-keywords-row">
+                                    <span
+                                        v-for="kw in (detailModal.alert.detected_keywords || [])"
+                                        :key="kw"
+                                        class="alert-keyword-tag"
+                                        :class="`keyword--${detailModal.alert.severity}`"
+                                    >{{ kw }}</span>
+                                </div>
+                            </div>
+
+                            <div class="email-field-group" v-if="detailModal.alert.flag_reason">
+                                <span class="email-field-label">Flag reason</span>
+                                <div class="alert-flag-reason">
+                                    <i class="bx bx-flag"></i>
+                                    <span>{{ detailModal.alert.flag_reason }}</span>
+                                </div>
+                            </div>
+
+                            <div class="email-field-group">
+                                <span class="email-field-label">Student alert history</span>
+                                <div class="student-history-cell student-history-cell--detail">
+                                    <span class="history-count history-count--total">
+                                        <i class="bx bx-flag"></i>
+                                        {{ detailModal.alert.total_alerts_count ?? 0 }} total crisis alert{{ (detailModal.alert.total_alerts_count ?? 0) !== 1 ? 's' : '' }}
+                                    </span>
+                                    <span
+                                        class="history-count history-count--severe"
+                                        :class="{ 'history-count--urgent': needsUrgentHelp(detailModal.alert) }"
+                                    >
+                                        <i class="bx bxs-bell-ring"></i>
+                                        {{ detailModal.alert.severe_alerts_count ?? 0 }} classified severe
+                                    </span>
+                                </div>
+                                <p v-if="needsUrgentHelp(detailModal.alert)" class="schedule-hint schedule-hint--urgent">
+                                    <i class="bx bxs-error-circle"></i>
+                                    This student has multiple severe alerts and needs urgent wellness support.
+                                </p>
+                            </div>
+
+                            <div class="email-field-group">
+                                <span class="email-field-label">Student</span>
+                                <p class="alert-user">
+                                    {{ detailModal.alert.user_display }}
+                                    <span v-if="detailModal.alert.total_alerts_count !== undefined" class="student-alert-badge" :class="studentAlertBadgeClass(detailModal.alert)">
+                                        {{ detailModal.alert.total_alerts_count }} alert{{ detailModal.alert.total_alerts_count !== 1 ? 's' : '' }}
+                                        <template v-if="detailModal.alert.severe_alerts_count > 0">
+                                            · {{ detailModal.alert.severe_alerts_count }} severe
+                                        </template>
+                                    </span>
+                                    ·
+                                    <span class="alert-email-text">
+                                        {{ revealedEmails.has(detailModal.alert.id) ? detailModal.alert.real_email : detailModal.alert.masked_email }}
+                                    </span>
+                                    <button
+                                        v-if="detailModal.alert.real_email"
+                                        class="reveal-email-btn"
+                                        :title="revealedEmails.has(detailModal.alert.id) ? 'Hide email' : 'Show email'"
+                                        @click="toggleEmail(detailModal.alert.id)"
+                                    >
+                                        <i :class="revealedEmails.has(detailModal.alert.id) ? 'bx bx-hide' : 'bx bx-show'"></i>
+                                    </button>
+                                </p>
+                            </div>
+
+                            <div class="email-field-group" v-if="hasAppointment(detailModal.alert)">
+                                <span class="email-field-label">Scheduled appointment</span>
+                                <div class="detail-appt-info" :class="{ 'detail-appt-info--done': isAppointmentDone(detailModal.alert) }">
+                                    <i :class="isAppointmentDone(detailModal.alert) ? 'bx bx-check-circle' : (detailModal.alert.appointment_status === 'did_not_attend' ? 'bx bx-user-x' : 'bx bx-calendar')"></i>
+                                    <span>
+                                        {{ formatAppointmentDate(detailModal.alert.appointment_date) }}
+                                        at {{ formatAppointmentTime(detailModal.alert.appointment_time) }}
+                                        <template v-if="detailModal.alert.appointment_status">
+                                            · {{ detailModal.alert.appointment_status === 'done' ? 'Done' : (detailModal.alert.appointment_status === 'did_not_attend' ? 'Did not attend' : capitalize(detailModal.alert.appointment_status)) }}
+                                        </template>
+                                    </span>
+                                </div>
+                                <p class="schedule-hint" v-if="!isAppointmentDone(detailModal.alert)">
+                                    <i class="bx bx-info-circle"></i>
+                                    Mark this appointment as Done on the Appointments page before resolving.
+                                </p>
+                                <p class="schedule-hint schedule-hint--ok" v-else>
+                                    <i class="bx bx-check-circle"></i>
+                                    Appointment completed — this alert can now be resolved.
+                                </p>
+                            </div>
+
+                            <div class="email-field-group">
+                                <span class="email-field-label">Time flagged</span>
+                                <span class="alert-time">
+                                    <i class="bx bx-time-five"></i> {{ formatTime(detailModal.alert.created_at) }}
+                                </span>
+                            </div>
+
+                            <div class="severity-assign-row">
+                                <div class="severity-assign-header">
+                                    <span class="severity-assign-label">Change severity:</span>
+                                    <span v-if="isHighRisk(detailModal.alert)" class="severity-lock-notice">
+                                        <i class="bx bx-lock-alt"></i>
+                                        High-risk — severity locked to <strong>Severe</strong>
+                                    </span>
+                                </div>
+                                <div class="severity-assign-controls">
+                                    <div class="severity-assign-buttons">
+                                        <button
+                                            class="severity-assign-btn severity-assign-btn--severe"
+                                            :disabled="isHighRisk(detailModal.alert)"
+                                            :class="{ selected: pendingSeverity[detailModal.alert.id] === 'severe' || (!pendingSeverity[detailModal.alert.id] && detailModal.alert.severity === 'severe') }"
+                                            @click="setPendingSeverity(detailModal.alert.id, 'severe')"
+                                        >
+                                            <i class="bx bxs-bell-ring"></i> Severe
+                                        </button>
+                                        <button
+                                            class="severity-assign-btn severity-assign-btn--moderate"
+                                            :disabled="isHighRisk(detailModal.alert)"
+                                            :class="{ selected: pendingSeverity[detailModal.alert.id] === 'moderate' || (!pendingSeverity[detailModal.alert.id] && detailModal.alert.severity === 'moderate') }"
+                                            @click="setPendingSeverity(detailModal.alert.id, 'moderate')"
+                                        >
+                                            <i class="bx bx-info-circle"></i> Moderate
+                                        </button>
+                                        <button
+                                            class="severity-assign-btn severity-assign-btn--low"
+                                            :disabled="isHighRisk(detailModal.alert)"
+                                            :class="{ selected: pendingSeverity[detailModal.alert.id] === 'low' || (!pendingSeverity[detailModal.alert.id] && detailModal.alert.severity === 'low') }"
+                                            @click="setPendingSeverity(detailModal.alert.id, 'low')"
+                                        >
+                                            <i class="bx bx-check-shield"></i> Low
+                                        </button>
+                                    </div>
+                                    <button
+                                        v-if="pendingSeverity[detailModal.alert.id] && pendingSeverity[detailModal.alert.id] !== detailModal.alert.severity"
+                                        class="severity-confirm-btn"
+                                        :disabled="assigningId === detailModal.alert.id"
+                                        @click="confirmSeverity(detailModal.alert)"
+                                    >
+                                        <i class="bx bx-check"></i>
+                                        {{ assigningId === detailModal.alert.id ? 'Saving…' : 'Confirm' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="email-modal-footer" v-if="detailModal.alert">
+                            <button class="action-btn action-btn--email" @click="openEmailModalFromDetail">
+                                <i class="bx bx-send"></i> Send Email
+                            </button>
+                            <button
+                                class="action-btn action-btn--resolve"
+                                :title="resolveButtonTitle(detailModal.alert)"
+                                @click="openResolveModal(detailModal.alert)"
+                                :disabled="!canResolveOnCrisisPage(detailModal.alert)"
+                            >
+                                <i class="bx bx-check"></i> Resolve
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+
             <!-- EMAIL MODAL -->
             <Transition name="modal-fade">
                 <div v-if="emailModal.visible" class="email-modal-overlay" @click.self="closeEmailModal">
@@ -572,7 +696,6 @@
                             </div>
                         </div>
                         <div class="email-modal-footer">
-                            <button class="action-btn" @click="closeEmailModal">Cancel</button>
                             <button class="action-btn action-btn--email" @click="openEmailConfirm">
                                 <i class="bx bx-send"></i> Send Email
                             </button>
@@ -611,7 +734,6 @@
                             </p>
                         </div>
                         <div class="email-modal-footer">
-                            <button class="action-btn" @click="closeEmailConfirm" :disabled="sendingEmail">Cancel</button>
                             <button class="action-btn action-btn--email" @click="confirmSendEmail" :disabled="sendingEmail">
                                 <i class="bx bx-send"></i> {{ sendingEmail ? 'Sending…' : 'Confirm & Send' }}
                             </button>
@@ -645,7 +767,6 @@
                             <p class="resolve-subtext">This action indicates that the crisis has been properly addressed and handled.</p>
                         </div>
                         <div class="email-modal-footer">
-                            <button class="action-btn" @click="closeResolveModal">Cancel</button>
                             <button class="action-btn action-btn--confirm-resolve" @click="confirmResolve">
                                 <i class="bx bx-check"></i> Confirm Resolution
                             </button>
@@ -696,9 +817,55 @@ const toggleUnclassifiedFilter = async () => {
 // ── Search ───────────────────────────────────────────────────
 const searchQuery = ref('');
 
-// ── Expand/collapse table row ─────────────────────────────────
-const expandedRow = ref(null);
-const toggleRow = (id) => { expandedRow.value = expandedRow.value === id ? null : id; };
+// ── Detail modal (classified alerts) ──────────────────────────
+const detailModal = ref({ visible: false, alert: null });
+
+const openDetailModal = (alert) => {
+    detailModal.value = { visible: true, alert };
+};
+
+const closeDetailModal = () => {
+    detailModal.value.visible = false;
+    setTimeout(() => {
+        if (!detailModal.value.visible) detailModal.value.alert = null;
+    }, 200);
+};
+
+const openEmailModalFromDetail = () => {
+    if (!detailModal.value.alert) return;
+    openEmailModal(detailModal.value.alert);
+};
+
+const hasAppointment = (alert) => !!(alert?.appointment_date);
+
+const isAppointmentDone = (alert) => alert?.appointment_status === 'done';
+
+const needsUrgentHelp = (alert) => (alert?.severe_alerts_count ?? 0) >= 2;
+
+const studentAlertBadgeClass = (alert) => ({
+    'has-severe': (alert?.severe_alerts_count ?? 0) > 0,
+    'has-urgent': needsUrgentHelp(alert),
+});
+
+const canResolveOnCrisisPage = (alert) => {
+    if (!alert) return false;
+    if (alert.status !== 'reviewed') return false;
+    // No appointment → resolve here. With appointment → only after marked done.
+    if (hasAppointment(alert) && !isAppointmentDone(alert)) return false;
+    return true;
+};
+
+const resolveButtonTitle = (alert) => {
+    if (!alert) return 'Resolve';
+    if (alert.status !== 'reviewed') return 'Mark under review first';
+    if (hasAppointment(alert) && !isAppointmentDone(alert)) {
+        if (alert.appointment_status === 'did_not_attend') {
+            return 'Appointment was a no-show — mark as done after a completed session';
+        }
+        return 'Mark the appointment as Done on the Appointments page first';
+    }
+    return 'Resolve';
+};
 
 // ── Pagination ─────────────────────────────────────────────────
 const PAGE_SIZE = 5;            // unclassified cards
@@ -789,24 +956,32 @@ const fetchAlerts = async () => {
 
 const updateStatus = async (alert, newStatus) => {
     // Optimistic update — badge changes immediately before API call
+    const previousStatus = alert.status;
     const targetInArray = alerts.value.find(a => a.id === alert.id);
     if (targetInArray) targetInArray.status = newStatus;
     else alert.status = newStatus; // fallback for static/local refs
 
+    if (detailModal.value.alert?.id === alert.id) {
+        detailModal.value.alert = { ...detailModal.value.alert, status: newStatus };
+    }
+
     const label = newStatus === 'reviewed' ? 'under review' : 'resolved';
-    toast.success(`Alert from ${alert.user_display} is now ${label}.`, { timeout: 3000 });
 
     try {
         const token = localStorage.getItem('token');
         await axios.patch(`/api/admin/crisis-alerts/${alert.id}`, { status: newStatus }, {
             headers: { Authorization: `Bearer ${token}` },
         });
+        toast.success(`Alert from ${alert.user_display} is now ${label}.`, { timeout: 3000 });
         fetchAlerts();
     } catch (err) {
         console.error('Failed to update alert:', err);
-        toast.error('Failed to update alert status.');
+        toast.error(err.response?.data?.message || 'Failed to update alert status.');
         // Revert optimistic update on failure
-        if (targetInArray) targetInArray.status = alert.status;
+        if (targetInArray) targetInArray.status = previousStatus;
+        if (detailModal.value.alert?.id === alert.id) {
+            detailModal.value.alert = { ...detailModal.value.alert, status: previousStatus };
+        }
     }
 };
 
@@ -820,7 +995,8 @@ const formatTime = (dateStr) => {
 
 const formatAppointmentDate = (dateStr) => {
     if (!dateStr) return '';
-    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-PH', {
+    const normalized = String(dateStr).includes('T') ? dateStr : `${dateStr}T00:00:00`;
+    return new Date(normalized).toLocaleDateString('en-PH', {
         weekday: 'long', month: 'short', day: 'numeric', year: 'numeric',
     });
 };
@@ -866,7 +1042,12 @@ const confirmSeverity = async (alert) => {
         delete copy[alert.id];
         pendingSeverity.value = copy;
         toast.success(`Alert classified as ${capitalize(chosen)}.`, { timeout: 3000 });
-        fetchAlerts();
+        await fetchAlerts();
+        // Keep detail modal in sync with refreshed data
+        if (detailModal.value.visible && detailModal.value.alert?.id === alert.id) {
+            const refreshed = alerts.value.find(a => a.id === alert.id);
+            if (refreshed) detailModal.value.alert = refreshed;
+        }
     } catch (err) {
         console.error('Failed to assign severity:', err);
         toast.error('Failed to assign severity. Please try again.');
@@ -878,15 +1059,29 @@ const confirmSeverity = async (alert) => {
 // ── Resolve Modal ──────────────────────────────────────────────
 const resolveModal = ref({ visible: false, alert: null });
 
-const openResolveModal  = (alert) => { resolveModal.value = { visible: true, alert }; };
+const openResolveModal  = (alert) => {
+    if (!canResolveOnCrisisPage(alert)) {
+        if (hasAppointment(alert) && !isAppointmentDone(alert)) {
+            toast.info('Mark the appointment as Done on the Appointments page before resolving.');
+        }
+        return;
+    }
+    resolveModal.value = { visible: true, alert };
+};
 const closeResolveModal = () => {
     resolveModal.value.visible = false;
     setTimeout(() => { if (!resolveModal.value.visible) resolveModal.value.alert = null; }, 200);
 };
 const confirmResolve = async () => {
     if (resolveModal.value.alert) {
+        if (!canResolveOnCrisisPage(resolveModal.value.alert)) {
+            toast.info('Mark the appointment as Done on the Appointments page before resolving.');
+            closeResolveModal();
+            return;
+        }
         await updateStatus(resolveModal.value.alert, 'resolved');
         closeResolveModal();
+        closeDetailModal();
     }
 };
 
@@ -919,13 +1114,38 @@ const emailConfirmModal = ref({
 });
 const sendingEmail = ref(false);
 
-const openEmailConfirm = () => {
-    if (emailModal.value.withAppointment) {
-        if (!emailModal.value.appointmentDate || !emailModal.value.appointmentTime) {
-            toast.warning('Please select both appointment date and time.');
-            return;
-        }
+const parseModalAppointmentDateTime = () => {
+    if (!emailModal.value.appointmentDate || !emailModal.value.appointmentTime) return null;
+    // `appointmentTime` is from <input type="time"> and comes as "HH:MM" (24h).
+    // Combine into a local datetime for accurate "already passed" validation.
+    const dt = new Date(`${emailModal.value.appointmentDate}T${emailModal.value.appointmentTime}:00`);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+};
+
+const validateAppointmentNotInPast = () => {
+    if (!emailModal.value.withAppointment) return true;
+
+    if (!emailModal.value.appointmentDate || !emailModal.value.appointmentTime) {
+        toast.warning('Please select both appointment date and time.');
+        return false;
     }
+
+    const dt = parseModalAppointmentDateTime();
+    if (!dt) {
+        toast.warning('Invalid appointment date/time selected.');
+        return false;
+    }
+
+    if (dt.getTime() < Date.now()) {
+        toast.warning('Appointment time has already passed. Please choose a future time.');
+        return false;
+    }
+
+    return true;
+};
+
+const openEmailConfirm = () => {
+    if (!validateAppointmentNotInPast()) return;
     emailConfirmModal.value = {
         visible: true,
         maskedEmail: emailModal.value.maskedEmail,
@@ -942,6 +1162,10 @@ const closeEmailConfirm = () => {
 
 const confirmSendEmail = async () => {
     if (sendingEmail.value) return;
+
+    // Re-check on confirm click to prevent stale UI inputs.
+    if (!validateAppointmentNotInPast()) return;
+
     sendingEmail.value = true;
     try {
         const token = localStorage.getItem('token');
@@ -956,6 +1180,12 @@ const confirmSendEmail = async () => {
         toast.success('Email sent successfully.', { timeout: 3000 });
         emailConfirmModal.value.visible = false;
         closeEmailModal();
+        await fetchAlerts();
+        // Refresh detail modal if open (e.g. appointment just scheduled)
+        if (detailModal.value.visible && detailModal.value.alert?.id === emailModal.value.alertId) {
+            const refreshed = alerts.value.find(a => a.id === emailModal.value.alertId);
+            if (refreshed) detailModal.value.alert = refreshed;
+        }
     } catch (err) {
         console.error('Failed to send email:', err);
         toast.error('Failed to send email.');
@@ -1025,6 +1255,164 @@ const todayDate = computed(() => new Date().toISOString().split('T')[0]);
     font-size: 14px;
 }
 
+/* ── Appointment linked badge (classified table) ── */
+.appt-linked-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-top: 5px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+
+.appt-linked-badge i {
+    font-size: 12px;
+}
+
+.appt-linked-badge--done {
+    background: #f0fdf4;
+    color: #15803d;
+    border-color: #86efac;
+}
+
+.appt-linked-badge--noshow {
+    background: #fff7ed;
+    color: #c2410c;
+    border-color: #fed7aa;
+}
+
+.status-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+/* ── Detail modal ── */
+.detail-modal {
+    width: 640px;
+    max-width: 94vw;
+}
+
+.detail-modal-message {
+    margin: 0;
+    padding: 12px 14px;
+    background: #f9fafb;
+    border-radius: 10px;
+    border-left: 3px solid #0e6008;
+}
+
+.detail-modal--severe .detail-modal-message { border-left-color: #ef4444; }
+.detail-modal--moderate .detail-modal-message { border-left-color: #9F7A00; }
+.detail-modal--low .detail-modal-message { border-left-color: #0A9569; }
+
+.detail-appt-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1d4ed8;
+}
+
+.detail-appt-info i {
+    font-size: 18px;
+}
+
+.detail-appt-info--done {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #15803d;
+}
+
+.schedule-hint--ok {
+    color: #15803d;
+}
+
+.detail-modal .severity-assign-row {
+    margin-top: 4px;
+    padding-top: 16px;
+}
+
+.email-modal-icon.icon-severe {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+}
+.email-modal-icon.icon-moderate {
+    background: #fffbeb;
+    border-color: #fde68a;
+    color: #9f7a00;
+}
+.email-modal-icon.icon-low {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #15803d;
+}
+
+[data-theme="dark"] .appt-linked-badge {
+    background: #1e2d4d;
+    color: #93c5fd;
+    border-color: #1e3a5f;
+}
+
+[data-theme="dark"] .appt-linked-badge--done {
+    background: #14532d;
+    color: #4ade80;
+    border-color: #166534;
+}
+
+[data-theme="dark"] .appt-linked-badge--noshow {
+    background: #431407;
+    color: #fdba74;
+    border-color: #9a3412;
+}
+
+[data-theme="dark"] .detail-modal-message {
+    background: #161b27;
+}
+
+[data-theme="dark"] .detail-appt-info {
+    background: #1e2d4d;
+    border-color: #1e3a5f;
+    color: #93c5fd;
+}
+
+[data-theme="dark"] .detail-appt-info--done {
+    background: #14532d;
+    border-color: #166534;
+    color: #4ade80;
+}
+
+[data-theme="dark"] .schedule-hint--ok {
+    color: #4ade80;
+}
+
+[data-theme="dark"] .email-modal-icon.icon-severe {
+    background: #3b1010;
+    border-color: #7f1d1d;
+    color: #fca5a5;
+}
+[data-theme="dark"] .email-modal-icon.icon-moderate {
+    background: #2d2410;
+    border-color: #78500a;
+    color: #fde68a;
+}
+[data-theme="dark"] .email-modal-icon.icon-low {
+    background: #0d2818;
+    border-color: #14532d;
+    color: #86efac;
+}
+
 /* ── Student Alert Count Badge ── */
 .student-alert-badge {
     display: inline-flex;
@@ -1045,6 +1433,86 @@ const todayDate = computed(() => new Date().toISOString().split('T')[0]);
     color: #b91c1c;
     border-color: #fca5a5;
     animation: pulse-badge 2.4s ease-in-out infinite;
+}
+
+.student-alert-badge.has-urgent {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+
+/* ── Student alert history (classified table) ── */
+.student-history-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-start;
+}
+
+.student-history-cell--detail {
+    gap: 8px;
+}
+
+.history-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.history-count i {
+    font-size: 13px;
+}
+
+.history-count--total {
+    background: #f3f4f6;
+    color: #4b5563;
+    border-color: #e5e7eb;
+}
+
+.history-count--severe {
+    background: #fff1f2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+}
+
+.history-count--urgent {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #ef4444;
+    animation: pulse-badge 2.4s ease-in-out infinite;
+}
+
+.urgent-student-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fca5a5;
+}
+
+.urgent-student-tag i {
+    font-size: 13px;
+    color: #ef4444;
+}
+
+.schedule-hint--urgent {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+.schedule-hint--urgent i {
+    color: #ef4444;
 }
 
 @keyframes pulse-badge {
@@ -1361,6 +1829,42 @@ const todayDate = computed(() => new Date().toISOString().split('T')[0]);
   background: #3b1010 !important;
   color: #fca5a5 !important;
   border-color: #7f1d1d !important;
+}
+[data-theme="dark"] .student-alert-badge.has-urgent {
+  background: #450a0a !important;
+  color: #fecaca !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+[data-theme="dark"] .history-count--total {
+  background: #2d3748 !important;
+  color: #9ca3af !important;
+  border-color: #374151 !important;
+}
+[data-theme="dark"] .history-count--severe {
+  background: #3b1010 !important;
+  color: #fca5a5 !important;
+  border-color: #7f1d1d !important;
+}
+[data-theme="dark"] .history-count--urgent {
+  background: #450a0a !important;
+  color: #fecaca !important;
+  border-color: #ef4444 !important;
+}
+[data-theme="dark"] .urgent-student-tag {
+  background: #3b1010 !important;
+  color: #fca5a5 !important;
+  border-color: #7f1d1d !important;
+}
+[data-theme="dark"] .schedule-hint--urgent {
+  color: #fca5a5 !important;
+}
+[data-theme="dark"] .schedule-hint--urgent i {
+  color: #f87171 !important;
+}
+[data-theme="dark"] .alert-row.row-urgent,
+[data-theme="dark"] .alert-row.row-urgent:hover {
+  background: #2d1010 !important;
 }
 
 [data-theme="dark"] .page-btn {

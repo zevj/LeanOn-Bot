@@ -84,7 +84,7 @@
                             <input
                                 v-model="search"
                                 type="text"
-                                placeholder="Search by ID, name, or email..."
+                                placeholder="Search by ID or email..."
                                 @input="debounceFetch"
                             />
                         </div>
