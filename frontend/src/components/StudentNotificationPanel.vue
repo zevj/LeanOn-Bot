@@ -156,7 +156,7 @@ const fetchNotifications = async () => {
         notifications.value.unshift({ ...incoming, dismissed: false })
       }
     }
-  } catch (e) {
+  } catch {
     // non-critical
   } finally {
     loading.value = false
@@ -176,7 +176,7 @@ const dismiss = async (notif) => {
     setTimeout(() => {
       notifications.value = notifications.value.filter(n => n.alert_id !== notif.alert_id)
     }, 400)
-  } catch (e) {
+  } catch {
     notif.dismissed = false
   }
 }
@@ -225,7 +225,7 @@ const formatAppointmentTime = (timeStr) => {
     const ampm = h >= 12 ? 'PM' : 'AM'
     const h12 = h % 12 || 12
     return `${h12}:${minutes} ${ampm}`
-  } catch (e) {
+  } catch {
     return timeStr
   }
 }
@@ -354,12 +354,12 @@ onUnmounted(() => {
 .filter-tab.active .filter-count { background: #2563eb; }
 
 /* ── Dark Mode: header actions / filter tabs ── */
-[data-theme="dark"] .refresh-btn { color: #64748b; }
-[data-theme="dark"] .refresh-btn:hover:not(:disabled) { color: #60a5fa; }
-[data-theme="dark"] .notif-filter-tabs { border-bottom-color: #334155; }
-[data-theme="dark"] .filter-tab { background: #263548; color: #94a3b8; }
-[data-theme="dark"] .filter-tab:hover { background: #2d3f56; }
-[data-theme="dark"] .filter-tab.active { background: #1e3a5f; color: #60a5fa; }
+:global([data-theme="dark"]) .refresh-btn { color: #64748b; }
+:global([data-theme="dark"]) .refresh-btn:hover:not(:disabled) { color: #60a5fa; }
+:global([data-theme="dark"]) .notif-filter-tabs { border-bottom-color: #334155; }
+:global([data-theme="dark"]) .filter-tab { background: #263548; color: #94a3b8; }
+:global([data-theme="dark"]) .filter-tab:hover { background: #2d3f56; }
+:global([data-theme="dark"]) .filter-tab.active { background: #1e3a5f; color: #60a5fa; }
 
 /* ── Skeleton ── */
 .notif-skeleton {
@@ -474,92 +474,92 @@ onUnmounted(() => {
 }
 
 /* ── Dark Mode ── */
-[data-theme="dark"] .icon-btn {
+:global([data-theme="dark"]) .icon-btn {
   background: #1a2e1a;
   border-color: #2d6a2d;
   color: #4ade80;
 }
-[data-theme="dark"] .icon-btn:hover {
+:global([data-theme="dark"]) .icon-btn:hover {
   background: #2d6a2d;
   color: #f0fdf4;
 }
-[data-theme="dark"] .notif-dot {
+:global([data-theme="dark"]) .notif-dot {
   background: #3b82f6;
   border-color: #1e293b;
 }
-[data-theme="dark"] .notif-panel {
+:global([data-theme="dark"]) .notif-panel {
   background: #1e293b;
   border-color: #334155;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
-[data-theme="dark"] .notif-header {
+:global([data-theme="dark"]) .notif-header {
   border-bottom-color: #334155;
 }
-[data-theme="dark"] .notif-title {
+:global([data-theme="dark"]) .notif-title {
   color: #f1f5f9;
 }
-[data-theme="dark"] .mark-all {
+:global([data-theme="dark"]) .mark-all {
   background: #1e3a5f;
   color: #60a5fa;
 }
-[data-theme="dark"] .mark-all:hover:not(:disabled) {
+:global([data-theme="dark"]) .mark-all:hover:not(:disabled) {
   background: #1d4ed8;
   color: #fff;
 }
-[data-theme="dark"] .notif-list::-webkit-scrollbar-thumb {
+:global([data-theme="dark"]) .notif-list::-webkit-scrollbar-thumb {
   background: #334155;
 }
-[data-theme="dark"] .notif-skeleton {
+:global([data-theme="dark"]) .notif-skeleton {
   border-bottom-color: #334155;
 }
-[data-theme="dark"] .skel-icon,
-[data-theme="dark"] .skel-line {
+:global([data-theme="dark"]) .skel-icon,
+:global([data-theme="dark"]) .skel-line {
   background: linear-gradient(90deg, #334155 25%, #3d4f63 50%, #334155 75%);
   background-size: 200% 100%;
 }
-[data-theme="dark"] .notif-item {
+:global([data-theme="dark"]) .notif-item {
   border-bottom-color: #334155;
 }
-[data-theme="dark"] .notif-item:hover {
+:global([data-theme="dark"]) .notif-item:hover {
   background: #263548;
 }
-[data-theme="dark"] .notif-item.unread {
+:global([data-theme="dark"]) .notif-item.unread {
   background: #1e3a5f;
 }
-[data-theme="dark"] .notif-icon.blue {
+:global([data-theme="dark"]) .notif-icon.blue {
   background: #1e3a5f;
 }
-[data-theme="dark"] .notif-icon.blue i {
+:global([data-theme="dark"]) .notif-icon.blue i {
   color: #60a5fa;
 }
-[data-theme="dark"] .notif-icon.green {
+:global([data-theme="dark"]) .notif-icon.green {
   background: #1a2e1a;
 }
-[data-theme="dark"] .notif-icon.green i {
+:global([data-theme="dark"]) .notif-icon.green i {
   color: #4ade80;
 }
-[data-theme="dark"] .notif-msg {
+:global([data-theme="dark"]) .notif-msg {
   color: #e2e8f0;
 }
-[data-theme="dark"] .notif-detail-text {
+:global([data-theme="dark"]) .notif-detail-text {
   color: #94a3b8;
 }
-[data-theme="dark"] .notif-time {
+:global([data-theme="dark"]) .notif-time {
   color: #64748b;
 }
-[data-theme="dark"] .unread-dot {
+:global([data-theme="dark"]) .unread-dot {
   background: #3b82f6;
 }
-[data-theme="dark"] .dismiss-btn {
+:global([data-theme="dark"]) .dismiss-btn {
   color: #475569;
 }
-[data-theme="dark"] .dismiss-btn:hover {
+:global([data-theme="dark"]) .dismiss-btn:hover {
   color: #f87171;
 }
-[data-theme="dark"] .notif-empty {
+:global([data-theme="dark"]) .notif-empty {
   color: #475569;
 }
-[data-theme="dark"] .notif-empty p {
+:global([data-theme="dark"]) .notif-empty p {
   color: #475569;
 }
 </style>

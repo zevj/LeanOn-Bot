@@ -154,44 +154,52 @@ class AnalyticsService
     /**
      * Search students for the Student Insights picker.
      * Returns student identity data for admin picker/search.
+     * When $q is empty, returns flagged students or recent active students.
      */
-    public function searchStudents(string $q, int $limit = 15): array
+    public function searchStudents(string $q = '', bool $flaggedOnly = false, int $limit = 15): array
     {
         $q = trim($q);
-        if ($q === '') {
-            return [];
-        }
-
         $limit = min(max($limit, 1), 25);
         $query = User::where('role', 'student');
 
-        $domainQuery = $q;
-        if (str_contains($q, '@')) {
-            $parts = explode('@', $q);
-            $domainQuery = end($parts);
+        if ($q !== '') {
+            $domainQuery = $q;
+            if (str_contains($q, '@')) {
+                $parts = explode('@', $q);
+                $domainQuery = end($parts);
+            }
+
+            // Match by name, email, domain email, or department
+            $query->where(function ($qb) use ($q, $domainQuery) {
+                $qb->where('first_name', 'like', '%' . $q . '%')
+                    ->orWhere('last_name', 'like', '%' . $q . '%')
+                    ->orWhere('email', 'like', '%' . $q . '%')
+                    ->orWhere('email', 'like', '%@' . $domainQuery . '%')
+                    ->orWhere('department', 'like', '%' . $q . '%');
+
+                if (preg_match('/^\d+$/', $q)) {
+                    $qb->orWhere('id', (int) $q);
+                }
+            });
+        } elseif ($flaggedOnly) {
+            $flaggedUserIds = CrisisAlert::select('user_id')->distinct()->pluck('user_id');
+            if ($flaggedUserIds->isNotEmpty()) {
+                $query->whereIn('id', $flaggedUserIds);
+            }
         }
 
-        // Match by:
-        // - name (first_name / last_name)
-        // - email (full or domain part)
-        // - department (optional convenience)
-        $query->where(function ($qb) use ($q, $domainQuery) {
-            $qb->where('first_name', 'like', '%' . $q . '%')
-                ->orWhere('last_name', 'like', '%' . $q . '%')
-                ->orWhere('email', 'like', '%' . $q . '%')
-                // Domain-only search (e.g. "gmail.com")
-                ->orWhere('email', 'like', '%@' . $domainQuery . '%')
-                ->orWhere('department', 'like', '%' . $q . '%');
+        $flaggedUserIds = CrisisAlert::select('user_id')->distinct()->pluck('user_id')->toArray();
 
-            if (preg_match('/^\d+$/', $q)) {
-                $qb->orWhere('id', (int) $q);
-            }
-        });
-
-        return $query->orderBy('id')
+        return $query->orderBy('updated_at', 'desc')
+            ->orderBy('id', 'desc')
             ->limit($limit)
             ->get(['id', 'email', 'department', 'first_name', 'last_name'])
-            ->map(fn (User $user) => $this->formatStudentSubject($user))
+            ->map(function (User $user) use ($flaggedUserIds) {
+                $data = $this->formatStudentSubject($user);
+                $data['has_crisis_flag'] = in_array($user->id, $flaggedUserIds);
+                $data['masked_email'] = $user->email;
+                return $data;
+            })
             ->values()
             ->toArray();
     }

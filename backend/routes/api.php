@@ -12,6 +12,7 @@ use App\Http\Controllers\CrisisAlertController;
 use App\Http\Controllers\EmotionController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\DirectMessageController;
 
 use App\Http\Controllers\AdminNotificationController;
 
@@ -81,7 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
                     'alert_id'           => $alert->id,
                     'sent_at'            => $alert->admin_email_sent_at->toIso8601String(),
                     'appointment_status' => $alert->appointment_status,
-                    'appointment_date'   => $alert->appointment_date ? $alert->appointment_date->format('Y-m-d') : null,
+                    'appointment_date'   => $alert->appointment_date ? \Carbon\Carbon::parse($alert->appointment_date)->format('Y-m-d') : null,
                     'appointment_time'   => $alert->appointment_time,
                 ],
             ]);
@@ -94,6 +95,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
             return response()->json(['ok' => true]);
         });
+
+        // ── Direct Messaging Routes ──────────────────────────────
+        Route::get('/direct-messages/conversations', [DirectMessageController::class, 'index']);
+        Route::post('/direct-messages/conversations', [DirectMessageController::class, 'startConversation']);
+        Route::get('/direct-messages/conversations/{id}/messages', [DirectMessageController::class, 'messages']);
+        Route::post('/direct-messages/conversations/{id}/messages', [DirectMessageController::class, 'storeMessage']);
+        Route::post('/direct-messages/conversations/{id}/read', [DirectMessageController::class, 'markRead']);
+        Route::get('/direct-messages/students/search', [DirectMessageController::class, 'searchStudents']);
     });
 
     Route::post('/logout', [AuthController::class, 'logout']);

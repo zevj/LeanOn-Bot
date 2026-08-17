@@ -23,66 +23,6 @@
           </div>
         </div>
 
-        <!-- STATS CARDS -->
-        <div class="audit-stats fade-in stagger-1">
-          <div
-            class="stat-card sc-depts animate-card stagger-1"
-            :class="{ 'stat-active': !statusFilter }"
-            style="cursor: pointer;"
-            @click="toggleStatusFilter('')"
-          >
-            <div class="sc-left">
-              <div class="sc-label">Total Scheduled</div>
-              <div class="sc-val">{{ totalScheduled }}</div>
-            </div>
-            <div class="sc-icon">
-              <i class="bx bx-calendar"></i>
-            </div>
-          </div>
-          <div
-            class="stat-card sc-total animate-card stagger-2"
-            :class="{ 'stat-active': statusFilter === 'new' }"
-            style="cursor: pointer;"
-            @click="toggleStatusFilter('new')"
-          >
-            <div class="sc-left">
-              <div class="sc-label">New</div>
-              <div class="sc-val">{{ newCount }}</div>
-            </div>
-            <div class="sc-icon">
-              <i class="bx bx-error-circle"></i>
-            </div>
-          </div>
-          <div
-            class="stat-card sc-active animate-card stagger-3"
-            :class="{ 'stat-active': statusFilter === 'reviewed' }"
-            style="cursor: pointer;"
-            @click="toggleStatusFilter('reviewed')"
-          >
-            <div class="sc-left">
-              <div class="sc-label">Under Review</div>
-              <div class="sc-val">{{ reviewedCount }}</div>
-            </div>
-            <div class="sc-icon">
-              <i class="bx bx-search-alt"></i>
-            </div>
-          </div>
-          <div
-            class="stat-card sc-closed animate-card stagger-4"
-            :class="{ 'stat-active': statusFilter === 'resolved' }"
-            style="cursor: pointer;"
-            @click="toggleStatusFilter('resolved')"
-          >
-            <div class="sc-left">
-              <div class="sc-label">Resolved</div>
-              <div class="sc-val">{{ resolvedCount }}</div>
-            </div>
-            <div class="sc-icon">
-              <i class="bx bx-check-circle"></i>
-            </div>
-          </div>
-        </div>
-
         <!-- CONTROLS / FILTERS -->
         <div class="log-controls animate-card stagger-5">
           <div class="search-wrapper">
@@ -90,7 +30,7 @@
             <input
               v-model="search"
               type="text"
-              placeholder="Search by ID, name, email, or message..."
+              placeholder="Search by Student ID, name or email..."
             />
           </div>
           <div class="filters-wrapper">
@@ -105,9 +45,8 @@
             <div class="select-box">
               <select v-model="statusFilter">
                 <option value="">All Statuses</option>
-                <option value="new">New</option>
-                <option value="reviewed">Under review</option>
-                <option value="resolved">Resolved</option>
+                <option value="pending">Pending</option>
+                <option value="done">Done</option>
               </select>
             </div>
           </div>
@@ -184,24 +123,10 @@
 
                 <!-- Status -->
                 <td data-label="Status">
-                  <div class="status-stack">
-                    <span class="badge" :class="`b-${appt.status}`">
-                      <i v-if="appt.status === 'new'" class="bx bx-error-circle"></i>
-                      <i v-else-if="appt.status === 'reviewed'" class="bx bx-search-alt"></i>
-                      <i v-else-if="appt.status === 'resolved'" class="bx bx-check-circle"></i>
-                      {{ appt.status === 'reviewed' ? 'Under review' : capitalize(appt.status) }}
-                    </span>
-                    <span
-                      v-if="appt.appointment_status"
-                      class="badge"
-                      :class="`b-appt-${appt.appointment_status}`"
-                    >
-                      <i v-if="appt.appointment_status === 'done'" class="bx bx-check-circle"></i>
-                      <i v-else-if="appt.appointment_status === 'did_not_attend'" class="bx bx-user-x"></i>
-                      <i v-else class="bx bx-calendar"></i>
-                      {{ formatApptStatus(appt.appointment_status) }}
-                    </span>
-                  </div>
+                  <span class="badge" :class="appt.appointment_status === 'done' ? 'b-done' : 'b-pending'">
+                    <i :class="appt.appointment_status === 'done' ? 'bx bx-check-circle' : 'bx bx-time-five'"></i>
+                    {{ appt.appointment_status === 'done' ? 'Done' : 'Pending' }}
+                  </span>
                 </td>
 
                 <!-- Actions -->
@@ -211,25 +136,17 @@
                       class="action-btn action-btn--edit"
                       title="Reschedule"
                       @click="openRescheduleModal(appt)"
-                      :disabled="appt.status === 'resolved' || appt.appointment_status === 'done'"
+                      :disabled="appt.appointment_status === 'done'"
                     >
                       <i class="bx bx-edit-alt"></i> Reschedule
                     </button>
                     <button
                       class="action-btn action-btn--done"
                       title="Done"
-                      @click="openOutcomeModal(appt, 'done')"
-                      :disabled="!canSetOutcome(appt) || appt.appointment_status === 'done'"
+                      @click="openOutcomeModal(appt)"
+                      :disabled="appt.appointment_status === 'done'"
                     >
                       <i class="bx bx-check-circle"></i> Done
-                    </button>
-                    <button
-                      class="action-btn action-btn--no-show"
-                      title="Did Not Attend"
-                      @click="openOutcomeModal(appt, 'did_not_attend')"
-                      :disabled="!canSetOutcome(appt) || appt.appointment_status === 'did_not_attend'"
-                    >
-                      <i class="bx bx-user-x"></i> Did Not Attend
                     </button>
                   </div>
                 </td>
@@ -277,7 +194,8 @@
               </div>
               <div class="email-field-group">
                 <span class="email-field-label">Time</span>
-                <input type="time" v-model="rescheduleModal.time" class="modal-input" />
+                <input type="time" v-model="rescheduleModal.time" class="modal-input" min="08:00" max="17:00" />
+                <small class="time-hint" style="font-size: 11.5px; color: #6b7280; margin-top: 4px; display: block;">Guidance office hours: 8:00 AM – 5:00 PM</small>
               </div>
             </div>
             <div class="email-modal-footer">
@@ -297,16 +215,11 @@
           <div class="email-modal resolve-modal">
             <div class="email-modal-header">
               <div class="email-modal-header-left">
-                <div
-                  class="email-modal-icon"
-                  :class="outcomeModal.outcome === 'done' ? 'icon-resolve' : 'icon-no-show'"
-                >
-                  <i :class="outcomeModal.outcome === 'done' ? 'bx bx-check-circle' : 'bx bx-user-x'"></i>
+                <div class="email-modal-icon icon-resolve">
+                  <i class="bx bx-check-circle"></i>
                 </div>
                 <div>
-                  <p class="email-modal-title">
-                    {{ outcomeModal.outcome === 'done' ? 'Mark as Done' : 'Did Not Attend' }}
-                  </p>
+                  <p class="email-modal-title">Mark as Done</p>
                   <p class="email-modal-subtitle">Confirm appointment outcome</p>
                 </div>
               </div>
@@ -315,36 +228,25 @@
               </button>
             </div>
             <div class="email-modal-body resolve-body">
-              <div
-                class="resolve-icon-large"
-                :class="{ 'icon-no-show-large': outcomeModal.outcome === 'did_not_attend' }"
-              >
-                <i :class="outcomeModal.outcome === 'done' ? 'bx bx-check-circle' : 'bx bx-user-x'"></i>
+              <div class="resolve-icon-large">
+                <i class="bx bx-check-circle"></i>
               </div>
-              <p class="resolve-text" v-if="outcomeModal.outcome === 'done'">
+              <p class="resolve-text">
                 Mark the appointment for
                 <strong>{{ outcomeModal.appt?.user_display }}</strong> as done?
               </p>
-              <p class="resolve-text" v-else>
-                Mark that
-                <strong>{{ outcomeModal.appt?.user_display }}</strong> did not attend this appointment?
-              </p>
-              <p class="resolve-subtext" v-if="outcomeModal.outcome === 'done'">
+              <p class="resolve-subtext">
                 Once marked done, this crisis alert can be resolved from the Crisis Alerts page.
-              </p>
-              <p class="resolve-subtext" v-else>
-                You can reschedule a new appointment if needed. The crisis alert stays open until an appointment is marked done and resolved.
               </p>
             </div>
             <div class="email-modal-footer">
               <button
-                class="action-btn"
-                :class="outcomeModal.outcome === 'done' ? 'action-btn--confirm-resolve' : 'action-btn--confirm-no-show'"
+                class="action-btn action-btn--confirm-resolve"
                 @click="executeOutcome"
                 :disabled="saving"
               >
-                <i :class="outcomeModal.outcome === 'done' ? 'bx bx-check' : 'bx bx-user-x'"></i>
-                {{ saving ? 'Saving...' : (outcomeModal.outcome === 'done' ? 'Confirm Done' : 'Confirm No Show') }}
+                <i class="bx bx-check"></i>
+                {{ saving ? 'Saving...' : 'Confirm Done' }}
               </button>
             </div>
           </div>
@@ -357,13 +259,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import axios from 'axios';
-import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import SidebarAdmin from '@/components/sidebarAdmin.vue';
 import HeaderAdmin from '@/components/headerAdmin.vue';
 
 const toast = useToast();
-const router = useRouter();
 
 const sidebarOpen = ref(localStorage.getItem('adminSidebarOpen') !== 'false');
 const loading = ref(false);
@@ -410,14 +310,7 @@ const fetchAppointments = async () => {
   }
 };
 
-const totalScheduled = computed(() => appointments.value.length);
-const newCount = computed(() => appointments.value.filter(a => a.status === 'new').length);
-const reviewedCount = computed(() => appointments.value.filter(a => a.status === 'reviewed').length);
-const resolvedCount = computed(() => appointments.value.filter(a => a.status === 'resolved').length);
 
-const toggleStatusFilter = (status) => {
-  statusFilter.value = statusFilter.value === status ? '' : status;
-};
 
 const filteredAppointments = computed(() => {
   const q = search.value.trim().toLowerCase();
@@ -435,7 +328,8 @@ const filteredAppointments = computed(() => {
     const matchesSeverity = !severityFilter.value || appt.severity === severityFilter.value;
 
     // Status filter
-    const matchesStatus = !statusFilter.value || appt.status === statusFilter.value;
+    const matchesStatus = !statusFilter.value ||
+      (statusFilter.value === 'done' ? appt.appointment_status === 'done' : appt.appointment_status !== 'done');
 
     return matchesSearch && matchesSeverity && matchesStatus;
   });
@@ -456,32 +350,12 @@ const formatTime = (timeStr) => {
     const ampm = h >= 12 ? 'PM' : 'AM';
     const h12 = h % 12 || 12;
     return `${h12}:${minutes} ${ampm}`;
-  } catch (e) {
+  } catch {
     return timeStr;
   }
 };
 
 const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
-
-const formatApptStatus = (status) => {
-  const map = {
-    scheduled: 'Scheduled',
-    rescheduled: 'Rescheduled',
-    done: 'Done',
-    did_not_attend: 'Did not attend',
-  };
-  return map[status] || capitalize(status);
-};
-
-const canSetOutcome = (appt) => {
-  if (!appt || appt.status === 'resolved') return false;
-  return true;
-};
-
-// Actions
-const goToCrisisAlert = (appt) => {
-  router.push('/AdminCrisisAlerts');
-};
 
 // Reschedule
 const rescheduleModal = ref({ visible: false, appt: null, date: '', time: '' });
@@ -505,6 +379,20 @@ const saveReschedule = async () => {
     toast.warning('Please select both date and time.');
     return;
   }
+
+  const [h, m] = rescheduleModal.value.time.split(':').map(Number);
+  const timeInMinutes = h * 60 + m;
+  if (timeInMinutes < 8 * 60 || timeInMinutes > 17 * 60) {
+    toast.warning('Guidance office hours are 8:00 AM to 5:00 PM. Please select a time within office hours.');
+    return;
+  }
+
+  const dt = new Date(`${rescheduleModal.value.date}T${rescheduleModal.value.time}:00`);
+  if (!isNaN(dt.getTime()) && dt.getTime() < Date.now()) {
+    toast.warning('Appointment time has already passed. Please choose a future time.');
+    return;
+  }
+
   saving.value = true;
   try {
     const token = localStorage.getItem('token');
@@ -525,12 +413,12 @@ const saveReschedule = async () => {
   }
 };
 
-// Appointment outcome (done / did not attend)
-const outcomeModal = ref({ visible: false, appt: null, outcome: null });
+// Appointment outcome (done)
+const outcomeModal = ref({ visible: false, appt: null });
 
-const openOutcomeModal = (appt, outcome) => {
-  if (!canSetOutcome(appt)) return;
-  outcomeModal.value = { visible: true, appt, outcome };
+const openOutcomeModal = (appt) => {
+  if (!appt || appt.appointment_status === 'done') return;
+  outcomeModal.value = { visible: true, appt };
 };
 
 const closeOutcomeModal = () => {
@@ -538,23 +426,21 @@ const closeOutcomeModal = () => {
   setTimeout(() => {
     if (!outcomeModal.value.visible) {
       outcomeModal.value.appt = null;
-      outcomeModal.value.outcome = null;
     }
   }, 200);
 };
 
 const executeOutcome = async () => {
-  if (!outcomeModal.value.appt || !outcomeModal.value.outcome) return;
+  if (!outcomeModal.value.appt) return;
   saving.value = true;
   try {
     const token = localStorage.getItem('token');
     await axios.patch(`/api/admin/crisis-alerts/${outcomeModal.value.appt.id}`, {
-      appointment_status: outcomeModal.value.outcome,
+      appointment_status: 'done',
     }, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    const label = outcomeModal.value.outcome === 'done' ? 'done' : 'did not attend';
-    toast.success(`Appointment marked as ${label} for ${outcomeModal.value.appt.user_display}`);
+    toast.success(`Appointment marked as done for ${outcomeModal.value.appt.user_display}`);
     closeOutcomeModal();
     fetchAppointments();
   } catch (err) {

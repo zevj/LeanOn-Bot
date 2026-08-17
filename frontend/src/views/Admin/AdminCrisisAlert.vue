@@ -289,7 +289,6 @@
                                     <th class="col-severity">Severity</th>
                                     <th class="col-student">Flagged ID</th>
                                     <th class="col-message">Message</th>
-                                    <th class="col-keywords">Keywords</th>
                                     <th class="col-status">Status</th>
                                     <th class="col-time">Time</th>
                                     <th class="col-actions">Actions</th>
@@ -318,17 +317,6 @@
                                     </td>
                                     <td class="col-message">
                                         <span class="message-preview">"{{ alert.message }}"</span>
-                                    </td>
-                                    <td class="col-keywords">
-                                        <div class="kw-cell">
-                                            <span
-                                                v-for="kw in (alert.detected_keywords || []).slice(0, 2)"
-                                                :key="kw"
-                                                class="alert-keyword-tag"
-                                                :class="`keyword--${alert.severity}`"
-                                            >{{ kw }}</span>
-                                            <span v-if="(alert.detected_keywords || []).length > 2" class="kw-more">+{{ alert.detected_keywords.length - 2 }}</span>
-                                        </div>
                                     </td>
                                     <td class="col-status">
                                         <div class="status-cell">
@@ -769,12 +757,14 @@
                     type="time"
                     class="schedule-input"
                     v-model="emailModal.appointmentTime"
+                    min="08:00"
+                    max="17:00"
                 />
             </div>
         </div>
         <p class="schedule-hint">
             <i class="bx bx-info-circle"></i>
-            An appointment request will be included in the email sent to the student.
+            Guidance office hours: 8:00 AM – 5:00 PM. An appointment request will be included in the email sent to the student.
         </p>
     </div>
 
@@ -1230,6 +1220,13 @@ const validateAppointmentNotInPast = () => {
 
     if (!emailModal.value.appointmentDate || !emailModal.value.appointmentTime) {
         toast.warning('Please select both appointment date and time.');
+        return false;
+    }
+
+    const [h, m] = emailModal.value.appointmentTime.split(':').map(Number);
+    const timeInMinutes = h * 60 + m;
+    if (timeInMinutes < 8 * 60 || timeInMinutes > 17 * 60) {
+        toast.warning('Guidance office hours are 8:00 AM to 5:00 PM. Please select a time within office hours.');
         return false;
     }
 
@@ -2031,5 +2028,21 @@ const todayDate = computed(() => new Date().toISOString().split('T')[0]);
 [data-theme="dark"] .severity-lock-notice,
 [data-theme="dark"] .alert-urgent-warning {
   animation-name: flash-warning-dark !important;
+}
+
+.action-btn--message {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.action-btn--message:hover:not(:disabled) {
+  background: #059669;
+}
+
+[data-theme="dark"] .action-btn--message {
+  background: #065f46 !important;
+  border-color: #065f46 !important;
+  color: #a7f3d0 !important;
 }
 </style>

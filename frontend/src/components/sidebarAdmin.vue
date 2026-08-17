@@ -42,6 +42,11 @@
         <i class='bx bx-calendar'></i>
       </router-link>
 
+      <router-link to="/AdminMessages" class="rail-btn" title="Messages" @click.stop>
+        <i class='bx bx-message-square-dots'></i>
+        <span v-if="totalUnreadCount > 0" class="rail-badge">{{ totalUnreadCount }}</span>
+      </router-link>
+
       <router-link to="/EmotionalTrends" class="rail-btn" title="Emotional Trends" @click.stop>
         <i class='bx bx-line-chart'></i>
       </router-link>
@@ -98,6 +103,12 @@
         <router-link to="/AdminAppointments" class="menu-item" active-class="active" @click="handleNavClick">
           <i class='bx bx-calendar'></i>
           <span>Appointments</span>
+        </router-link>
+
+        <router-link to="/AdminMessages" class="menu-item" active-class="active" @click="handleNavClick">
+          <i class='bx bx-message-square-dots'></i>
+          <span>Messages</span>
+          <span v-if="totalUnreadCount > 0" class="menu-badge">{{ totalUnreadCount }}</span>
         </router-link>
 
         <router-link to="/EmotionalTrends" class="menu-item" active-class="active" @click="handleNavClick">
@@ -173,7 +184,10 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import axios from 'axios'
 import { useSidebarToggle } from '@/composables/useSidebarToggle'
+import { useDirectMessages } from '@/composables/useDirectMessages'
 import ConfirmationModal from '@/components/ConfirmationModal.vue'
+
+const { totalUnreadCount } = useDirectMessages()
 
 const props = defineProps({
   open: Boolean,
@@ -285,3 +299,22 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped src="../assets/header-sidebar/sidebarAdmin.css"></style>
+<style scoped>
+.rail-badge,
+.menu-badge {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: auto;
+}
+
+.rail-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin-left: 0;
+}
+</style>

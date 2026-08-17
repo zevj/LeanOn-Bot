@@ -56,9 +56,10 @@ class AnalyticsController extends Controller
     public function students(Request $request)
     {
         $q = (string) $request->query('q', '');
+        $flagged = filter_var($request->query('flagged', false), FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $students = $this->analytics->searchStudents($q);
+            $students = $this->analytics->searchStudents($q, $flagged);
             return response()->json(['students' => $students]);
         } catch (\Exception $e) {
             Log::error('Analytics student search error: ' . $e->getMessage());

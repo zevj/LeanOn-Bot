@@ -12,7 +12,7 @@
         <div class="page-header-wrapper">
           <div class="header-title">
             <h1 class="title">Student Insights</h1>
-            <p class="subtext">Student-specific wellness metrics for an individual student case. AI Insights stay on the school-wide Analytics page.</p>
+            <p class="subtext">Student-specific wellness metrics for an individual student case.</p>
           </div>
 
           <div class="header-actions">
@@ -29,6 +29,16 @@
                 </option>
               </select>
             </div>
+
+            <!-- Export Button -->
+            <button
+              class="export-btn"
+              type="button"
+              :disabled="!selectedStudent || loading"
+              @click="openExportModal"
+            >
+              <i class="bx bx-download"></i> Export Report
+            </button>
           </div>
         </div>
 
@@ -121,18 +131,120 @@
                 </span>
               </div>
             </div>
-            <p class="privacy-chip">
-              <i class="bx bx-lock-alt"></i>
-              Case view — student metrics
-            </p>
+            <div class="selected-student-right">
+              <p class="privacy-chip">
+                <i class="bx bx-lock-alt"></i>
+                Case view — student metrics
+              </p>
+            </div>
           </div>
         </div>
 
-        <!-- Empty state -->
-        <div v-if="!selectedStudent" class="empty-state-card">
-          <i class="bx bx-user-pin"></i>
-          <h3>Select a student to begin</h3>
-          <p>Search by student name or domain email to view conversations, mood, usage hours, and crisis alerts for that student.</p>
+        <!-- Student Selection Hub (when no student selected) -->
+        <div v-if="!selectedStudent" class="insights-welcome-hub">
+          <!-- Hero Section -->
+          <div class="hub-hero-card">
+            <div class="hub-hero-badge">
+              <i class="bx bx-user-pin"></i> Counseling Case Review
+            </div>
+            <h2 class="hub-hero-title">Student Insights Hub</h2>
+            <p class="hub-hero-subtext">
+              Select a student case from the priority roster below or search by name or email address above to review individual mood trends, peak active hours, and crisis alert history.
+            </p>
+          </div>
+
+          <!-- Priority Roster / Suggested Students Grid -->
+          <div class="hub-section">
+            <div class="hub-section-header">
+              <div class="section-title-wrap">
+                <i class="bx bxs-flag-alt icon-flag"></i>
+                <h3 class="hub-section-title">Priority & Active Student Roster</h3>
+              </div>
+              <span v-if="suggestedStudents.length" class="hub-badge-count">
+                {{ suggestedStudents.length }} {{ suggestedStudents.length === 1 ? 'Student' : 'Students' }} Available
+              </span>
+            </div>
+
+            <div v-if="loadingSuggested" class="hub-students-loading">
+              <div class="spinner"></div>
+              <span>Loading student roster…</span>
+            </div>
+
+            <div v-else-if="suggestedStudents.length === 0" class="hub-empty-roster">
+              <i class="bx bx-check-circle icon-ok"></i>
+              <div>
+                <strong>No active flagged student alerts</strong>
+                <p>Use the search bar above to look up any student in the system.</p>
+              </div>
+            </div>
+
+            <div v-else class="hub-students-grid">
+              <div
+                v-for="student in suggestedStudents"
+                :key="student.id"
+                class="student-quick-card"
+                :class="{ 'card-flagged': student.has_crisis_flag }"
+                @click="selectStudent(student)"
+              >
+                <div class="student-card-left">
+                  <div class="student-avatar" :class="{ 'avatar-flagged': student.has_crisis_flag }">
+                    <i class="bx bx-user"></i>
+                  </div>
+                  <div class="student-info">
+                    <div class="student-name-row">
+                      <span class="student-name">{{ student.display }}</span>
+                      <span v-if="student.has_crisis_flag" class="flag-badge">
+                        <i class="bx bxs-flag"></i> Flagged Alert
+                      </span>
+                    </div>
+                    <div class="student-sub-info">
+                      <span>{{ student.masked_email }}</span>
+                      <span class="dot-divider">•</span>
+                      <span>{{ student.department || 'General' }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="student-card-right">
+                  <button type="button" class="select-case-btn">
+                    View Case <i class="bx bx-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Feature Overview Grid -->
+          <div class="hub-features-grid">
+            <div class="hub-feature-card">
+              <div class="feature-icon icon-green">
+                <i class="bx bx-pie-chart-alt-2"></i>
+              </div>
+              <div class="feature-content">
+                <h4>Mood & Emotion Distribution</h4>
+                <p>Track positive, anxious, stressed, or sad emotional logs over selected reporting periods.</p>
+              </div>
+            </div>
+
+            <div class="hub-feature-card">
+              <div class="feature-icon icon-cyan">
+                <i class="bx bx-time-five"></i>
+              </div>
+              <div class="feature-content">
+                <h4>Peak Usage Hour Tracking</h4>
+                <p>Identify what time of day the student reaches out to LeanOn-Bot for targeted outreach.</p>
+              </div>
+            </div>
+
+            <div class="hub-feature-card">
+              <div class="feature-icon icon-amber">
+                <i class="bx bx-shield-quarter"></i>
+              </div>
+              <div class="feature-content">
+                <h4>Crisis Logs & Direct Chat</h4>
+                <p>Review severity levels, message volume, and launch a direct chat with the student with one click.</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Loading -->
@@ -227,12 +339,87 @@
         </template>
       </div>
     </main>
+
+    <!-- Export Student Case Modal -->
+    <Transition name="modal-fade">
+      <div v-if="showExportModal" class="export-modal-overlay" @click.self="closeExportModal">
+        <div class="export-modal">
+          <div class="export-modal-header">
+            <div class="export-modal-header-left">
+              <div class="export-modal-icon">
+                <i class="bx bxs-file-export"></i>
+              </div>
+              <div>
+                <h3 class="export-modal-title">Export Student Case Report</h3>
+                <p class="export-modal-subtitle">Generate report for {{ selectedStudent?.display }}</p>
+              </div>
+            </div>
+            <button class="export-modal-close" type="button" @click="closeExportModal">
+              <i class="bx bx-x"></i>
+            </button>
+          </div>
+
+          <div class="export-modal-body">
+            <!-- Export Format -->
+            <div class="export-field-group">
+              <label class="export-field-label">Export Format</label>
+              <div class="export-format-tabs">
+                <button
+                  type="button"
+                  class="export-format-tab"
+                  :class="{ active: exportOptions.format === 'pdf' }"
+                  @click="exportOptions.format = 'pdf'"
+                >
+                  <i class="bx bxs-file-pdf"></i> PDF Document
+                </button>
+                <button
+                  type="button"
+                  class="export-format-tab"
+                  :class="{ active: exportOptions.format === 'csv' }"
+                  @click="exportOptions.format = 'csv'"
+                >
+                  <i class="bx bxs-file-txt"></i> CSV Spreadsheet
+                </button>
+              </div>
+            </div>
+
+            <!-- Filtered Period Details -->
+            <div class="export-field-group">
+              <label class="export-field-label">Filtered Reporting Period</label>
+              <div class="export-period-badge" style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;color:#166534;font-size:13.5px;font-weight:600;">
+                <i class="bx bx-calendar" style="font-size:18px;"></i>
+                <span>{{ periods.find(p => p.value === selectedPeriod)?.label || selectedPeriod }}</span>
+                <span v-if="stats.period_start && stats.period_end" style="color:#4b5563;font-weight:normal;font-size:12.5px;">
+                  ({{ stats.period_start }} → {{ stats.period_end }})
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="export-modal-footer">
+            <button type="button" class="export-cancel-btn" @click="closeExportModal">Cancel</button>
+            <button
+              type="button"
+              class="export-confirm-btn"
+              @click="exportOptions.format === 'csv' ? generateCSV() : generatePDF()"
+              :disabled="exportLoading"
+            >
+              <span v-if="exportLoading" class="btn-spinner"></span>
+              <i v-else :class="exportOptions.format === 'csv' ? 'bx bx-spreadsheet' : 'bx bx-download'"></i>
+              {{ exportLoading ? 'Generating...' : (exportOptions.format === 'csv' ? 'Download CSV' : 'Download PDF') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import SidebarAdmin from '@/components/sidebarAdmin.vue'
 import HeaderAdmin from '@/components/headerAdmin.vue'
 import MoodDistributionChart from '@/components/MoodDistributionChart.vue'
@@ -257,6 +444,8 @@ const searching = ref(false)
 const showDropdown = ref(false)
 const loading = ref(false)
 const fetching = ref(false)
+const suggestedStudents = ref([])
+const loadingSuggested = ref(false)
 
 const stats = ref({
   total_conversations: 0,
@@ -290,14 +479,7 @@ const onSearchInput = () => {
   searchTimer = setTimeout(runSearch, 300)
 }
 
-/* DINAGDAG */
-const onSearchFocus = () => {
-  showDropdown.value = true
-  // wala pang laman ang search? kunin yung default/flagged list
-  if (!searchQuery.value.trim() && searchResults.value.length === 0) {
-    runSearch()
-  }
-}
+
 
 const runSearch = async () => {
   const q = searchQuery.value.trim()
@@ -408,6 +590,462 @@ const getGrowthIcon = (val) => {
   return val > 0 ? 'bx bx-trending-up' : 'bx bx-trending-down'
 }
 
+const fetchSuggestedStudents = async () => {
+  loadingSuggested.value = true
+  try {
+    const res = await axios.get('/api/admin/analytics/students?flagged=true', authConfig())
+    suggestedStudents.value = res.data.students || []
+  } catch (err) {
+    console.error('Failed to load suggested students:', err)
+    suggestedStudents.value = []
+  } finally {
+    loadingSuggested.value = false
+  }
+}
+
+// ── Export Modal State & Logic ────────────────────────────────────
+const showExportModal = ref(false)
+const exportLoading = ref(false)
+const exportOptions = ref({
+  format: 'pdf',
+})
+
+const openExportModal = () => {
+  if (!selectedStudent.value) return
+  exportOptions.value.format = 'pdf'
+  showExportModal.value = true
+}
+
+const closeExportModal = () => {
+  if (!exportLoading.value) showExportModal.value = false
+}
+
+// PDF Styling Helpers
+const PDF_GREEN      = [14, 96, 8]
+const PDF_GREEN_MID  = [22, 163, 74]
+const PDF_GREEN_DARK = [10, 68, 6]
+const PDF_TEXT_DARK  = [17, 24, 39]
+const PDF_TEXT_MID   = [75, 85, 99]
+const PDF_TEXT_LIGHT = [156, 163, 175]
+const PDF_ROW_ALT    = [247, 250, 247]
+const PDF_BORDER     = [229, 231, 235]
+
+const loadImageAsDataUrl = (path) => new Promise((resolve) => {
+  const img = new Image()
+  img.crossOrigin = 'anonymous'
+  img.onload = () => {
+    const canvas = document.createElement('canvas')
+    canvas.width  = img.naturalWidth
+    canvas.height = img.naturalHeight
+    canvas.getContext('2d').drawImage(img, 0, 0)
+    resolve(canvas.toDataURL('image/png'))
+  }
+  img.onerror = () => resolve(null)
+  img.src = path
+})
+
+const pdfDrawHeader = async (doc, title, periodLabel, generatedAt, refId) => {
+  const W = doc.internal.pageSize.getWidth()
+  const M = 14
+  const BANNER_TOP = 0
+  const BANNER_H   = 42
+
+  doc.setFillColor(...PDF_GREEN_DARK)
+  doc.rect(0, BANNER_TOP, W, 7, 'F')
+  doc.setFillColor(...PDF_GREEN)
+  doc.rect(0, 7, W, BANNER_H - 7, 'F')
+  doc.setFillColor(...PDF_GREEN_MID)
+  doc.rect(W - 38, 7, 38, BANNER_H - 7, 'F')
+
+  const LOGO_SIZE = 22
+  const LOGO_Y    = 7 + (35 - LOGO_SIZE) / 2
+  const GC_X      = M
+  const LB_X      = GC_X + LOGO_SIZE + 3
+
+  const gcLogo = await loadImageAsDataUrl('/gc-logo.png')
+  if (gcLogo) {
+    doc.addImage(gcLogo, 'PNG', GC_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE)
+  }
+
+  doc.setDrawColor(255, 255, 255)
+  doc.setLineWidth(0.4)
+  doc.line(LB_X - 1.5, LOGO_Y + 2, LB_X - 1.5, LOGO_Y + LOGO_SIZE - 2)
+
+  const lbLogo = await loadImageAsDataUrl('/leanOnBot.png')
+  if (lbLogo) {
+    doc.addImage(lbLogo, 'PNG', LB_X, LOGO_Y, LOGO_SIZE, LOGO_SIZE)
+  }
+
+  const textX = LB_X + LOGO_SIZE + 5
+
+  doc.setFontSize(6.5)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(187, 247, 208)
+  doc.text('GORDON COLLEGE  ·  GUIDANCE & COUNSELING OFFICE  ·  LEANON BOT', textX, 15)
+
+  doc.setFontSize(13)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(255, 255, 255)
+  doc.text(title, textX, 25, { maxWidth: W - textX - 42 })
+
+  doc.setFontSize(7.5)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(187, 247, 208)
+  const metaText = `Period: ${periodLabel}   ·   Generated: ${generatedAt}`
+  doc.text(metaText, textX, 34, { maxWidth: W - textX - 42 })
+
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(255, 255, 255)
+  doc.text('CONFIDENTIAL', W - 19, 19, { align: 'center' })
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(6)
+  doc.text('Student Case View', W - 19, 25, { align: 'center' })
+  doc.setFontSize(5.5)
+  doc.text(`Ref: ${refId}`, W - 19, 30, { align: 'center' })
+
+  doc.setDrawColor(...PDF_BORDER)
+  doc.setLineWidth(0.25)
+  doc.line(0, BANNER_H + 1, W, BANNER_H + 1)
+
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'italic')
+  doc.setTextColor(...PDF_TEXT_MID)
+  doc.text('Confidential student case wellness report for counseling records.', M, BANNER_H + 7)
+
+  return BANNER_H + 13
+}
+
+const pdfDrawFooter = (doc, refId) => {
+  const count = doc.internal.getNumberOfPages()
+  const W = doc.internal.pageSize.getWidth()
+  const H = doc.internal.pageSize.getHeight()
+  for (let i = 1; i <= count; i++) {
+    doc.setPage(i)
+    doc.setDrawColor(...PDF_BORDER)
+    doc.setLineWidth(0.25)
+    doc.line(14, H - 14, W - 14, H - 14)
+    doc.setFontSize(6.5)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...PDF_TEXT_LIGHT)
+    doc.text('LeanOn Bot  ·  Gordon College  ·  Confidential — For authorized guidance counselors only', 14, H - 9)
+    doc.setFontSize(6)
+    doc.text(`Export Ref: ${refId}`, 14, H - 5)
+    doc.setFontSize(7)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(120, 130, 145)
+    doc.text(`Page ${i} of ${count}`, W - 14, H - 7, { align: 'right' })
+  }
+}
+
+const pdfSectionHeading = (doc, text, y, margin) => {
+  const W = doc.internal.pageSize.getWidth()
+  doc.setFillColor(...PDF_GREEN)
+  doc.rect(margin, y - 4.5, 3, 7, 'F')
+  doc.setFontSize(10.5)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(...PDF_TEXT_DARK)
+  doc.text(text, margin + 6, y)
+  doc.setDrawColor(...PDF_BORDER)
+  doc.setLineWidth(0.2)
+  doc.line(margin + 6, y + 2, W - margin, y + 2)
+  return y + 8
+}
+
+const pdfTableStyles = () => ({
+  headStyles: {
+    fillColor: PDF_GREEN,
+    textColor: [255, 255, 255],
+    fontStyle: 'bold',
+    fontSize: 8.5,
+    cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+  },
+  bodyStyles: {
+    textColor: PDF_TEXT_DARK,
+    fontSize: 8,
+    cellPadding: { top: 3.5, bottom: 3.5, left: 5, right: 5 },
+  },
+  alternateRowStyles: {
+    fillColor: PDF_ROW_ALT,
+  },
+  tableLineColor: PDF_BORDER,
+  tableLineWidth: 0.2,
+})
+
+// Generate PDF Report for Selected Student
+const generatePDF = async () => {
+  if (!selectedStudent.value) return
+  exportLoading.value = true
+  try {
+    const student = selectedStudent.value
+    const doc = new jsPDF()
+    const periodObj = periods.find(p => p.value === selectedPeriod.value)
+    const periodLabel = periodObj ? periodObj.label : selectedPeriod.value
+    const generatedAt = new Date().toLocaleString('en-PH', {
+      month: 'long', day: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    })
+    const refId = `STU-RPT-${Date.now().toString(36).toUpperCase()}`
+
+    const W = doc.internal.pageSize.getWidth()
+    const M = 14
+
+    let startY = await pdfDrawHeader(
+      doc,
+      `Student Case: ${student.display}`,
+      `${periodLabel} (${stats.value.period_start || ''} → ${stats.value.period_end || ''})`,
+      generatedAt,
+      refId
+    )
+
+    // Student Profile Card
+    doc.setFillColor(245, 247, 250)
+    doc.setDrawColor(...PDF_BORDER)
+    doc.roundedRect(M, startY, W - (M * 2), 24, 3, 3, 'FD')
+
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(...PDF_TEXT_DARK)
+    doc.text(student.display, M + 6, startY + 8)
+
+    doc.setFontSize(8.5)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(...PDF_TEXT_MID)
+    const emailText = student.domain_email ? `@${student.domain_email}` : student.email
+    doc.text(`Email: ${emailText} (${student.email})`, M + 6, startY + 14)
+    doc.text(`Department: ${student.department || 'N/A'}  ·  Student ID: #${student.id}`, M + 6, startY + 19)
+
+    startY += 30
+
+    // Wellness Metrics Summary
+    startY = pdfSectionHeading(doc, 'Wellness Metrics Summary', startY, M)
+
+    const statsRows = [
+      ['Conversations', String(stats.value.total_conversations || 0), 'Total Messages', String(stats.value.message_count || 0)],
+      ['Session Count', String(stats.value.session_count || 0), 'Off-Topic Fallbacks', String(stats.value.fallback_count || 0)],
+      ['Peak Active Hour', formatPeakHour(stats.value.peak_hour), 'Crisis Alert Count', String(stats.value.crisis_alert_count || 0)],
+    ]
+
+    autoTable(doc, {
+      startY: startY,
+      margin: { left: M, right: M },
+      head: [['Metric', 'Value', 'Metric', 'Value']],
+      body: statsRows,
+      ...pdfTableStyles(),
+    })
+
+    startY = doc.lastAutoTable.finalY + 8
+
+    // Crisis Severity Breakdown
+    if (stats.value.crisis_alert_count > 0 || (stats.value.crisis_by_severity && Object.keys(stats.value.crisis_by_severity).length > 0)) {
+      startY = pdfSectionHeading(doc, 'Crisis Severity Breakdown', startY, M)
+
+      const crisisRows = Object.entries(stats.value.crisis_by_severity || {}).map(([sev, count]) => [
+        sev.charAt(0).toUpperCase() + sev.slice(1),
+        String(count),
+      ])
+
+      if (crisisRows.length === 0) {
+        crisisRows.push(['Unclassified / General Alerts', String(stats.value.crisis_alert_count)])
+      }
+
+      autoTable(doc, {
+        startY: startY,
+        margin: { left: M, right: M },
+        head: [['Severity Level', 'Alert Count']],
+        body: crisisRows,
+        ...pdfTableStyles(),
+      })
+
+      startY = doc.lastAutoTable.finalY + 8
+    }
+
+    // Emotion Distribution
+    const emoDist = trendData.value.emotion_distribution || {}
+    if (Object.keys(emoDist).length > 0) {
+      if (startY > doc.internal.pageSize.getHeight() - 60) {
+        doc.addPage()
+        startY = 20
+      }
+
+      startY = pdfSectionHeading(doc, 'Emotion & Mood Breakdown', startY, M)
+
+      const totalEmotions = Object.values(emoDist).reduce((a, b) => a + b, 0)
+      const emoRows = Object.entries(emoDist)
+        .sort(([, a], [, b]) => b - a)
+        .map(([emo, count], idx) => [
+          emo.charAt(0).toUpperCase() + emo.slice(1),
+          String(count),
+          totalEmotions > 0 ? `${((count / totalEmotions) * 100).toFixed(1)}%` : '0%',
+          `#${idx + 1}`,
+        ])
+
+      autoTable(doc, {
+        startY: startY,
+        margin: { left: M, right: M },
+        head: [['Emotion', 'Log Count', 'Percentage', 'Rank']],
+        body: emoRows,
+        ...pdfTableStyles(),
+      })
+
+      startY = doc.lastAutoTable.finalY + 8
+    }
+
+    // Sentiment Over Time
+    const sentWeeks = trendData.value.sentiment_over_time || []
+    if (sentWeeks.length > 0) {
+      if (startY > doc.internal.pageSize.getHeight() - 60) {
+        doc.addPage()
+        startY = 20
+      }
+
+      startY = pdfSectionHeading(doc, 'Sentiment Trends Over Time', startY, M)
+
+      const sentRows = sentWeeks.map((w, idx) => {
+        const pos = w.positive || 0
+        const neu = w.neutral || 0
+        const neg = w.negative || 0
+        const dominant = pos >= neu && pos >= neg ? 'Positive' : (neg >= pos && neg >= neu ? 'Negative' : 'Neutral')
+        const weekLabel = w.week_start ? w.week_start : `Week ${idx + 1}`
+        return [weekLabel, String(pos), String(neu), String(neg), dominant]
+      })
+
+      autoTable(doc, {
+        startY: startY,
+        margin: { left: M, right: M },
+        head: [['Week Starting', 'Positive', 'Neutral', 'Negative', 'Dominant Trend']],
+        body: sentRows,
+        ...pdfTableStyles(),
+      })
+
+      startY = doc.lastAutoTable.finalY + 8
+    }
+
+    pdfDrawFooter(doc, refId)
+
+    const fileName = `Student-Insights-${student.display.replace(/\s+/g, '_')}-${selectedPeriod.value}-${new Date().toISOString().slice(0, 10)}.pdf`
+    doc.save(fileName)
+    closeExportModal()
+  } catch (err) {
+    console.error('PDF export failed:', err)
+    alert('Failed to generate PDF report. Please try again.')
+  } finally {
+    exportLoading.value = false
+  }
+}
+
+// Generate CSV Report for Selected Student
+const generateCSV = async () => {
+  if (!selectedStudent.value) return
+  exportLoading.value = true
+  try {
+    const student = selectedStudent.value
+    const periodObj = periods.find(p => p.value === selectedPeriod.value)
+    const periodLabel = periodObj ? periodObj.label : selectedPeriod.value
+    const generatedAt = new Date().toLocaleString('en-PH', {
+      month: 'long', day: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', hour12: true,
+    })
+    const refId = `STU-RPT-${Date.now().toString(36).toUpperCase()}`
+
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`
+    const rows = []
+
+    rows.push([esc('LeanOn Bot — Individual Student Wellness Report')])
+    rows.push([esc('Gordon College — Guidance & Counseling Office')])
+    rows.push([esc(`Student Name: ${student.display}`)])
+    rows.push([esc(`Student Email: ${student.email}`)])
+    rows.push([esc(`Department: ${student.department || 'N/A'}`)])
+    rows.push([esc(`Reporting Period: ${periodLabel} (${stats.value.period_start || ''} to ${stats.value.period_end || ''})`)])
+    rows.push([esc(`Generated At: ${generatedAt}`)])
+    rows.push([esc(`Export Reference: ${refId}`)])
+    rows.push([esc('Privacy Notice: Confidential student case metrics for authorized guidance counselors.')])
+    rows.push([])
+
+    rows.push([esc('=== SUMMARY METRICS ===')])
+    rows.push([esc('Metric'), esc('Value')])
+    rows.push([esc('Total Conversations'), esc(stats.value.total_conversations || 0)])
+    rows.push([esc('Conversation Growth (%)'), esc(stats.value.conversation_growth || 0)])
+    rows.push([esc('Total Messages'), esc(stats.value.message_count || 0)])
+    rows.push([esc('Session Count'), esc(stats.value.session_count || 0)])
+    rows.push([esc('Peak Active Hour'), esc(formatPeakHour(stats.value.peak_hour))])
+    rows.push([esc('Crisis Alert Count'), esc(stats.value.crisis_alert_count || 0)])
+    rows.push([esc('Off-Topic Fallbacks'), esc(stats.value.fallback_count || 0)])
+    rows.push([])
+
+    if (stats.value.crisis_by_severity && Object.keys(stats.value.crisis_by_severity).length > 0) {
+      rows.push([esc('=== CRISIS SEVERITY BREAKDOWN ===')])
+      rows.push([esc('Severity'), esc('Alert Count')])
+      Object.entries(stats.value.crisis_by_severity).forEach(([sev, cnt]) => {
+        rows.push([esc(sev.charAt(0).toUpperCase() + sev.slice(1)), esc(cnt)])
+      })
+      rows.push([])
+    }
+
+    const emoDist = trendData.value.emotion_distribution || {}
+    if (Object.keys(emoDist).length > 0) {
+      rows.push([esc('=== EMOTION DISTRIBUTION ===')])
+      rows.push([esc('Emotion'), esc('Count'), esc('Percentage'), esc('Rank')])
+      const total = Object.values(emoDist).reduce((a, b) => a + b, 0)
+      Object.entries(emoDist)
+        .sort(([, a], [, b]) => b - a)
+        .forEach(([emo, count], idx) => {
+          rows.push([
+            esc(emo.charAt(0).toUpperCase() + emo.slice(1)),
+            esc(count),
+            esc(total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%'),
+            esc(`#${idx + 1}`),
+          ])
+        })
+      rows.push([])
+    }
+
+    const sentWeeks = trendData.value.sentiment_over_time || []
+    if (sentWeeks.length > 0) {
+      rows.push([esc('=== SENTIMENT TREND OVER TIME ===')])
+      rows.push([esc('Week Starting'), esc('Positive'), esc('Neutral'), esc('Negative'), esc('Dominant Trend')])
+      sentWeeks.forEach((w, idx) => {
+        const pos = w.positive || 0
+        const neu = w.neutral || 0
+        const neg = w.negative || 0
+        const dominant = pos >= neu && pos >= neg ? 'Positive' : (neg >= pos && neg >= neu ? 'Negative' : 'Neutral')
+        rows.push([
+          esc(w.week_start || `Week ${idx + 1}`),
+          esc(pos), esc(neu), esc(neg), esc(dominant),
+        ])
+      })
+      rows.push([])
+    }
+
+    const peakHours = trendData.value.peak_usage_hours || []
+    if (peakHours.length > 0) {
+      rows.push([esc('=== PEAK USAGE HOURS ===')])
+      rows.push([esc('Hour'), esc('Interaction Volume')])
+      peakHours.forEach(h => {
+        rows.push([esc(formatPeakHour(h.hour)), esc(h.count || 0)])
+      })
+      rows.push([])
+    }
+
+    rows.push([esc(`End of Report — ${refId}`)])
+
+    const csvContent = '\uFEFF' + rows.map(r => r.join(',')).join('\r\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Student-Insights-${student.display.replace(/\s+/g, '_')}-${selectedPeriod.value}-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    closeExportModal()
+  } catch (err) {
+    console.error('CSV export failed:', err)
+    alert('Failed to generate CSV report. Please try again.')
+  } finally {
+    exportLoading.value = false
+  }
+}
+
 const onDocClick = (e) => {
   if (!e.target.closest('.student-search-card')) {
     showDropdown.value = false
@@ -416,6 +1054,7 @@ const onDocClick = (e) => {
 
 onMounted(() => {
   document.addEventListener('click', onDocClick)
+  fetchSuggestedStudents()
 })
 
 onUnmounted(() => {
@@ -578,6 +1217,32 @@ onUnmounted(() => {
   color: #6b7280;
 }
 
+.selected-student-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.message-student-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.message-student-btn:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
 .privacy-chip {
   margin: 0;
   font-size: 12px;
@@ -598,6 +1263,434 @@ onUnmounted(() => {
   border: 1px dashed #d1d5db;
   border-radius: 16px;
   color: #6b7280;
+}
+
+/* --- Student Selection Hub (Improved Empty State) --- */
+.insights-welcome-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.hub-hero-card {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.06) 0%, rgba(14, 96, 8, 0.02) 100%), var(--card-bg, #ffffff);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+}
+
+.hub-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.hub-hero-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+}
+
+.hub-hero-subtext {
+  margin: 0 0 1.25rem 0;
+  font-size: 14px;
+  color: #4b5563;
+  max-width: 680px;
+  line-height: 1.55;
+}
+
+.hub-quick-search-wrap {
+  position: relative;
+  max-width: 540px;
+}
+
+.hub-search-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 16px 0 44px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  font-size: 14px;
+  background: #ffffff;
+  color: #111827;
+  outline: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.hub-search-input:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+/* Hub Roster Section */
+.hub-section {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03);
+}
+
+.hub-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title-wrap .icon-flag {
+  font-size: 20px;
+  color: #dc2626;
+}
+
+.hub-section-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  color: #111827;
+}
+
+.hub-badge-count {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.hub-students-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 2.5rem;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.hub-empty-roster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  color: #4b5563;
+}
+
+.hub-empty-roster .icon-ok {
+  font-size: 28px;
+  color: #16a34a;
+}
+
+.hub-empty-roster strong {
+  display: block;
+  font-size: 14px;
+  color: #111827;
+}
+
+.hub-empty-roster p {
+  margin: 2px 0 0 0;
+  font-size: 13px;
+}
+
+/* Grid of quick select student cards */
+.hub-students-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.student-quick-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-quick-card:hover {
+  border-color: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px -4px rgba(22, 163, 74, 0.12);
+  background: #f0fdf4;
+}
+
+.student-quick-card.card-flagged {
+  border-left: 4px solid #ef4444;
+}
+
+.student-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.student-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.student-avatar.avatar-flagged {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.student-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.student-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.student-name {
+  font-size: 14px;
+  font-weight: 650;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.student-sub-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dot-divider {
+  color: #d1d5db;
+}
+
+.student-card-right {
+  flex-shrink: 0;
+}
+
+.select-case-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.student-quick-card:hover .select-case-btn {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+/* Feature grid */
+.hub-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .hub-features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hub-feature-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 1.25rem;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+
+.hub-feature-card .feature-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.icon-green {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.icon-cyan {
+  background: #ecfeff;
+  color: #0891b2;
+}
+
+.icon-amber {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.feature-content h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 650;
+  color: #111827;
+}
+
+.feature-content p {
+  margin: 0;
+  font-size: 12.5px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+/* Dark mode overrides for Hub */
+[data-theme="dark"] .hub-hero-card {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(15, 23, 42, 0) 100%), #161d2b;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .hub-hero-badge {
+  background: #15231c;
+  border-color: #1f3d2a;
+  color: #86efac;
+}
+
+[data-theme="dark"] .hub-hero-title,
+[data-theme="dark"] .hub-section-title,
+[data-theme="dark"] .student-name,
+[data-theme="dark"] .feature-content h4,
+[data-theme="dark"] .hub-empty-roster strong {
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .hub-hero-subtext,
+[data-theme="dark"] .hub-badge-count,
+[data-theme="dark"] .student-sub-info,
+[data-theme="dark"] .feature-content p,
+[data-theme="dark"] .hub-empty-roster p {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .hub-badge-count {
+  background: #1e2533;
+}
+
+[data-theme="dark"] .hub-search-input {
+  background: #1e2533;
+  border-color: #374151;
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .hub-search-input:focus {
+  border-color: #4ade80;
+}
+
+[data-theme="dark"] .hub-section,
+[data-theme="dark"] .hub-feature-card {
+  background: #161d2b;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .hub-section-header {
+  border-bottom-color: #2d3748;
+}
+
+[data-theme="dark"] .student-quick-card {
+  background: #1e2533;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .student-quick-card:hover {
+  background: #15231c;
+  border-color: #4ade80;
+}
+
+[data-theme="dark"] .student-avatar {
+  background: #2a3447;
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .student-avatar.avatar-flagged {
+  background: #3b1d1d;
+  color: #f87171;
+}
+
+[data-theme="dark"] .select-case-btn {
+  background: #2a3447;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .hub-empty-roster {
+  background: #1e2533;
 }
 
 .empty-state-card i {

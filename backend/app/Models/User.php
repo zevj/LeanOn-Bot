@@ -133,4 +133,14 @@ class User extends Authenticatable {
     {
         return $this->hasMany(SessionLog::class);
     }
+
+    public function directConversationsAsAdmin()
+    {
+        return $this->hasMany(DirectConversation::class, 'admin_id');
+    }
+
+    public function directConversationsAsStudent()
+    {
+        return $this->hasMany(DirectConversation::class, 'student_id');
+    }
 }

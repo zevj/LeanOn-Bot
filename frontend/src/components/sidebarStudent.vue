@@ -34,6 +34,11 @@
         <i class='bx bx-message-square-add'></i>
       </button>
 
+      <button class="rail-btn" :class="{ 'active-rail': isDirectMessagesActive }" @click.stop="goToDirectMessages" title="Direct Messages">
+        <i class='bx bx-conversation'></i>
+        <span v-if="totalUnreadCount > 0" class="rail-badge">{{ totalUnreadCount }}</span>
+      </button>
+
       <button class="rail-btn" @click.stop="openSearchModal">
         <i class='bx bx-search'></i>
       </button>
@@ -72,6 +77,11 @@
         </div>
 
         <div class="main-menu">
+          <div class="menu-item" :class="{ 'active-menu': isDirectMessagesActive }" @click="goToDirectMessages">
+            <i class='bx bx-conversation'></i>
+            <span>Direct Messages</span>
+            <span v-if="totalUnreadCount > 0" class="menu-badge">{{ totalUnreadCount }}</span>
+          </div>
           <div class="menu-item" @click="openSearchModal">
             <i class='bx bx-search'></i>
             <span>Search Chat</span>
@@ -373,6 +383,7 @@ import TermsModal from '@/components/TermsModal.vue'
 import TermsOfUseModal from '@/components/TermsofuseModal.vue'
 import PrivacyPolicyModal from '@/components/PrivacypolicyModal.vue'
 import { useSidebarToggle } from '@/composables/useSidebarToggle'
+import { useDirectMessages } from '@/composables/useDirectMessages'
 import axios from 'axios'
 
 const router = useRouter()
@@ -380,6 +391,14 @@ const route = useRoute()
 const toast = useToast()
 
 const { mobileToggleCount } = useSidebarToggle()
+const { totalUnreadCount, fetchConversations: fetchDMConversations } = useDirectMessages()
+
+const isDirectMessagesActive = computed(() => route.path === '/StudentMessages')
+
+const goToDirectMessages = () => {
+  if (isMobile.value) mobileOpen.value = false
+  router.push('/StudentMessages')
+}
 
 const props = defineProps({
   open: Boolean,
@@ -474,6 +493,7 @@ const lastCreatedChatId = ref(null)
 
 onMounted(() => {
   fetchConversations()
+  fetchDMConversations()
   fetchUserProfile()
   window.addEventListener('resize', handleResize)
 })
@@ -732,3 +752,52 @@ const bulkDelete = () => {
 </script>
 
 <style scoped src="../assets/header-sidebar/sidebar.css"></style>
+
+<style scoped>
+.menu-badge {
+  margin-left: auto;
+  background-color: var(--primary-color, #0E6008);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+}
+
+.rail-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.active-menu, .active-rail {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+.active-menu i, .active-rail i, .active-menu span {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .active-menu,
+:global([data-theme="dark"]) .active-rail {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+:global([data-theme="dark"]) .active-menu i,
+:global([data-theme="dark"]) .active-rail i,
+:global([data-theme="dark"]) .active-menu span {
+  color: #ffffff !important;
+}
+</style>

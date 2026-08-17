@@ -14,6 +14,8 @@ import AdminProfile from '../views/Admin/AdminProfile.vue'
 import AdminLogRecords from '../views/Admin/AdminLogRecords.vue'
 import AdminAnalytics from '../views/Admin/AdminAnalytics.vue'
 import AdminStudentInsights from '../views/Admin/AdminStudentInsights.vue'
+import AdminMessages from '../views/Admin/AdminMessages.vue'
+import StudentMessages from '../views/StudentMessages.vue'
 import GoogleCallback from '../views/GoogleCallback.vue'
 
 const routes = [
@@ -62,6 +64,13 @@ const routes = [
   },
 
   {
+    path: '/StudentMessages',
+    name: 'StudentMessages',
+    component: StudentMessages,
+    meta: { requiresAuth: true, role: 'student' }
+  },
+
+  {
     path: '/MyAccount',
     name: 'MyAccount',
     component: MyAccount
@@ -93,6 +102,13 @@ const routes = [
     name: 'AdminAppointments',
     component: AdminAppointments,
     meta: { hideThemeToggle: true }
+  },
+
+  {
+    path: '/AdminMessages',
+    name: 'AdminMessages',
+    component: AdminMessages,
+    meta: { requiresAuth: true, role: 'guidance', hideThemeToggle: true }
   },
 
   {

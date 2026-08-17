@@ -14,6 +14,7 @@ const showThemeToggleFAB = computed(() => {
   const allowed = ['LandingPage', 'login', 'OTPFPass', 'forgotPass', 'NewPass']
   return allowed.includes(route.name)
 })
+
 const { initTheme } = useTheme()
 
 onMounted(() => {
