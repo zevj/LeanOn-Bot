@@ -17,8 +17,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { Line } from 'vue-chartjs'
+import { useTheme } from '@/composables/useTheme.js'
+import { getChartTheme } from '@/utils/chartTheme.js'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -40,6 +42,24 @@ const props = defineProps({
 })
 
 const hasData = computed(() => props.data.length > 0)
+const { isDark } = useTheme()
+const themeColors = computed(() => getChartTheme(isDark.value))
+
+// ── Responsive breakpoint tracking ──
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+const updateWidth = () => { windowWidth.value = window.innerWidth }
+onMounted(() => window.addEventListener('resize', updateWidth))
+onUnmounted(() => window.removeEventListener('resize', updateWidth))
+
+const isCompact = computed(() => windowWidth.value <= 480)   // small phones
+const isMobile = computed(() => windowWidth.value <= 768)    // tablets/large phones
+
+const pointRadius = computed(() => (isCompact.value ? 2.5 : isMobile.value ? 3 : 4))
+const pointHoverRadius = computed(() => (isCompact.value ? 4 : isMobile.value ? 5 : 6))
+const borderWidth = computed(() => (isCompact.value ? 2 : 2.5))
+const tickFontSize = computed(() => (isCompact.value ? 9 : isMobile.value ? 10 : 11))
+const legendFontSize = computed(() => (isCompact.value ? 10 : isMobile.value ? 11 : 12))
+const legendPadding = computed(() => (isCompact.value ? 8 : isMobile.value ? 12 : 16))
 
 const chartData = computed(() => {
   const labels = props.data.map((d, i) => `Week ${i + 1}`)
@@ -54,12 +74,12 @@ const chartData = computed(() => {
         backgroundColor: 'rgba(16, 185, 129, 0.08)',
         fill: true,
         tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: pointRadius.value,
+        pointHoverRadius: pointHoverRadius.value,
         pointBackgroundColor: '#10b981',
-        pointBorderColor: '#fff',
+        pointBorderColor: themeColors.value.pointBorder,
         pointBorderWidth: 2,
-        borderWidth: 2.5,
+        borderWidth: borderWidth.value,
       },
       {
         label: 'Neutral',
@@ -68,12 +88,12 @@ const chartData = computed(() => {
         backgroundColor: 'rgba(245, 158, 11, 0.06)',
         fill: true,
         tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: pointRadius.value,
+        pointHoverRadius: pointHoverRadius.value,
         pointBackgroundColor: '#f59e0b',
-        pointBorderColor: '#fff',
+        pointBorderColor: themeColors.value.pointBorder,
         pointBorderWidth: 2,
-        borderWidth: 2.5,
+        borderWidth: borderWidth.value,
       },
       {
         label: 'Negative',
@@ -82,12 +102,12 @@ const chartData = computed(() => {
         backgroundColor: 'rgba(239, 68, 68, 0.06)',
         fill: true,
         tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: pointRadius.value,
+        pointHoverRadius: pointHoverRadius.value,
         pointBackgroundColor: '#ef4444',
-        pointBorderColor: '#fff',
+        pointBorderColor: themeColors.value.pointBorder,
         pointBorderWidth: 2,
-        borderWidth: 2.5,
+        borderWidth: borderWidth.value,
       },
     ]
   }
@@ -103,23 +123,28 @@ const chartOptions = computed(() => ({
   plugins: {
     legend: {
       position: 'top',
-      align: 'end',
+      align: isCompact.value ? 'center' : 'end',
       labels: {
-        color: 'var(--text-secondary, #6b7280)',
+        color: themeColors.value.tick,
         usePointStyle: true,
-        pointStyleWidth: 10,
-        padding: 16,
+        pointStyleWidth: isCompact.value ? 8 : 10,
+        padding: legendPadding.value,
+        boxHeight: isCompact.value ? 6 : 8,
         font: {
           family: "'DM Sans', system-ui, sans-serif",
-          size: 12,
+          size: legendFontSize.value,
         },
       },
     },
     tooltip: {
-      backgroundColor: 'rgba(17, 24, 39, 0.9)',
-      titleFont: { family: "'DM Sans', system-ui, sans-serif", weight: '600' },
-      bodyFont: { family: "'DM Sans', system-ui, sans-serif" },
-      padding: 12,
+      backgroundColor: themeColors.value.tooltipBg,
+      borderColor: themeColors.value.tooltipBorder,
+      borderWidth: 1,
+      titleColor: themeColors.value.tooltipTitle,
+      bodyColor: themeColors.value.tooltipBody,
+      titleFont: { family: "'DM Sans', system-ui, sans-serif", weight: '600', size: isCompact.value ? 11 : 12 },
+      bodyFont: { family: "'DM Sans', system-ui, sans-serif", size: isCompact.value ? 11 : 12 },
+      padding: isCompact.value ? 8 : 12,
       cornerRadius: 8,
     }
   },
@@ -127,17 +152,22 @@ const chartOptions = computed(() => ({
     x: {
       grid: { display: false },
       ticks: {
-        color: '#9ca3af',
-        font: { family: "'DM Sans', system-ui, sans-serif", size: 11 },
+        color: themeColors.value.tick,
+        font: { family: "'DM Sans', system-ui, sans-serif", size: tickFontSize.value },
+        maxRotation: isCompact.value ? 45 : 0,
+        minRotation: isCompact.value ? 45 : 0,
+        autoSkip: true,
+        maxTicksLimit: isCompact.value ? 5 : undefined,
       }
     },
     y: {
       beginAtZero: true,
-      grid: { color: 'rgba(0, 0, 0, 0.04)' },
+      grid: { color: themeColors.value.grid },
       ticks: {
-        color: '#9ca3af',
-        font: { family: "'DM Sans', system-ui, sans-serif", size: 11 },
+        color: themeColors.value.tick,
+        font: { family: "'DM Sans', system-ui, sans-serif", size: tickFontSize.value },
         precision: 0,
+        maxTicksLimit: isCompact.value ? 5 : undefined,
       }
     }
   }
@@ -166,6 +196,7 @@ const chartOptions = computed(() => ({
   align-items: center;
   gap: 12px;
   margin-bottom: 1.25rem;
+  flex-wrap: wrap;
 }
 
 .chart-icon-wrapper {
@@ -206,6 +237,8 @@ const chartOptions = computed(() => ({
   justify-content: center;
   gap: 10px;
   color: #9ca3af;
+  text-align: center;
+  padding: 0 1rem;
 }
 
 .empty-chart-state i {
@@ -271,15 +304,65 @@ const chartOptions = computed(() => ({
     font-size: 1rem;
     border-radius: 8px;
   }
+
+  .empty-chart-state i {
+    font-size: 2rem;
+  }
+
+  .empty-chart-state p {
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 360px) {
+  .chart-card {
+    padding: 0.85rem;
+  }
+
   .chart-body {
     height: 180px;
   }
 
   .chart-card-title {
     font-size: 13px;
+  }
+}
+
+@media (max-width: 320px) {
+  .chart-card {
+    padding: 0.7rem;
+    border-radius: 10px;
+  }
+
+  .chart-body {
+    height: 165px;
+  }
+
+  .chart-card-header {
+    gap: 8px;
+    margin-bottom: 0.75rem;
+  }
+
+  .chart-icon-wrapper {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9rem;
+    border-radius: 7px;
+  }
+
+  .chart-card-title {
+    font-size: 12px;
+  }
+}
+
+/* ── Short/landscape mobile viewports ── */
+@media (max-height: 480px) and (orientation: landscape) {
+  .chart-body {
+    height: 160px;
+  }
+
+  .chart-card {
+    padding: 0.85rem;
   }
 }
 </style>

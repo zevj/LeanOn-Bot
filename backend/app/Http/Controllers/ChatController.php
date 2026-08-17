@@ -414,6 +414,20 @@ I'm here with you. Do you want to talk about what's going on?";
             $this->classifyConversationEmotion($conversationId, $userId, $geminiApiKey);
         }
 
+        // ── Soft-flag check (moderate / low distress) ─────────────────────────
+        // This runs AFTER the AI reply is saved so the student's experience is
+        // never interrupted. It creates a CrisisAlert only when the conversation
+        // shows persistent, contextual distress — not just a single keyword hit.
+        if ($userId) {
+            $this->checkAndFlagSoftDistress(
+                $userId,
+                $conversationId,
+                $userMessage,
+                $emotionalTone,   // already computed above: 'casual' | 'emotional' | 'serious'
+                $history
+            );
+        }
+
         return response()->json([
             'reply' => $aiReply
         ]);
@@ -950,8 +964,176 @@ I'm here with you. Do you want to talk about what's going on?";
     }
 
     /**
+     * Context-aware soft-distress flagging for moderate/low level concerns.
+     *
+     * Unlike checkForCrisis() which flags on a single keyword hit, this method
+     * requires MULTIPLE signals before creating a CrisisAlert:
+     *   1. The current message contains moderate/low distress keywords
+     *   2. The emotional tone of the message is NOT casual (must be 'emotional' or 'serious')
+     *      OR the conversation history already shows accumulated distress
+     *   3. The student hasn't already been flagged for the SAME conversation recently
+     *
+     * This prevents flagging a student who casually says "I'm a bit tired" in
+     * an otherwise lighthearted conversation, while still catching someone who
+     * has been expressing sustained distress across multiple messages.
+     */
+    private function checkAndFlagSoftDistress(
+        int $userId,
+        int $conversationId,
+        string $currentMessage,
+        string $emotionalTone,
+        $history
+    ): void {
+        try {
+            $messageLower = strtolower($currentMessage);
+
+            // ── Step 1: Does the current message contain moderate/low keywords?
+            $matchedModerate = [];
+            $matchedLow = [];
+
+            foreach ($this->moderateKeywords as $kw) {
+                if (str_contains($messageLower, $kw)) {
+                    $matchedModerate[] = $kw;
+                }
+            }
+            foreach ($this->lowKeywords as $kw) {
+                if (str_contains($messageLower, $kw)) {
+                    $matchedLow[] = $kw;
+                }
+            }
+
+            $allMatched = array_merge($matchedModerate, $matchedLow);
+
+            // No soft keywords in this message → skip
+            if (empty($allMatched)) {
+                return;
+            }
+
+            // ── Step 2: Require emotional/serious tone OR persistent history distress
+            // A single "I'm tired" in a casual conversation should NOT flag.
+            $distressScore = 0;
+
+            // Current message tone contributes:
+            if ($emotionalTone === 'emotional') {
+                $distressScore += 3;
+            } elseif ($emotionalTone === 'serious') {
+                $distressScore += 2;
+            }
+            // casual tone = 0 points from current message
+
+            // Keyword weight: moderate keywords count more than low keywords
+            $distressScore += count($matchedModerate) * 2;
+            $distressScore += count($matchedLow) * 1;
+
+            // ── Step 3: Scan conversation history for accumulated emotional weight
+            // Each past message with moderate/low keywords or emotional tone adds weight
+            $historyDistress = 0;
+            foreach ($history as $msg) {
+                $pastMsg = strtolower($msg->message ?? '');
+                foreach ($this->moderateKeywords as $kw) {
+                    if (str_contains($pastMsg, $kw)) {
+                        $historyDistress += 1;
+                        break; // count max 1 per message
+                    }
+                }
+                foreach ($this->lowKeywords as $kw) {
+                    if (str_contains($pastMsg, $kw)) {
+                        $historyDistress += 1;
+                        break;
+                    }
+                }
+            }
+            $distressScore += $historyDistress;
+
+            // ── Step 4: Threshold check
+            // Minimum score of 4 required to flag:
+            //   - "emotional" tone + 1 moderate keyword = 3 + 2 = 5 ✓ (flags)
+            //   - "serious" tone + 1 moderate keyword = 2 + 2 = 4 ✓ (flags)
+            //   - "casual" tone + 1 moderate keyword = 0 + 2 = 2 ✗ (does NOT flag)
+            //   - "casual" tone + 1 low keyword + 2 history hits = 0 + 1 + 2 = 3 ✗
+            //   - "casual" tone + 2 moderate keywords + 1 history = 0 + 4 + 1 = 5 ✓ (flags — repeated keywords even in casual tone)
+            if ($distressScore < 4) {
+                return;
+            }
+
+            // ── Step 5: Prevent duplicate flags for the same conversation
+            // Only flag once per conversation (avoids spamming admin with repeated alerts)
+            $existingFlag = CrisisAlert::where('user_id', $userId)
+                ->whereHas('chatMessage', function ($q) use ($conversationId) {
+                    $q->where('conversation_id', $conversationId);
+                })
+                ->where('is_classified', false)
+                ->where('status', 'new')
+                ->whereNull('severity')
+                ->exists();
+
+            if ($existingFlag) {
+                return;
+            }
+
+            // ── Step 6: Create the soft-flag alert
+            $flagReason = $this->buildSoftFlagReason($matchedModerate, $matchedLow, $emotionalTone, $distressScore);
+
+            $alertUser = \App\Models\User::find($userId);
+
+            // Find the most recent chat message for this conversation
+            $latestMsg = ChatMessage::where('user_id', $userId)
+                ->where('conversation_id', $conversationId)
+                ->orderByDesc('created_at')
+                ->first();
+
+            CrisisAlert::create([
+                'user_id'           => $userId,
+                'chat_message_id'   => $latestMsg?->id,
+                'department'        => $alertUser?->department,
+                'gender'            => $alertUser?->gender,
+                'message'           => $currentMessage,
+                'severity'          => null,   // Admin classifies manually
+                'detected_keywords' => $allMatched,
+                'flag_reason'       => $flagReason,
+                'status'            => 'new',
+                'is_classified'     => false,
+            ]);
+
+            // Notify admin
+            $newAlert = CrisisAlert::where('chat_message_id', $latestMsg?->id)->first();
+            if ($newAlert) {
+                AdminNotification::crisisFlagged($newAlert);
+            }
+
+            Log::info("Soft-distress flag created for user {$userId} in conversation {$conversationId} (score: {$distressScore})");
+        } catch (\Exception $e) {
+            // Non-critical — never interrupt the student's chat experience
+            Log::warning('Soft-distress flag check failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Build a human-readable flag reason for moderate/low distress alerts.
+     */
+    private function buildSoftFlagReason(array $moderate, array $low, string $tone, int $score): string
+    {
+        if (!empty($moderate) && $tone === 'emotional') {
+            return 'Emotional distress with moderate concern signals';
+        }
+        if (!empty($moderate) && $tone === 'serious') {
+            return 'Serious tone with moderate concern signals';
+        }
+        if (!empty($moderate) && count($moderate) >= 2) {
+            return 'Repeated moderate concern signals in conversation';
+        }
+        if (!empty($low) && $tone === 'emotional') {
+            return 'Emotional distress with low-level concern signals';
+        }
+        if ($score >= 6) {
+            return 'Accumulated emotional distress across conversation';
+        }
+        return 'Persistent emotional concern detected';
+    }
+
+    /**
      * Detect the emotional tone of the user's message.
-     * Returns 'casual', 'emotional', or 'crisis'.
+     * Returns 'casual', 'emotional', or 'serious'.
      * Note: Actual crisis is already handled by checkForCrisis().
      * This covers the spectrum between casual and crisis.
      */

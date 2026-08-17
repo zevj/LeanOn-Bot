@@ -9,9 +9,13 @@ import LandingPage from '../views/LandingPage.vue'
 import AdminDashboard from '../views/Admin/adminDashboard.vue'
 import EmotionalTrends from '../views/Admin/EmotionalTrends.vue'
 import AdminCrisisAlerts from '../views/Admin/AdminCrisisAlert.vue'
+import AdminAppointments from '../views/Admin/AdminAppointments.vue'
 import AdminProfile from '../views/Admin/AdminProfile.vue'
 import AdminLogRecords from '../views/Admin/AdminLogRecords.vue'
 import AdminAnalytics from '../views/Admin/AdminAnalytics.vue'
+import AdminStudentInsights from '../views/Admin/AdminStudentInsights.vue'
+import AdminMessages from '../views/Admin/AdminMessages.vue'
+import StudentMessages from '../views/StudentMessages.vue'
 import GoogleCallback from '../views/GoogleCallback.vue'
 
 const routes = [
@@ -60,6 +64,13 @@ const routes = [
   },
 
   {
+    path: '/StudentMessages',
+    name: 'StudentMessages',
+    component: StudentMessages,
+    meta: { requiresAuth: true, role: 'student' }
+  },
+
+  {
     path: '/MyAccount',
     name: 'MyAccount',
     component: MyAccount
@@ -86,6 +97,19 @@ const routes = [
     component: AdminCrisisAlerts,
     meta: { hideThemeToggle: true }
   },
+  {
+    path: '/AdminAppointments',
+    name: 'AdminAppointments',
+    component: AdminAppointments,
+    meta: { hideThemeToggle: true }
+  },
+
+  {
+    path: '/AdminMessages',
+    name: 'AdminMessages',
+    component: AdminMessages,
+    meta: { requiresAuth: true, role: 'guidance', hideThemeToggle: true }
+  },
 
   {
     path: '/AdminProfile',
@@ -105,6 +129,13 @@ const routes = [
     path: '/AdminAnalytics',
     name: 'AdminAnalytics',
     component: AdminAnalytics,
+    meta: { requiresAuth: true, role: 'guidance', hideThemeToggle: true }
+  },
+
+  {
+    path: '/AdminStudentInsights',
+    name: 'AdminStudentInsights',
+    component: AdminStudentInsights,
     meta: { requiresAuth: true, role: 'guidance', hideThemeToggle: true }
   },
 

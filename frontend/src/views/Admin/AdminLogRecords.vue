@@ -84,7 +84,7 @@
                             <input
                                 v-model="search"
                                 type="text"
-                                placeholder="Search by ID, name, or email..."
+                                placeholder="Search by ID or email..."
                                 @input="debounceFetch"
                             />
                         </div>
@@ -197,10 +197,21 @@
                         </span>
                         <div class="log-pag-btns">
                             <button :disabled="page <= 1" @click="page--; fetchLogs()" class="btn-prev">
-                                <i class='bx bx-chevron-left'></i> Previous
+                                <i class='bx bx-chevron-left'></i>
                             </button>
+
+                            <template v-for="p in paginationRange" :key="p">
+                                <span v-if="p === '...'" class="pag-ellipsis">···</span>
+                                <button
+                                    v-else
+                                    class="pag-num"
+                                    :class="{ active: p === page }"
+                                    @click="page = p; fetchLogs()"
+                                >{{ p }}</button>
+                            </template>
+
                             <button :disabled="page >= totalPages" @click="page++; fetchLogs()" class="btn-next">
-                                Next <i class='bx bx-chevron-right'></i>
+                                <i class='bx bx-chevron-right'></i>
                             </button>
                         </div>
                     </div>
@@ -711,6 +722,23 @@ const toggleEmail = (id) => {
     updated.has(id) ? updated.delete(id) : updated.add(id);
     revealedEmails.value = updated;
 };
+
+/* PAGINATION */
+const paginationRange = computed(() => {
+    const total = totalPages.value;
+    const current = page.value;
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+    const pages = [];
+    pages.push(1);
+    if (current > 3) pages.push('...');
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+        pages.push(i);
+    }
+    if (current < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
+});
 </script>
 
 <style scoped src="@/assets/admin/AdminLogRecords.css"></style>

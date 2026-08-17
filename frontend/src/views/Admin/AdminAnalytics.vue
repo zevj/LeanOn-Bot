@@ -53,10 +53,10 @@
             <div class="stat-card red">
               <div class="stat-card-content">
                 <h4 class="stat-label">Dept. With Most Alerts</h4>
-                <p class="stat-value dept-value" :style="{ color: stats.top_department_alerts !== 'N/A' ? '#b91c1c' : '#111827' }">
+                <p class="stat-value dept-value" :class="{ 'stat-value--alert': stats.top_department_alerts !== 'N/A' }">
                   {{ stats.top_department_alerts || 'N/A' }}
                 </p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">
+                <span class="stat-meta">
                   {{ stats.top_department_alerts_count || 0 }} classified alerts
                 </span>
               </div>
@@ -81,7 +81,7 @@
               <div class="stat-card-content">
                 <h4 class="stat-label">Peak Usage Hour</h4>
                 <p class="stat-value unit-suffix">{{ formatPeakHour(stats.peak_hour) }}</p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">Highest interaction volume</span>
+                <span class="stat-meta">Highest interaction volume</span>
               </div>
               <div class="stat-icon-wrapper icon-cyan"><i class="bx bx-bell"></i></div>
             </div>
@@ -90,10 +90,10 @@
             <div class="stat-card amber">
               <div class="stat-card-content">
                 <h4 class="stat-label">Crisis Alerts</h4>
-                <p class="stat-value" :style="{ color: stats.crisis_alert_count > 0 ? '#b91c1c' : '#111827' }">
+                <p class="stat-value" :class="{ 'stat-value--alert': stats.crisis_alert_count > 0 }">
                   {{ stats.crisis_alert_count || 0 }}
                 </p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">Flagged messages</span>
+                <span class="stat-meta">Flagged messages</span>
               </div>
               <div class="stat-icon-wrapper icon-amber"><i class="bx bx-shield"></i></div>
             </div>
@@ -102,10 +102,10 @@
             <div class="stat-card purple">
               <div class="stat-card-content">
                 <h4 class="stat-label">Users Age Range</h4>
-                <p class="stat-value unit-suffix" style="font-size:22px;font-weight:700;">
+                <p class="stat-value unit-suffix stat-value--age">
                   {{ stats.top_age_range || 'N/A' }}
                 </p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">
+                <span class="stat-meta">
                   {{ stats.top_age_range_count || 0 }} registered students
                 </span>
               </div>
@@ -123,29 +123,29 @@
           <div class="charts-section-bottom">
             <SentimentTrendChart :data="trendData.sentiment_over_time || []" />
 
-            <div class="stat-card" style="height:auto;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:1.5rem;gap:1.25rem;border-left:4px solid #16a34a;background:var(--card-bg,#fff);">
+            <div class="stat-card perf-card" style="height:auto;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:1.5rem;gap:1.25rem;border-left:4px solid #16a34a;">
               <div style="display:flex;align-items:center;gap:10px;width:100%;">
                 <div class="stat-icon-wrapper icon-green" style="width:36px;height:36px;font-size:1.1rem;">
                   <i class="bx bx-info-circle"></i>
                 </div>
-                <h3 style="font-size:15px;font-weight:600;color:#111827;margin:0;">System Performance & Privacy</h3>
+                <h3 class="perf-card-title" style="font-size:15px;font-weight:600;margin:0;">System Performance & Privacy</h3>
               </div>
-              <div style="display:flex;flex-direction:column;gap:12px;width:100%;font-size:13.5px;color:#4b5563;">
-                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
+              <div class="perf-card-body" style="display:flex;flex-direction:column;gap:12px;width:100%;font-size:13.5px;">
+                <div class="perf-row" style="display:flex;justify-content:space-between;border-bottom:1px solid;padding-bottom:8px;">
                   <span>Off-topic Fallbacks:</span>
-                  <strong style="color:#111827;">{{ stats.fallback_count || 0 }} times</strong>
+                  <strong class="perf-row">{{ stats.fallback_count || 0 }} times</strong>
                 </div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
+                <div class="perf-row" style="display:flex;justify-content:space-between;border-bottom:1px solid;padding-bottom:8px;">
                   <span>Active Student Engagement Rate:</span>
-                  <strong style="color:#111827;">
+                  <strong class="perf-row">
                     {{ stats.total_registered_users > 0 ? ((stats.active_users_in_period / stats.total_registered_users) * 100).toFixed(1) : 0 }}%
                   </strong>
                 </div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
+                <div class="perf-row" style="display:flex;justify-content:space-between;border-bottom:1px solid;padding-bottom:8px;">
                   <span>Total Registered Students:</span>
-                  <strong style="color:#111827;">{{ stats.total_registered_users || 0 }}</strong>
+                  <strong class="perf-row">{{ stats.total_registered_users || 0 }}</strong>
                 </div>
-                <div style="margin-top:8px;font-size:12px;line-height:1.5;color:#6b7280;background:#f9fafb;padding:10px;border-radius:8px;border:1px solid #f3f4f6;">
+                <div class="perf-privacy-notice" style="margin-top:8px;font-size:12px;line-height:1.5;padding:10px;border-radius:8px;border:1px solid;">
                   <i class="bx bx-lock-alt" style="margin-right:4px;color:#16a34a;"></i>
                   <strong>Privacy Notice:</strong> All text contents, raw chat sessions, names, and emails are excluded from AI analyses. Only aggregated statistics are shared with AI APIs for school-wide insight extraction.
                 </div>
@@ -1145,3 +1145,148 @@ onMounted(() => {
 
 <style scoped src="@/assets/admin/adminAnalytics.css"></style>
 <style src="@/assets/admin/admin-layout.css"></style>
+
+<style>
+/* ── AdminAnalytics Non-scoped Dark Mode Overrides ── */
+/* These must be non-scoped since admin-dark.css cannot pierce scoped selectors */
+[data-theme="dark"] .perf-card {
+  background: #1e2533 !important;
+}
+
+[data-theme="dark"] .perf-card-title {
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .perf-card-body {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .perf-row {
+  border-bottom-color: #2d3748 !important;
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .perf-privacy-notice {
+  background: #161b27 !important;
+  border-color: #2d3748 !important;
+  color: #9ca3af !important;
+}
+
+/* Analytics stat cards */
+[data-theme="dark"] .stat-cards-grid .stat-card {
+  background: linear-gradient(145deg, #1e2533, #1a2030) !important;
+  border-color: #2d3748 !important;
+}
+
+[data-theme="dark"] .stat-label {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .stat-value {
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .stat-growth.positive {
+  background: #0d2818 !important;
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .stat-growth.negative {
+  background: #3b1010 !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .stat-growth.neutral {
+  background: #1a1f2e !important;
+  color: #6b7280 !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-green {
+  background: #0d2818 !important;
+  border-color: #14532d !important;
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-red {
+  background: #3b1010 !important;
+  border-color: #7f1d1d !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-amber {
+  background: #2d2410 !important;
+  border-color: #78500a !important;
+  color: #fde68a !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-purple {
+  background: #2e1b4e !important;
+  border-color: #4c1d95 !important;
+  color: #c084fc !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-cyan {
+  background: #0a2a2e !important;
+  border-color: #164e57 !important;
+  color: #67e8f9 !important;
+}
+
+[data-theme="dark"] .loading-overlay {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .loading-overlay p {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .main-container {
+  background: #0f1117 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .title {
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .subtext,
+[data-theme="dark"] .period-selector label {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .period-tabs {
+  background: #1e2533 !important;
+  border-color: #2d3748 !important;
+}
+
+[data-theme="dark"] .period-tab {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .period-tab:hover:not(.active) {
+  background: #243044 !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .period-dropdown {
+  background: #1a2030 !important;
+  border-color: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .period-dropdown:hover,
+[data-theme="dark"] .period-dropdown:focus {
+  border-color: #4ade80 !important;
+}
+
+[data-theme="dark"] .stat-meta {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .stat-value--alert {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .ai-insights-section {
+  color: #cbd5e1 !important;
+}
+</style>
