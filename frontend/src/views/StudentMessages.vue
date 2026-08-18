@@ -8,100 +8,139 @@
     <main class="main-area">
       <HeaderStudent @toggle-sidebar="sidebarOpen = !sidebarOpen" />
 
-      <div class="messages-page-container">
-        <!-- Direct Message Main Container -->
-        <div class="dm-card">
-          
-          <!-- Header Banner -->
-          <div class="dm-header">
-            <div class="counselor-info">
-              <div class="counselor-avatar">
-                <template v-if="otherParticipant?.profile_image_url">
-                  <img :src="otherParticipant.profile_image_url" alt="Counselor Profile" />
-                </template>
-                <template v-else>
-                  {{ getInitials(otherParticipant?.full_name || 'Guidance Counselor') }}
-                </template>
-              </div>
-              <div class="counselor-details">
-                <h2 class="counselor-name">
-                  {{ otherParticipant?.full_name || 'Guidance Counselor' }}
-                </h2>
-                <div class="counselor-status">
-                  <span class="status-dot"></span>
-                  <span class="status-text">Counseling & Guidance Support</span>
-                </div>
-              </div>
-            </div>
+      <div class="main-container">
+        <div class="page-header-wrapper">
+          <div class="header-title">
+            <h1 class="title">Direct Messages</h1>
+            <p class="subtext">Communicate directly with students in real time.</p>
           </div>
+        </div>
 
-          <!-- Messages Stream Container -->
-          <div ref="chatContainerRef" class="dm-body">
-            <!-- Loading Notice -->
-            <div v-if="loadingConversations || loadingMessages" class="loading-state">
-              <div class="mini-spinner"></div>
-              <span>Connecting to Guidance Counselor...</span>
-            </div>
-
-            <!-- Empty Conversation State -->
-            <div v-else-if="messages.length === 0" class="empty-messages">
-              <div class="empty-icon-wrap">
-                <i class="bx bx-message-rounded-dots"></i>
-              </div>
-              <h3>Start a Conversation</h3>
-              <p>Send a direct message to communicate privately with your Guidance Counselor.</p>
-            </div>
-
-            <!-- Messages List -->
-            <template v-else>
-              <div
-                v-for="msg in messages"
-                :key="msg.id"
-                class="message-row"
-                :class="isMyMessage(msg) ? 'my-message-row' : 'counselor-message-row'"
-              >
-                <div v-if="!isMyMessage(msg)" class="avatar-small">
-                  {{ getInitials(msg.sender_name || otherParticipant?.full_name) }}
+        <div class="messages-page-container">
+          <!-- Direct Message Main Container -->
+          <div class="dm-card">
+            
+            <!-- Header Banner -->
+            <div class="dm-header">
+              <div class="counselor-info">
+                <div class="counselor-avatar">
+                  <template v-if="otherParticipant?.profile_image_url">
+                    <img :src="otherParticipant.profile_image_url" alt="Counselor Profile" />
+                  </template>
+                  <template v-else>
+                    {{ getInitials(otherParticipant?.full_name || 'Guidance Counselor') }}
+                  </template>
                 </div>
-
-                <div class="message-bubble" :class="isMyMessage(msg) ? 'my-bubble' : 'counselor-bubble'">
-                  <div class="sender-label" v-if="!isMyMessage(msg)">
-                    {{ msg.sender_name || otherParticipant?.full_name || 'Counselor' }}
+                <div class="counselor-details">
+                  <h2 class="counselor-name">
+                    {{ otherParticipant?.full_name || 'Guidance Counselor' }}
+                  </h2>
+                  <div class="counselor-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Counseling & Guidance Support</span>
                   </div>
-                  <p class="message-text">{{ msg.message }}</p>
-                  <div class="message-meta">
-                    <span class="message-time">{{ formatTime(msg.created_at) }}</span>
-                    <span v-if="isMyMessage(msg)" class="read-status">
-                      <i :class="msg.is_read ? 'bx bx-check-double read' : 'bx bx-check'"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Messages Stream Container -->
+            <div ref="chatContainerRef" class="chat-stream" @click="closeActions">
+              <!-- Loading Notice -->
+              <div v-if="loadingConversations || loadingMessages" class="chat-loader">
+                <div class="typing-bubble">
+                  <div class="typing-dots"><span></span><span></span><span></span></div>
+                </div>
+                <span class="loader-text">Connecting to Guidance Counselor...</span>
+              </div>
+
+              <!-- Empty Conversation State -->
+              <div v-else-if="messages.length === 0" class="empty-chat">
+                <img src="https://cdn-icons-png.flaticon.com/512/1041/1041916.png" alt="Say Hi" class="empty-illustration"/>
+                <h3>Start a Conversation</h3>
+                <p>Send a direct message to communicate privately with your Guidance Counselor.</p>
+              </div>
+
+              <!-- Messages List -->
+              <div v-else class="message-wrapper">
+                <div
+                  v-for="msg in messages"
+                  :key="msg.id"
+                  class="msg-row slide-up"
+                  :class="[
+                    isMyMessage(msg) ? 'me' : 'them',
+                    { 'show-actions': activeActionMsgId === msg.id }
+                  ]"
+                >
+
+                  <!-- Action for 'me' messages -->
+                  <div class="msg-actions" v-if="isMyMessage(msg)">
+                    <button class="reply-icon-btn" @click.stop="startReply(msg)" title="Reply to message">
+                      <i class="bx bx-reply"></i>
+                    </button>
+                  </div>
+                  
+                  <div 
+                    class="bubble"
+                    @touchstart="startPress(msg.id)"
+                    @touchend="cancelPress"
+                    @touchmove="cancelPress"
+                    @touchcancel="cancelPress"
+                    @mousedown="startPress(msg.id)"
+                    @mouseup="cancelPress"
+                    @mouseleave="cancelPress"
+                  >
+                    <!-- Quoted Reply Render -->
+                    <div v-if="extractReply(msg.message).quoted" class="bubble-quote">
+                      <i class="bx bx-reply"></i>
+                      <span>{{ extractReply(msg.message).quoted }}</span>
+                    </div>
+                    
+                    <p class="text">{{ extractReply(msg.message).content }}</p>
+                    <span class="meta">
+                      {{ formatTime(msg.created_at) }}
+                      <i v-if="isMyMessage(msg)" class="bx" :class="msg.is_read ? 'bx-check-double read' : 'bx-check'"></i>
                     </span>
                   </div>
+
+                  <!-- Action for 'them' messages -->
+                  <div class="msg-actions" v-if="!isMyMessage(msg)">
+                    <button class="reply-icon-btn" @click.stop="startReply(msg)" title="Reply to message">
+                      <i class="bx bx-reply"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
-            </template>
-          </div>
+            </div>
 
-          <!-- Input Composer -->
-          <div class="dm-footer">
-            <form @submit.prevent="handleSend" class="input-form">
-              <input
-                v-model="msgText"
-                type="text"
-                class="message-input"
-                placeholder="Type your message to the Guidance Counselor..."
-                :disabled="sendingMessage"
-                @keydown.enter.exact.prevent="handleSend"
-              />
-              <button
-                type="submit"
-                class="send-btn"
-                :disabled="!msgText.trim() || sendingMessage"
-              >
-                <i v-if="!sendingMessage" class="bx bx-paper-plane"></i>
-                <div v-else class="mini-spinner button-spinner"></div>
-              </button>
-            </form>
-          </div>
+            <!-- Input Composer -->
+            <div class="composer-container">
+              <!-- Reply Preview Box -->
+              <div v-if="replyingTo" class="reply-preview slide-up">
+                <div class="reply-preview-content">
+                  <span class="reply-label">
+                    <i class="bx bx-reply"></i> 
+                    Replying to {{ isMyMessage(replyingTo) ? 'yourself' : otherParticipant?.full_name || 'Counselor' }}
+                  </span>
+                  <p class="reply-text">{{ extractReply(replyingTo.message).content }}</p>
+                </div>
+                <button class="cancel-reply-btn" @click="cancelReply"><i class="bx bx-x"></i></button>
+              </div>
 
+              <form class="composer" :class="{ 'has-reply': replyingTo }" @submit.prevent="handleSend">
+                <input
+                  ref="msgInputRef"
+                  v-model="msgText"
+                  type="text"
+                  placeholder="Type your message to the Guidance Counselor..."
+                  :disabled="sendingMessage"
+                />
+                <button type="submit" class="send-btn" :disabled="!msgText.trim() || sendingMessage">
+                  <i class="bx" :class="sendingMessage ? 'bx-loader-alt bx-spin' : 'bx-send'"></i>
+                </button>
+              </form>
+            </div>
+
+          </div>
         </div>
       </div>
     </main>
@@ -117,6 +156,12 @@ import { useDirectMessages } from '@/composables/useDirectMessages'
 const sidebarOpen = ref(false)
 const msgText = ref('')
 const chatContainerRef = ref(null)
+const msgInputRef = ref(null)
+const replyingTo = ref(null)
+
+// Variables for hold-to-reply functionality
+const activeActionMsgId = ref(null)
+let pressTimer = null
 
 const {
   conversations,
@@ -175,9 +220,65 @@ const scrollToBottom = () => {
   })
 }
 
+/* Long press / Hold functionality logic */
+const startPress = (msgId) => {
+  if (pressTimer) clearTimeout(pressTimer)
+  
+  pressTimer = setTimeout(() => {
+    activeActionMsgId.value = activeActionMsgId.value === msgId ? null : msgId
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(50)
+    }
+  }, 500)
+}
+
+const cancelPress = () => {
+  if (pressTimer) {
+    clearTimeout(pressTimer)
+    pressTimer = null
+  }
+}
+
+const closeActions = (e) => {
+  if (!e.target.closest('.msg-row')) {
+    activeActionMsgId.value = null
+  }
+}
+
+/* Reply functionality helpers */
+const startReply = (msg) => {
+  replyingTo.value = msg
+  activeActionMsgId.value = null
+  nextTick(() => {
+    msgInputRef.value?.focus()
+  })
+}
+
+const cancelReply = () => {
+  replyingTo.value = null
+}
+
+const extractReply = (text) => {
+  if (!text) return { quoted: null, content: '' }
+  const match = text.match(/^\[REPLY:"([\s\S]*?)"\]\n([\s\S]*)$/)
+  if (match) {
+    return { quoted: match[1], content: match[2] }
+  }
+  return { quoted: null, content: text }
+}
+
 const handleSend = async () => {
   if (!msgText.value.trim() || sendingMessage.value) return
-  const text = msgText.value
+  
+  let finalMessageText = msgText.value
+
+  // Attach reply formatting if replying
+  if (replyingTo.value) {
+    const originalContent = extractReply(replyingTo.value.message).content
+    finalMessageText = `[REPLY:"${originalContent}"]\n${finalMessageText}`
+    replyingTo.value = null 
+  }
+
   msgText.value = ''
 
   // If no active conversation exists, start conversation with counselor
@@ -185,7 +286,7 @@ const handleSend = async () => {
     await startConversationWithStudent(null)
   }
 
-  await sendMessage(text)
+  await sendMessage(finalMessageText)
   scrollToBottom()
 }
 
@@ -212,11 +313,13 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* ── Layout ── */
 .layout {
   display: flex;
-  min-height: 100vh;
-  background-color: var(--bg-color);
-  color: var(--text-primary);
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--page-bg, #f7f8fa);
+  font-family: 'DM Sans', system-ui, sans-serif;
 }
 
 .main-area {
@@ -224,55 +327,79 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
+}
+
+.main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; 
+  padding: 2rem 2.5rem 2rem;
+}
+
+.page-header-wrapper {
+  flex-shrink: 0;
 }
 
 .messages-page-container {
   flex: 1;
-  padding: 1.5rem;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  min-height: 0; 
 }
 
+/* Main Layout Enhancements */
 .dm-card {
-  width: 100%;
-  max-width: 1000px;
-  height: calc(100vh - 120px);
-  background-color: var(--surface-color);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  box-shadow: 0 10px 25px var(--shadow-color);
   display: flex;
   flex-direction: column;
+  flex: 1; 
+  height: 100%;
+  width: 100%;
+  max-width: 1100px;
+  margin-top: 10px;
+  background: var(--surface-color, #ffffff);
+  border: 1px solid var(--border-color, #cbd5e1); 
+  border-radius: 20px; 
   overflow: hidden;
+  box-shadow: 0 10px 40px -10px var(--shadow-color, rgba(0, 0, 0, 0.08));
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 0; 
 }
 
 /* Header */
 .dm-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
+  padding: 20px 30px;
+  background: var(--surface-color, #ffffff); 
+  border-bottom: 1px solid var(--border-color, #cbd5e1);
+  display: flex;
+  align-items: center;
+  z-index: 5;
+  flex-shrink: 0;
 }
 
 .counselor-info {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 14px;
 }
 
 .counselor-avatar {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  color: var(--white-const);
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--primary-color, #0e6008) 0%, var(--secondary-color, #22c55e) 100%);
+  color: #ffffff;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
   overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .counselor-avatar img {
@@ -281,18 +408,23 @@ onUnmounted(() => {
   object-fit: cover;
 }
 
+.counselor-details {
+  display: flex;
+  flex-direction: column;
+}
+
 .counselor-name {
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--text-primary);
   margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
 }
 
 .counselor-status {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.2rem;
+  gap: 6px;
+  margin-top: 2px;
 }
 
 .status-dot {
@@ -300,333 +432,458 @@ onUnmounted(() => {
   height: 8px;
   border-radius: 50%;
   background-color: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
 }
 
 .status-text {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
+  font-size: 12.5px;
+  color: var(--text-secondary, #6b7280);
 }
 
-/* Body / Chat stream */
-.dm-body {
+/* Chat Stream */
+.chat-stream {
   flex: 1;
-  padding: 1.5rem;
   overflow-y: auto;
+  padding: 24px 30px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  background-color: var(--bg-color);
+  background: var(--bg-color, #f8fafc);
 }
 
-.loading-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 3rem;
-  color: var(--text-secondary);
+.chat-stream::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-stream::-webkit-scrollbar-thumb {
+  background-color: var(--border-color, #d1d5db);
+  border-radius: 10px;
 }
 
-.empty-messages {
+.message-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  margin: auto;
-  padding: 2rem;
-  color: var(--text-secondary);
+  gap: 16px;
 }
 
-.empty-icon-wrap {
-  font-size: 3rem;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background-color: var(--surface-color);
-  border: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-  color: var(--primary-color);
-}
-
-.empty-messages h3 {
-  font-size: 1.2rem;
-  color: var(--text-primary);
-  margin-bottom: 0.4rem;
-}
-
-/* Message Rows */
-.message-row {
+/* Chat Messages */
+.msg-row {
   display: flex;
   align-items: flex-end;
-  gap: 0.6rem;
-  max-width: 75%;
+  gap: 8px;
+  margin: 0;
+}
+.slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) both;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.my-message-row {
-  align-self: flex-end;
-  flex-direction: row-reverse;
-}
+.msg-row.me { justify-content: flex-end; }
+.msg-row.them { justify-content: flex-start; }
 
-.counselor-message-row {
-  align-self: flex-start;
+/* Reply Buttons Actions */
+.msg-actions {
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin-bottom: 4px;
+  transform: scale(0.8);
 }
-
-.avatar-small {
+.msg-row:hover .msg-actions,
+.msg-row.show-actions .msg-actions {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+.reply-icon-btn {
+  background: var(--surface-color, #ffffff);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 50%;
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  color: var(--white-const);
-  font-size: 0.75rem;
-  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  cursor: pointer;
+  color: var(--text-secondary, #6b7280);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: all 0.2s;
+}
+.reply-icon-btn:hover {
+  color: var(--primary-color, #16a34a);
+  border-color: var(--primary-color, #16a34a);
+  transform: translateY(-2px);
 }
 
-.message-bubble {
-  padding: 0.8rem 1.1rem;
-  border-radius: 18px;
-  font-size: 0.95rem;
-  line-height: 1.45;
-  word-break: break-word;
+.bubble {
+  max-width: 65%;
+  padding: 12px 18px;
   position: relative;
-  box-shadow: 0 2px 6px var(--shadow-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-.my-bubble {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  color: var(--white-const);
-  border-bottom-right-radius: 4px;
+.msg-row.me .bubble {
+  background: linear-gradient(135deg, var(--primary-color, #16a34a), #22c55e);
+  color: #ffffff;
+  border-radius: 20px 20px 4px 20px; 
 }
 
-.counselor-bubble {
-  background-color: var(--surface-color);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-bottom-left-radius: 4px;
+.msg-row.them .bubble {
+  background: var(--surface-color, #ffffff);
+  color: var(--text-primary, #111827);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 20px 20px 20px 4px;
 }
 
-.sender-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  margin-bottom: 0.2rem;
+/* Quoted Reply Inside Bubble */
+.bubble-quote {
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border-left: 3px solid rgba(0, 0, 0, 0.2);
+}
+.msg-row.me .bubble-quote {
+  background: rgba(255, 255, 255, 0.2);
+  border-left-color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.95);
+}
+.msg-row.them .bubble-quote {
+  background: var(--bg-secondary, #f1f5f9);
+  border-left-color: var(--primary-color, #16a34a);
+  color: var(--text-secondary, #4b5563);
+}
+.bubble-quote span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
 }
 
-.message-text {
+.bubble .text {
   margin: 0;
-  white-space: pre-wrap;
-  background: transparent !important;
-  color: inherit;
-  font-weight: 400 !important;
+  font-size: 14.5px;
+  line-height: 1.5;
+  font-weight: 400;
+  white-space: pre-wrap; 
+  word-wrap: break-word;
 }
 
-.message-meta {
+.bubble .meta {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.4rem;
-  margin-top: 0.3rem;
-  font-size: 0.7rem;
-  opacity: 0.85;
+  gap: 6px;
+  font-size: 11px;
+  margin-top: 6px;
+  font-weight: 500;
 }
 
-.read-status .read {
-  color: #60a5fa;
+.msg-row.me .bubble .meta { color: rgba(255, 255, 255, 0.8); }
+.msg-row.them .bubble .meta { color: var(--text-secondary, #9ca3af); }
+.meta .read { color: #60a5fa; font-size: 14px;}
+
+/* Input Area (Composer) */
+.composer-container {
+  padding: 0 30px 24px 30px; 
+  background: var(--bg-color, #f8fafc);
+  position: relative;
+  flex-shrink: 0;
 }
 
-/* Footer / Input */
-.dm-footer {
-  padding: 1rem 1.5rem;
-  background-color: var(--surface-color);
-  border-top: 1px solid var(--border-color);
+/* Reply Preview Layout */
+.reply-preview {
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  padding: 10px 16px 16px 16px;
+  margin: 0 12px -12px 12px; 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 1;
 }
-
-.input-form {
+.reply-preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.reply-label {
+  font-size: 11px;
+  color: var(--primary-color, #16a34a);
+  font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 4px;
+}
+.reply-text {
+  font-size: 13px;
+  color: var(--text-secondary, #6b7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+.cancel-reply-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #9ca3af);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+.cancel-reply-btn:hover { color: #ef4444; }
+
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-color, #ffffff);
+  padding: 8px 8px 8px 24px;
+  border-radius: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-color, #cbd5e1);
+  transition: box-shadow 0.3s ease, border-color 0.3s;
+  position: relative;
+  z-index: 2;
 }
 
-.message-input {
+.composer.has-reply {
+  border-radius: 0 0 24px 24px; 
+}
+
+.composer:focus-within {
+  border-color: var(--primary-color, #16a34a);
+  box-shadow: 0 6px 24px rgba(22, 163, 74, 0.12);
+}
+
+.composer input {
   flex: 1;
-  padding: 0.85rem 1.2rem;
-  border-radius: 24px;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 0.95rem;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #111827);
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  font-size: 14.5px;
 }
-
-.message-input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(14, 96, 8, 0.15);
+.composer input::placeholder {
+  color: #9ca3af;
 }
 
 .send-btn {
   width: 44px;
   height: 44px;
   border-radius: 50%;
+  background: var(--primary-color, #16a34a);
+  color: #ffffff;
   border: none;
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  color: var(--white-const);
-  font-size: 1.2rem;
+  cursor: pointer;
+  font-size: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: transform 0.2s, opacity 0.2s;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
 }
-
 .send-btn:hover:not(:disabled) {
-  transform: scale(1.05);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 14px rgba(22, 163, 74, 0.4);
 }
-
 .send-btn:disabled {
-  opacity: 0.5;
+  background: #9ca3af;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
-.mini-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: var(--white-const);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+/* Empty States & Loaders */
+.empty-chat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.empty-chat h3 {
+  font-size: 1.4rem;
+  color: var(--text-primary, #111827);
+  margin-bottom: 8px;
+  font-weight: 700;
 }
+.empty-chat p {
+  color: var(--text-secondary, #6b7280);
+  font-size: 14px;
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+.empty-illustration {
+  width: 120px;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.chat-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+}
+.typing-bubble {
+  background: var(--surface-color, #ffffff);
+  border: 1px solid var(--border-color, #cbd5e1);
+  padding: 16px 24px;
+  border-radius: 20px;
+  display: inline-block;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.typing-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 20px;
+}
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary-color, #16a34a);
+  border-radius: 50%;
+  animation: typing 1.4s infinite ease-in-out both;
+}
+.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes typing {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+.loader-text {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+
+/* ------------------- RESPONSIVENESS (MOBILE FULL SCREEN) ------------------- */
 
 @media (max-width: 768px) {
+  .main-container {
+    padding: 0 !important;
+  }
+
+  .page-header-wrapper {
+    display: none; 
+  }
+
   .messages-page-container {
-    padding: 0.5rem;
+    padding: 0;
   }
-  
+
   .dm-card {
-    height: calc(100vh - 80px);
-    border-radius: 0;
+    height: 100% !important; 
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    min-height: 0 !important; /* Critical constraint */
+  }
+
+  .chat-header, .dm-header {
+    padding: 16px 20px;
+  }
+
+  .chat-stream {
+    padding: 16px 20px;
+  }
+
+  .composer-container {
+    padding: 0 20px 16px 20px;
+  }
+
+  .bubble {
+    max-width: 85%;
   }
   
-  .message-row {
-    max-width: 88%;
+  .reply-icon-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
   }
 }
 
-/* Explicit Dark Mode Overrides */
+/* ------------------- DARK MODE OVERRIDES ------------------- */
 :global([data-theme="dark"]) .dm-card {
-  background-color: #1e293b;
-  border-color: #334155;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  background: #111827 !important;
+  border-color: #374151 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
 }
 
 :global([data-theme="dark"]) .dm-header {
-  background-color: #0f172a;
-  border-bottom-color: #334155;
+  background: #111827 !important;
+  border-bottom-color: #374151 !important;
 }
 
-:global([data-theme="dark"]) .counselor-name {
-  color: #f8fafc;
+:global([data-theme="dark"]) .counselor-name,
+:global([data-theme="dark"]) .empty-chat h3 {
+  color: #f9fafb;
 }
 
-:global([data-theme="dark"]) .status-text {
-  color: #94a3b8;
+:global([data-theme="dark"]) .status-text,
+:global([data-theme="dark"]) .empty-chat p,
+:global([data-theme="dark"]) .reply-text {
+  color: #9ca3af;
 }
 
-:global([data-theme="dark"]) .dm-body {
-  background-color: #0b1120;
+:global([data-theme="dark"]) .chat-stream,
+:global([data-theme="dark"]) .composer-container {
+  background: #0b0f19;
 }
 
-:global([data-theme="dark"]) .dm-body::-webkit-scrollbar-thumb {
-  background-color: #334155;
-  border-radius: 4px;
+:global([data-theme="dark"]) .composer,
+:global([data-theme="dark"]) .reply-preview {
+  background: #1f2937;
+  border-color: #374151;
 }
 
-:global([data-theme="dark"]) .loading-state {
-  color: #94a3b8;
+:global([data-theme="dark"]) .reply-icon-btn {
+  background: #1f2937;
+  border-color: #374151;
+  color: #9ca3af;
 }
 
-:global([data-theme="dark"]) .loading-state .mini-spinner {
-  border-color: rgba(74, 222, 128, 0.3);
-  border-top-color: #4ade80;
+:global([data-theme="dark"]) .composer input {
+  color: #f9fafb;
 }
 
-:global([data-theme="dark"]) .empty-icon-wrap {
-  background-color: #1e293b;
-  border-color: #334155;
-  color: #4ade80;
+:global([data-theme="dark"]) .msg-row.them .bubble,
+:global([data-theme="dark"]) .typing-bubble {
+  background: #1f2937;
+  color: #f9fafb;
+  border-color: #374151;
 }
 
-:global([data-theme="dark"]) .empty-messages h3 {
-  color: #f8fafc;
+:global([data-theme="dark"]) .msg-row.them .bubble-quote {
+  background: #111827;
+  color: #cbd5e1;
 }
 
-:global([data-theme="dark"]) .empty-messages p {
-  color: #94a3b8;
-}
-
-:global([data-theme="dark"]) .avatar-small {
-  background: #16a34a;
-  color: #ffffff;
-}
-
-:global([data-theme="dark"]) .counselor-bubble {
-  background-color: #1e293b;
-  color: #f8fafc;
-  border-color: #334155;
-}
-
-:global([data-theme="dark"]) .counselor-bubble .sender-label {
-  color: #4ade80;
-}
-
-:global([data-theme="dark"]) .counselor-bubble .message-text {
-  color: #f8fafc;
-}
-
-:global([data-theme="dark"]) .counselor-bubble .message-time {
-  color: #94a3b8;
-}
-
-:global([data-theme="dark"]) .my-bubble {
-  background: linear-gradient(135deg, #0e6008, #16a34a);
-  color: #ffffff;
-}
-
-:global([data-theme="dark"]) .dm-footer {
-  background-color: #0f172a;
-  border-top-color: #334155;
-}
-
-:global([data-theme="dark"]) .message-input {
-  background-color: #1e293b;
-  border-color: #334155;
-  color: #f8fafc;
-}
-
-:global([data-theme="dark"]) .message-input::placeholder {
-  color: #64748b;
-}
-
-:global([data-theme="dark"]) .message-input:focus {
-  border-color: #4ade80;
-  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.2);
-}
-
-:global([data-theme="dark"]) .send-btn {
-  background: linear-gradient(135deg, #0e6008, #16a34a);
-  color: #ffffff;
+:global([data-theme="dark"]) .msg-row.them .bubble .meta {
+  color: #9ca3af;
 }
 </style>

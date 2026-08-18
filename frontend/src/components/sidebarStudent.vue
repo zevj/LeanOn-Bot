@@ -34,17 +34,17 @@
         <i class='bx bx-message-square-add'></i>
       </button>
 
-      <button class="rail-btn" :class="{ 'active-rail': isDirectMessagesActive }" @click.stop="goToDirectMessages" title="Direct Messages">
-        <i class='bx bx-conversation'></i>
-        <span v-if="totalUnreadCount > 0" class="rail-badge">{{ totalUnreadCount }}</span>
-      </button>
-
       <button class="rail-btn" @click.stop="openSearchModal">
         <i class='bx bx-search'></i>
       </button>
 
       <button class="rail-btn" @click.stop="openSavedModal">
         <i class='bx bx-bookmark'></i>
+      </button>
+
+      <button class="rail-btn" :class="{ 'active-rail': isDirectMessagesActive }" @click.stop="goToDirectMessages" title="Direct Messages">
+        <i class='bx bx-conversation'></i>
+        <span v-if="totalUnreadCount > 0" class="rail-badge">{{ totalUnreadCount }}</span>
       </button>
 
       <div class="rail-divider"></div>
@@ -77,11 +77,6 @@
         </div>
 
         <div class="main-menu">
-          <div class="menu-item" :class="{ 'active-menu': isDirectMessagesActive }" @click="goToDirectMessages">
-            <i class='bx bx-conversation'></i>
-            <span>Direct Messages</span>
-            <span v-if="totalUnreadCount > 0" class="menu-badge">{{ totalUnreadCount }}</span>
-          </div>
           <div class="menu-item" @click="openSearchModal">
             <i class='bx bx-search'></i>
             <span>Search Chat</span>
@@ -89,6 +84,11 @@
           <div class="menu-item" @click="openSavedModal">
             <i class='bx bx-bookmark'></i>
             <span>Saved</span>
+          </div>
+          <div class="menu-item" :class="{ 'active-menu': isDirectMessagesActive }" @click="goToDirectMessages">
+            <i class='bx bx-conversation'></i>
+            <span>Direct Messages</span>
+            <span v-if="totalUnreadCount > 0" class="menu-badge">{{ totalUnreadCount }}</span>
           </div>
         </div>
 
