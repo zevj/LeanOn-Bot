@@ -225,6 +225,18 @@ export function useDirectMessages() {
     }
   }
 
+const archiveConversation = async (conversationId) => {
+  await axios.patch(`/api/direct-messages/conversations/${conversationId}/archive`, {}, authConfig())
+}
+
+const unarchiveConversation = async (conversationId) => {
+  await axios.patch(`/api/direct-messages/conversations/${conversationId}/unarchive`, {}, authConfig())
+}
+
+const deleteConversation = async (conversationId) => {
+  await axios.delete(`/api/direct-messages/conversations/${conversationId}`, authConfig())
+}
+
   return {
     isOpen,
     conversations,
@@ -248,5 +260,8 @@ export function useDirectMessages() {
     toggleDrawer,
     startPolling,
     stopPolling,
+    archiveConversation,
+    unarchiveConversation,
+    deleteConversation, // <-- kulang ito
   }
 }

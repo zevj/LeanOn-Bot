@@ -20,17 +20,38 @@
           <!-- Left Pane: Conversations & Student Search -->
           <div class="left-pane">
             <div class="search-box">
-              <i class="bx bx-search search-icon"></i>
-              <input
-                v-model="searchInput"
-                type="text"
-                placeholder="Search students..."
-                @input="onSearchInput"
-                @focus="onSearchFocus"
-              />
-              <button v-if="searchInput || isSearchFocused" class="clear-btn" @click="clearSearch">
-                <i class="bx bx-x"></i>
-              </button>
+  <i class="bx bx-search search-icon"></i>
+  <input
+    v-model="searchInput"
+    type="text"
+    placeholder="Search students..."
+    @input="onSearchInput"
+    @focus="onSearchFocus"
+  />
+  <button v-if="searchInput || isSearchFocused" class="clear-btn" @click="clearSearch">
+    <i class="bx bx-x"></i>
+  </button>
+            </div>
+
+            <!-- Filter Tabs (hidden while searching) -->
+            <div v-if="!(searchInput.trim() || isSearchFocused)" class="filter-tabs">
+  <button :class="{ active: activeFilter === 'active' }" @click="setFilter('active')">
+    Chats
+  </button>
+  <button :class="{ active: activeFilter === 'archived' }" @click="setFilter('archived')">
+    Archived
+  </button>
+            </div>
+
+            <!-- Bulk Action Bar -->
+            <div v-if="activeFilter === 'archived' && selectedIds.size > 0" class="bulk-action-bar">
+  <span>{{ selectedIds.size }} selected</span>
+  <div class="actions">
+    <button @click="bulkUnarchive">
+      <i class="bx bx-archive-out"></i> Unarchive
+    </button>
+    <button class="cancel" @click="clearSelection">Cancel</button>
+  </div>
             </div>
 
             <!-- Search Dropdown Results -->
@@ -40,7 +61,7 @@
                 <div class="bouncing-dots"><span></span><span></span><span></span></div>
                 <p>Finding students...</p>
               </div>
-              
+
               <template v-else>
                 <div
                   v-for="st in searchResults"
@@ -65,50 +86,75 @@
             </div>
 
             <!-- Conversations List -->
-            <div v-else class="convo-list">
-              <!-- Conversation Skeleton Loader -->
-              <div v-if="loadingConversations && conversations.length === 0" class="skeleton-list">
-                <div class="skeleton-convo" v-for="n in 5" :key="n">
-                  <div class="skeleton-avatar shimmer"></div>
-                  <div class="skeleton-lines">
-                    <div class="skeleton-line long shimmer"></div>
-                    <div class="skeleton-line short shimmer"></div>
-                  </div>
-                </div>
-              </div>
+            <div v-else class="convo-list">           
+<div v-if="loadingConversations && conversations.length === 0" class="skeleton-list">
+  <div class="skeleton-convo" v-for="n in 5" :key="n">
+    <div class="skeleton-avatar shimmer"></div>
+    <div class="skeleton-lines">
+      <div class="skeleton-line long shimmer"></div>
+      <div class="skeleton-line short shimmer"></div>
+    </div>
+  </div>
+</div>
 
-              <template v-else-if="conversations.length > 0">
-                <div
-                  v-for="convo in conversations"
-                  :key="convo.id"
-                  class="convo-card"
-                  :class="{
-                    'is-active': activeConversation && activeConversation.id === convo.id,
-                    'is-unread': convo.unread_count > 0
-                  }"
-                  @click="selectConversation(convo)"
-                >
-                  <div class="avatar-wrapper">
-                    <div class="avatar">{{ getInitials(convo.other_participant?.full_name) }}</div>
-                    <div v-if="convo.unread_count > 0" class="online-indicator active"></div>
-                  </div>
-                  <div class="card-body">
-                    <div class="card-top">
-                      <strong class="name">{{ convo.other_participant?.full_name || 'Student' }}</strong>
-                      <span class="time">{{ formatTime(convo.last_message_at || convo.created_at) }}</span>
-                    </div>
-                    <div class="card-bottom">
-                      <span class="snippet">{{ convo.last_message || 'Start a conversation...' }}</span>
-                      <span v-if="convo.unread_count > 0" class="badge">{{ convo.unread_count }}</span>
-                    </div>
-                  </div>
-                </div>
-              </template>
+  <template v-else-if="filteredConversations.length > 0">
+    <div
+      v-for="convo in filteredConversations"
+      :key="convo.id"
+      class="convo-card"
+      :class="{
+        'is-active': activeConversation && activeConversation.id === convo.id,
+        'is-unread': convo.unread_count > 0,
+        'is-selectable': activeFilter === 'archived'
+      }"
+      @click="activeFilter === 'archived' ? toggleSelect(convo.id) : selectConversation(convo)"
+    >
+      <input
+        v-if="activeFilter === 'archived'"
+        type="checkbox"
+        class="select-checkbox"
+        :checked="selectedIds.has(convo.id)"
+        @click.stop="toggleSelect(convo.id)"
+      />
 
-              <div v-else class="pane-notice empty">
-                <div class="empty-icon-wrap"><i class="bx bx-message-square-detail"></i></div>
-                <p>Your inbox is empty.<br/>Search above to start chatting.</p>
-              </div>
+      <div class="avatar-wrapper">
+        <div class="avatar">{{ getInitials(convo.other_participant?.full_name) }}</div>
+        <div v-if="convo.unread_count > 0" class="online-indicator active"></div>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <strong class="name">{{ convo.other_participant?.full_name || 'Student' }}</strong>
+          <span class="time">{{ formatTime(convo.last_message_at || convo.created_at) }}</span>
+        </div>
+        <div class="card-bottom">
+          <span class="snippet">{{ convo.last_message || 'Start a conversation...' }}</span>
+          <span v-if="convo.unread_count > 0" class="badge">{{ convo.unread_count }}</span>
+        </div>
+      </div>
+
+      <div v-if="activeFilter !== 'archived'" class="kebab-wrapper" :class="{ 'menu-open': openMenuId === convo.id }">
+        <button class="kebab-btn" @click.stop="toggleMenu(convo.id)">
+          <i class="bx bx-dots-vertical-rounded"></i>
+        </button>
+        <div v-if="openMenuId === convo.id" class="kebab-menu" @click.stop>
+          <button @click="archiveConvo(convo)">
+            <i class="bx bx-archive-in"></i> Archive chat
+          </button>
+          <button class="danger" @click="promptDelete(convo)">
+            <i class="bx bx-trash"></i> Delete chat
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <div v-else class="pane-notice empty">
+    <div class="empty-icon-wrap">
+      <i :class="activeFilter === 'archived' ? 'bx bx-archive' : 'bx bx-message-square-detail'"></i>
+    </div>
+    <p v-if="activeFilter === 'archived'">No archived chats.</p>
+    <p v-else>Your inbox is empty.<br/>Search above to start chatting.</p>
+  </div>
             </div>
           </div>
 
@@ -234,11 +280,36 @@
         </div>
       </div>
     </main>
+    <!-- Delete Confirmation Modal -->
+    <Teleport to="body">
+      <div v-if="convoToDelete" class="modal-overlay" @click.self="cancelDelete">
+        <div class="confirm-modal">
+          <div class="modal-icon-wrap">
+            <i class="bx bx-trash"></i>
+          </div>
+          <h3>Delete this chat?</h3>
+          <p>
+            This will permanently delete your conversation with
+            <strong>{{ convoToDelete.other_participant?.full_name || 'this student' }}</strong>.
+            This action cannot be undone.
+          </p>
+          <div class="modal-actions">
+            <button class="btn-cancel" @click="cancelDelete" :disabled="deletingConvo">
+              Cancel
+            </button>
+            <button class="btn-delete" @click="confirmDelete" :disabled="deletingConvo">
+              <i v-if="deletingConvo" class="bx bx-loader-alt bx-spin"></i>
+              <span>{{ deletingConvo ? 'Deleting...' : 'Delete' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import SidebarAdmin from '@/components/sidebarAdmin.vue'
 import HeaderAdmin from '@/components/headerAdmin.vue'
 import { useDirectMessages } from '@/composables/useDirectMessages'
@@ -259,7 +330,108 @@ const {
   sendMessage,
   startConversationWithStudent,
   searchStudents,
+  archiveConversation,   // add to composable
+  unarchiveConversation, // add to composable
+  deleteConversation, // galing sa composable, tama ito dito
 } = useDirectMessages()
+
+// ...existing activeFilter, openMenuId, selectedIds, filteredConversations, etc...
+
+const convoToDelete = ref(null)
+const deletingConvo = ref(false)
+
+const promptDelete = (convo) => {
+  openMenuId.value = null
+  convoToDelete.value = convo
+}
+
+const cancelDelete = () => {
+  if (deletingConvo.value) return
+  convoToDelete.value = null
+}
+
+const confirmDelete = async () => {
+  if (!convoToDelete.value) return
+  const convo = convoToDelete.value
+  deletingConvo.value = true
+  try {
+    await deleteConversation(convo.id)
+    conversations.value = conversations.value.filter(c => c.id !== convo.id)
+    if (activeConversation.value?.id === convo.id) {
+      activeConversation.value = null
+      mobileChatVisible.value = false
+    }
+    convoToDelete.value = null
+  } catch (e) {
+    console.error('Error deleting conversation:', e)
+  } finally {
+    deletingConvo.value = false
+  }
+}
+
+const activeFilter = ref('active') // 'active' | 'archived'
+const openMenuId = ref(null)
+const selectedIds = ref(new Set())
+
+const filteredConversations = computed(() =>
+  conversations.value.filter(c =>
+    activeFilter.value === 'archived' ? !!c.archived : !c.archived
+  )
+)
+
+const setFilter = (filter) => {
+  activeFilter.value = filter
+  selectedIds.value = new Set()
+  openMenuId.value = null
+}
+
+const toggleMenu = (id) => {
+  openMenuId.value = openMenuId.value === id ? null : id
+}
+
+const toggleSelect = (id) => {
+  const next = new Set(selectedIds.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  selectedIds.value = next
+}
+
+const clearSelection = () => {
+  selectedIds.value = new Set()
+}
+
+const archiveConvo = async (convo) => {
+  openMenuId.value = null
+  const wasActive = activeConversation.value?.id === convo.id
+  convo.archived = true
+  if (wasActive) {
+    activeConversation.value = null
+    mobileChatVisible.value = false
+  }
+  try {
+    await archiveConversation(convo.id)
+  } catch (e) {
+    convo.archived = false
+  }
+}
+
+const bulkUnarchive = async () => {
+  const ids = Array.from(selectedIds.value)
+  conversations.value.forEach(c => {
+    if (ids.includes(c.id)) c.archived = false
+  })
+  selectedIds.value = new Set()
+  try {
+    await Promise.all(ids.map(id => unarchiveConversation(id)))
+  } catch (e) {
+    await fetchConversations() // resync on failure
+  }
+}
+
+const handleOutsideClick = (e) => {
+  if (!e.target.closest('.kebab-wrapper')) {
+    openMenuId.value = null
+  }
+}
 
 const searchInput = ref('')
 const msgText = ref('')
@@ -421,6 +593,11 @@ watch(activeConversation, (newVal) => {
 
 onMounted(() => {
   fetchConversations()
+  document.addEventListener('click', handleOutsideClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleOutsideClick)
 })
 </script>
 
@@ -544,6 +721,7 @@ onMounted(() => {
 
 .convo-list, .search-results-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -1058,13 +1236,23 @@ onMounted(() => {
 }
 
 /* Empty States & Specific Loaders */
-.no-chat-selected, .empty-chat, .pane-notice {
+/* Empty States & Specific Loaders */
+.no-chat-selected, .empty-chat {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+/* Pane notice (empty inbox / no search results) — anchored near top, not vertically centered */
+.pane-notice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 60px;
 }
 
 .glass-icon {
@@ -1184,6 +1372,139 @@ onMounted(() => {
   to { transform: translateY(-8px); }
 }
 
+/* Filter Tabs */
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 20px 0;
+  border-bottom: 1px solid var(--border-color, #f0f2f5);
+}
+.filter-tabs button {
+  flex: 1;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.filter-tabs button.active {
+  color: var(--primary-color, #16a34a);
+  border-bottom-color: var(--primary-color, #16a34a);
+}
+
+/* Kebab menu */
+.convo-card { position: relative; }
+.kebab-wrapper { position: relative; flex-shrink: 0; }
+.kebab-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #9ca3af);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 1;
+  transition: all 0.2s;
+}
+.kebab-btn:hover {
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--text-primary, #111827);
+}
+.kebab-menu {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  background: var(--surface-color, #ffffff);
+  border: 1px solid var(--border-color, #cbd5e1);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  min-width: 160px;
+  z-index: 30;
+  overflow: hidden;
+  animation: slideUp 0.15s ease both;
+}
+.kebab-menu button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-primary, #111827);
+  cursor: pointer;
+  text-align: left;
+}
+.kebab-menu button:hover { background: var(--surface-hover, #f8fafc); }
+.kebab-menu button i { font-size: 16px; color: var(--text-secondary, #6b7280); }
+
+/* Bulk select */
+.select-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-color, #16a34a);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.convo-card.is-selectable { cursor: pointer; }
+
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--surface-hover, #f0fdf4);
+  border-bottom: 1px solid var(--border-color, #cbd5e1);
+}
+.bulk-action-bar span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #111827);
+}
+.bulk-action-bar .actions { display: flex; gap: 8px; }
+.bulk-action-bar button {
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.bulk-action-bar button:not(.cancel) {
+  background: var(--primary-color, #16a34a);
+  color: #fff;
+}
+.bulk-action-bar button.cancel {
+  background: transparent;
+  color: var(--text-secondary, #6b7280);
+}
+
+/* Dark mode */
+:global([data-theme="dark"]) .filter-tabs { border-color: #374151; }
+:global([data-theme="dark"]) .kebab-menu {
+  background: #1f2937;
+  border-color: #374151;
+}
+:global([data-theme="dark"]) .kebab-menu button { color: #f9fafb; }
+:global([data-theme="dark"]) .kebab-menu button:hover { background: #111827; }
+:global([data-theme="dark"]) .bulk-action-bar {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #374151;
+}
+
 /* ------------------- RESPONSIVENESS (MOBILE SLIDING VIEW) ------------------- */
 
 @media (max-width: 992px) {
@@ -1278,6 +1599,130 @@ onMounted(() => {
     height: 28px;
     font-size: 16px;
   }
+}
+
+/* Danger item in kebab menu */
+.kebab-menu button.danger {
+  color: #ef4444;
+}
+.kebab-menu button.danger i { color: #ef4444; }
+.kebab-menu button.danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Confirmation Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.15s ease both;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.confirm-modal {
+  background: var(--surface-color, #ffffff);
+  border-radius: 20px;
+  padding: 32px 28px 24px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) both;
+}
+
+.modal-icon-wrap {
+  width: 64px;
+  height: 64px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.modal-icon-wrap i {
+  font-size: 30px;
+  color: #ef4444;
+}
+
+.confirm-modal h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+  margin-bottom: 10px;
+}
+
+.confirm-modal p {
+  font-size: 13.5px;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.confirm-modal p strong {
+  color: var(--text-primary, #111827);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.modal-actions button {
+  flex: 1;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.btn-cancel {
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--text-primary, #111827);
+}
+.btn-cancel:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+.btn-delete {
+  background: #ef4444;
+  color: #fff;
+}
+.btn-delete:hover:not(:disabled) {
+  background: #dc2626;
+}
+.modal-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Dark mode */
+:global([data-theme="dark"]) .confirm-modal {
+  background: #1f2937;
+}
+:global([data-theme="dark"]) .confirm-modal h3 {
+  color: #f9fafb;
+}
+:global([data-theme="dark"]) .confirm-modal p strong {
+  color: #f9fafb;
+}
+:global([data-theme="dark"]) .btn-cancel {
+  background: #374151;
+  color: #f9fafb;
+}
+:global([data-theme="dark"]) .btn-cancel:hover:not(:disabled) {
+  background: #4b5563;
 }
 
 /* ------------------- DARK MODE OVERRIDES ------------------- */
