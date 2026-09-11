@@ -350,9 +350,9 @@ I'm here with you. Do you want to talk about what's going on?";
         }
 
         // ── STEP 3: Build enriched message with context hints for the AI.
-        $geminiApiKey = env('GEMINI_API_KEY');
-        $groqApiKey = env('GROQ_API_KEY');
-        $openRouterApiKey = env('OPENROUTER_API_KEY');
+        $geminiApiKey = config('services.gemini.key') ?: env('GEMINI_API_KEY');
+        $groqApiKey = config('services.groq.key') ?: env('GROQ_API_KEY');
+        $openRouterApiKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
 
         // Detect language, closure, and emotional tone for context injection
         $detectedLanguage = $this->detectLanguage($userMessage);
@@ -507,7 +507,7 @@ I'm here with you. Do you want to talk about what's going on?";
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
             ])->post('https://api.groq.com/openai/v1/chat/completions', [
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model', 'qwen/qwen3.8-27b'),
                 'messages' => $messages
             ]);
 

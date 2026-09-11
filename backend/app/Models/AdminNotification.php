@@ -66,6 +66,56 @@ class AdminNotification extends Model
     }
 
     /**
+     * Create an "Excel report exported" notification.
+     */
+    public static function excelExported(string $period): self
+    {
+        return self::create([
+            'type'    => 'excel_exported',
+            'title'   => 'Excel Report Downloaded',
+            'message' => "An analytics Excel report was downloaded (period: {$period}).",
+            'detail'  => 'Includes dashboard stats, emotion distribution, sentiment trends, peak usage hours, and daily snapshots.',
+            'icon'    => 'bx bx-spreadsheet',
+            'color'   => 'green',
+            'is_read' => false,
+            'meta'    => [
+                'format' => 'excel',
+                'period' => $period,
+            ],
+        ]);
+    }
+
+    /**
+     * Create a "log records Excel exported" notification.
+     */
+    public static function logExcelExported(int $totalRecords, array $filters = []): self
+    {
+        $filterParts = [];
+        if (!empty($filters['department']) && $filters['department'] !== 'All Departments') {
+            $filterParts[] = 'Dept: ' . $filters['department'];
+        }
+        if (!empty($filters['status']) && $filters['status'] !== 'All Sessions') {
+            $filterParts[] = 'Status: ' . $filters['status'];
+        }
+        $filterLabel = !empty($filterParts) ? implode(', ', $filterParts) : 'No filters applied';
+
+        return self::create([
+            'type'    => 'log_excel_exported',
+            'title'   => 'Log Records Excel Downloaded',
+            'message' => "A session log Excel file was exported with {$totalRecords} record(s).",
+            'detail'  => $filterLabel,
+            'icon'    => 'bx bx-spreadsheet',
+            'color'   => 'green',
+            'is_read' => false,
+            'meta'    => [
+                'format'        => 'excel',
+                'total_records' => $totalRecords,
+                'filters'       => $filters,
+            ],
+        ]);
+    }
+
+    /**
      * Create a "CSV report exported" notification.
      */
     public static function csvExported(string $period): self

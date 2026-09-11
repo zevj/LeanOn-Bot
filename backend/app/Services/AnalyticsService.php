@@ -28,75 +28,116 @@ class AnalyticsService
     /**
      * Get extended dashboard statistics for a given period.
      */
-    public function getDashboardStats(string $period = '7d'): array
+    public function getDashboardStats(string $period = '7d', ?string $department = null): array
     {
-        $cacheKey = "analytics:dashboard:{$period}";
+        $deptSlug = $department ? trim($department) : '';
+        $cacheKey = $deptSlug !== '' ? "analytics:dashboard:{$period}:dept:{$deptSlug}" : "analytics:dashboard:{$period}";
         $cacheTtl = 3600; // 1 hour
 
-        return Cache::remember($cacheKey, $cacheTtl, function () use ($period) {
+        return Cache::remember($cacheKey, $cacheTtl, function () use ($period, $department) {
             $end = Carbon::now();
             $start = $this->periodToStart($period, $end);
             $prevStart = $this->periodToStart($period, $start);
 
+            $deptUserIds = $this->getDepartmentUserIds($department);
+
             // Current period metrics
-            $currentConversations = Conversation::whereBetween('created_at', [$start, $end])->count();
-            $crisisCount = CrisisAlert::whereBetween('created_at', [$start, $end])->count();
-            $fallbackCount = $this->getFallbackCount($start, $end);
+            $convQuery = Conversation::whereBetween('created_at', [$start, $end]);
+            if ($deptUserIds !== null) {
+                $convQuery->whereIn('user_id', $deptUserIds);
+            }
+            $currentConversations = $convQuery->count();
+
+            $crisisQuery = CrisisAlert::whereBetween('created_at', [$start, $end]);
+            $this->applyDepartmentFilter($crisisQuery, $department, $deptUserIds);
+            $crisisCount = $crisisQuery->count();
+
+            $fallbackCount = $this->getFallbackCount($start, $end, null, $deptUserIds);
 
             // Previous period for comparison
-            $prevConversations = Conversation::whereBetween('created_at', [$prevStart, $start])->count();
+            $prevConvQuery = Conversation::whereBetween('created_at', [$prevStart, $start]);
+            if ($deptUserIds !== null) {
+                $prevConvQuery->whereIn('user_id', $deptUserIds);
+            }
+            $prevConversations = $prevConvQuery->count();
 
             // Growth calculations
             $convGrowth = $prevConversations > 0 ? round((($currentConversations - $prevConversations) / $prevConversations) * 100, 1) : 0;
 
             // Peak usage hour
-            $peakHours = $this->getPeakUsageHours($start, $end);
+            $peakHours = $this->getPeakUsageHours($start, $end, null, $deptUserIds);
             $peakHour = !empty($peakHours) ? $peakHours[0]['hour'] : null;
 
             // Crisis by severity (classified only)
-            $crisisBySeverity = CrisisAlert::whereBetween('created_at', [$start, $end])
-                ->where('is_classified', true)
+            $crisisBySevQuery = CrisisAlert::whereBetween('created_at', [$start, $end])
+                ->where('is_classified', true);
+            $this->applyDepartmentFilter($crisisBySevQuery, $department, $deptUserIds);
+            $crisisBySeverity = $crisisBySevQuery
                 ->selectRaw('severity, COUNT(*) as count')
                 ->groupBy('severity')
                 ->pluck('count', 'severity')
                 ->toArray();
 
             // Total registered users
-            $totalUsers = User::where('role', 'student')->count();
+            $userCountQuery = User::where('role', 'student');
+            if ($deptUserIds !== null) {
+                $userCountQuery->whereIn('id', $deptUserIds);
+            }
+            $totalUsers = $userCountQuery->count();
 
             // Active users in the current period
-            $activeUsersInPeriod = SessionLog::whereBetween('session_start', [$start, $end])
+            $activeUsersQuery = SessionLog::whereBetween('session_start', [$start, $end]);
+            if ($deptUserIds !== null) {
+                $activeUsersQuery->whereIn('user_id', $deptUserIds);
+            }
+            $activeUsersInPeriod = $activeUsersQuery
                 ->distinct('user_id')
                 ->count('user_id');
 
             // ── NEW: Three replacement stat cards ──────────────────
-            // 1. Department with most users
-            $topDeptUsers = User::where('role', 'student')
-                ->whereNotNull('department')
-                ->selectRaw('department, COUNT(*) as count')
-                ->groupBy('department')
-                ->orderByDesc('count')
-                ->first();
+            // 1. Department with most users & 2. Department with most crisis alerts
+            if (!empty($department)) {
+                $topDeptUsersName = $department;
+                $topDeptUsersCount = $totalUsers;
 
-            // 2. Department with most crisis alerts (all time, not period-limited,
-            //    so the card always shows meaningful data even in short periods)
-            $topDeptAlerts = CrisisAlert::where('is_classified', true)
-                ->whereNotNull('department')
-                ->selectRaw('department, COUNT(*) as count')
-                ->groupBy('department')
-                ->orderByDesc('count')
-                ->first();
+                $topDeptAlertsName = $department;
+                $topDeptAlertsQuery = CrisisAlert::where('is_classified', true);
+                $this->applyDepartmentFilter($topDeptAlertsQuery, $department, $deptUserIds);
+                $topDeptAlertsCount = $topDeptAlertsQuery->count();
+            } else {
+                $topDeptUsers = User::where('role', 'student')
+                    ->whereNotNull('department')
+                    ->selectRaw('department, COUNT(*) as count')
+                    ->groupBy('department')
+                    ->orderByDesc('count')
+                    ->first();
+                $topDeptUsersName = $topDeptUsers?->department ?? 'N/A';
+                $topDeptUsersCount = (int) ($topDeptUsers?->count ?? 0);
+
+                $topDeptAlerts = CrisisAlert::where('is_classified', true)
+                    ->whereNotNull('department')
+                    ->selectRaw('department, COUNT(*) as count')
+                    ->groupBy('department')
+                    ->orderByDesc('count')
+                    ->first();
+                $topDeptAlertsName = $topDeptAlerts?->department ?? 'N/A';
+                $topDeptAlertsCount = (int) ($topDeptAlerts?->count ?? 0);
+            }
 
             // 3. Gender that uses the system most
-            $topGender = User::where('role', 'student')
-                ->whereNotNull('gender')
+            $topGenderQuery = User::where('role', 'student')
+                ->whereNotNull('gender');
+            if ($deptUserIds !== null) {
+                $topGenderQuery->whereIn('id', $deptUserIds);
+            }
+            $topGender = $topGenderQuery
                 ->selectRaw('gender, COUNT(*) as count')
                 ->groupBy('gender')
                 ->orderByDesc('count')
                 ->first();
 
             // 4. Age range that uses the system most
-            $topAgeRange = $this->getTopAgeRange();
+            $topAgeRange = $this->getTopAgeRange($deptUserIds);
 
             return [
                 // Kept for backward compat (charts, export, etc.)
@@ -110,14 +151,15 @@ class AnalyticsService
                 'total_registered_users' => $totalUsers,
                 'active_users_in_period' => $activeUsersInPeriod,
                 'period'                => $period,
+                'department'            => $department ?: null,
                 'period_start'          => $start->toDateString(),
                 'period_end'            => $end->toDateString(),
 
                 // ── New replacement cards ──
-                'top_department_users'  => $topDeptUsers?->department  ?? 'N/A',
-                'top_department_users_count' => (int) ($topDeptUsers?->count ?? 0),
-                'top_department_alerts' => $topDeptAlerts?->department ?? 'N/A',
-                'top_department_alerts_count' => (int) ($topDeptAlerts?->count ?? 0),
+                'top_department_users'  => $topDeptUsersName,
+                'top_department_users_count' => $topDeptUsersCount,
+                'top_department_alerts' => $topDeptAlertsName,
+                'top_department_alerts_count' => $topDeptAlertsCount,
                 'top_gender'            => $topGender?->gender          ?? 'N/A',
                 'top_gender_count'      => (int) ($topGender?->count    ?? 0),
 
@@ -131,20 +173,22 @@ class AnalyticsService
     /**
      * Get emotion/sentiment trend data over a period.
      */
-    public function getTrends(string $period = '30d'): array
+    public function getTrends(string $period = '30d', ?string $department = null): array
     {
-        $cacheKey = "analytics:trends:{$period}";
+        $deptSlug = $department ? trim($department) : '';
+        $cacheKey = $deptSlug !== '' ? "analytics:trends:{$period}:dept:{$deptSlug}" : "analytics:trends:{$period}";
         $cacheTtl = 3600;
 
-        return Cache::remember($cacheKey, $cacheTtl, function () use ($period) {
+        return Cache::remember($cacheKey, $cacheTtl, function () use ($period, $department) {
             $end = Carbon::now();
             $start = $this->periodToStart($period, $end);
+            $deptUserIds = $this->getDepartmentUserIds($department);
 
             return [
-                'emotion_distribution' => $this->getEmotionDistribution($start, $end),
-                'sentiment_over_time'  => $this->getSentimentOverTime($start, $end),
-                'peak_usage_hours'     => $this->getPeakUsageHours($start, $end),
-                'weekly_comparison'    => $this->getWeeklyComparison(),
+                'emotion_distribution' => $this->getEmotionDistribution($start, $end, null, $deptUserIds),
+                'sentiment_over_time'  => $this->getSentimentOverTime($start, $end, null, $deptUserIds),
+                'peak_usage_hours'     => $this->getPeakUsageHours($start, $end, null, $deptUserIds),
+                'weekly_comparison'    => $this->getWeeklyComparison($deptUserIds),
                 'period_start'         => $start->toDateString(),
                 'period_end'           => $end->toDateString(),
             ];
@@ -539,30 +583,55 @@ class AnalyticsService
     /**
      * Get dashboard stats for a custom date range (used by export endpoint).
      */
-    public function getDashboardStatsByRange(Carbon $start, Carbon $end): array
+    public function getDashboardStatsByRange(Carbon $start, Carbon $end, ?string $department = null): array
     {
-        $currentConversations = Conversation::whereBetween('created_at', [$start, $end])->count();
-        $crisisCount = CrisisAlert::whereBetween('created_at', [$start, $end])->count();
-        $fallbackCount = $this->getFallbackCount($start, $end);
+        $deptUserIds = $this->getDepartmentUserIds($department);
 
-        $peakHours = $this->getPeakUsageHours($start, $end);
+        $convQuery = Conversation::whereBetween('created_at', [$start, $end]);
+        if ($deptUserIds !== null) {
+            $convQuery->whereIn('user_id', $deptUserIds);
+        }
+        $currentConversations = $convQuery->count();
+
+        $crisisQuery = CrisisAlert::whereBetween('created_at', [$start, $end]);
+        $this->applyDepartmentFilter($crisisQuery, $department, $deptUserIds);
+        $crisisCount = $crisisQuery->count();
+
+        $fallbackCount = $this->getFallbackCount($start, $end, null, $deptUserIds);
+
+        $peakHours = $this->getPeakUsageHours($start, $end, null, $deptUserIds);
         $peakHour = !empty($peakHours) ? $peakHours[0]['hour'] : null;
 
-        $crisisBySeverity = CrisisAlert::whereBetween('created_at', [$start, $end])
-            ->where('is_classified', true)
+        $crisisBySevQuery = CrisisAlert::whereBetween('created_at', [$start, $end])
+            ->where('is_classified', true);
+        $this->applyDepartmentFilter($crisisBySevQuery, $department, $deptUserIds);
+        $crisisBySeverity = $crisisBySevQuery
             ->selectRaw('severity, COUNT(*) as count')
             ->groupBy('severity')
             ->pluck('count', 'severity')
             ->toArray();
 
-        $totalUsers = User::where('role', 'student')->count();
+        $userCountQuery = User::where('role', 'student');
+        if ($deptUserIds !== null) {
+            $userCountQuery->whereIn('id', $deptUserIds);
+        }
+        $totalUsers = $userCountQuery->count();
 
-        $topDeptAlerts = CrisisAlert::where('is_classified', true)
-            ->whereNotNull('department')
-            ->selectRaw('department, COUNT(*) as count')
-            ->groupBy('department')
-            ->orderByDesc('count')
-            ->first();
+        if (!empty($department)) {
+            $topDeptAlertsName = $department;
+            $topDeptAlertsQuery = CrisisAlert::where('is_classified', true);
+            $this->applyDepartmentFilter($topDeptAlertsQuery, $department, $deptUserIds);
+            $topDeptAlertsCount = $topDeptAlertsQuery->count();
+        } else {
+            $topDeptAlerts = CrisisAlert::where('is_classified', true)
+                ->whereNotNull('department')
+                ->selectRaw('department, COUNT(*) as count')
+                ->groupBy('department')
+                ->orderByDesc('count')
+                ->first();
+            $topDeptAlertsName = $topDeptAlerts?->department ?? 'N/A';
+            $topDeptAlertsCount = (int) ($topDeptAlerts?->count ?? 0);
+        }
 
         return [
             'total_conversations'        => $currentConversations,
@@ -573,23 +642,26 @@ class AnalyticsService
             'crisis_by_severity'         => $crisisBySeverity,
             'fallback_count'             => $fallbackCount,
             'total_registered_users'     => $totalUsers,
+            'department'                 => $department ?: null,
             'period_start'               => $start->toDateString(),
             'period_end'                 => $end->toDateString(),
-            'top_department_alerts'      => $topDeptAlerts?->department ?? 'N/A',
-            'top_department_alerts_count'=> (int) ($topDeptAlerts?->count ?? 0),
+            'top_department_alerts'      => $topDeptAlertsName,
+            'top_department_alerts_count'=> $topDeptAlertsCount,
         ];
     }
 
     /**
      * Get trend data for a custom date range (used by export endpoint).
      */
-    public function getTrendsByRange(Carbon $start, Carbon $end): array
+    public function getTrendsByRange(Carbon $start, Carbon $end, ?string $department = null): array
     {
+        $deptUserIds = $this->getDepartmentUserIds($department);
+
         return [
-            'emotion_distribution' => $this->getEmotionDistribution($start, $end),
-            'sentiment_over_time'  => $this->getSentimentOverTime($start, $end),
-            'peak_usage_hours'     => $this->getPeakUsageHours($start, $end),
-            'weekly_comparison'    => $this->getWeeklyComparison(),
+            'emotion_distribution' => $this->getEmotionDistribution($start, $end, null, $deptUserIds),
+            'sentiment_over_time'  => $this->getSentimentOverTime($start, $end, null, $deptUserIds),
+            'peak_usage_hours'     => $this->getPeakUsageHours($start, $end, null, $deptUserIds),
+            'weekly_comparison'    => $this->getWeeklyComparison($deptUserIds),
             'period_start'         => $start->toDateString(),
             'period_end'           => $end->toDateString(),
         ];
@@ -607,6 +679,43 @@ class AnalyticsService
     }
 
     // ─── Private Helper Methods ──────────────────────────────
+
+    private function getDepartmentUserIds(?string $department): ?\Illuminate\Support\Collection
+    {
+        if (empty($department)) {
+            return null;
+        }
+
+        return User::where('role', 'student')
+            ->where(function ($q) use ($department) {
+                $q->where('department', $department);
+                if (strcasecmp($department, 'CSS') === 0) {
+                    $q->orWhere('department', 'CCS');
+                } elseif (strcasecmp($department, 'CCS') === 0) {
+                    $q->orWhere('department', 'CSS');
+                }
+            })
+            ->pluck('id');
+    }
+
+    private function applyDepartmentFilter($query, ?string $department, ?\Illuminate\Support\Collection $deptUserIds = null, string $table = 'crisis_alerts')
+    {
+        if (empty($department)) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($department, $deptUserIds, $table) {
+            $q->where("{$table}.department", $department);
+            if (strcasecmp($department, 'CSS') === 0) {
+                $q->orWhere("{$table}.department", 'CCS');
+            } elseif (strcasecmp($department, 'CCS') === 0) {
+                $q->orWhere("{$table}.department", 'CSS');
+            }
+            if ($deptUserIds && $deptUserIds->isNotEmpty()) {
+                $q->orWhereIn("{$table}.user_id", $deptUserIds);
+            }
+        });
+    }
 
     private function getDailyActiveUsers(Carbon $start, Carbon $end): int
     {
@@ -638,12 +747,15 @@ class AnalyticsService
         return round($result ?? 0, 1);
     }
 
-    private function getPeakUsageHours(Carbon $start, Carbon $end, ?int $userId = null): array
+    private function getPeakUsageHours(Carbon $start, Carbon $end, ?int $userId = null, ?\Illuminate\Support\Collection $deptUserIds = null): array
     {
         $driver = DB::connection()->getDriverName();
         $query = ChatMessage::whereBetween('created_at', [$start, $end]);
         if ($userId) {
             $query->where('user_id', $userId);
+        }
+        if ($deptUserIds !== null) {
+            $query->whereIn('user_id', $deptUserIds);
         }
 
         switch ($driver) {
@@ -666,11 +778,14 @@ class AnalyticsService
             ->toArray();
     }
 
-    private function getEmotionDistribution(Carbon $start, Carbon $end, ?int $userId = null): array
+    private function getEmotionDistribution(Carbon $start, Carbon $end, ?int $userId = null, ?\Illuminate\Support\Collection $deptUserIds = null): array
     {
         $query = EmotionLog::whereBetween('created_at', [$start, $end]);
         if ($userId) {
             $query->where('user_id', $userId);
+        }
+        if ($deptUserIds !== null) {
+            $query->whereIn('user_id', $deptUserIds);
         }
 
         return $query->selectRaw('emotion, COUNT(*) as count')
@@ -768,12 +883,15 @@ class AnalyticsService
         ];
     }
 
-    private function getFallbackCount(Carbon $start, Carbon $end, ?int $userId = null): int
+    private function getFallbackCount(Carbon $start, Carbon $end, ?int $userId = null, ?\Illuminate\Support\Collection $deptUserIds = null): int
     {
         $query = ChatMessage::whereBetween('created_at', [$start, $end])
             ->where('is_fallback', true);
         if ($userId) {
             $query->where('user_id', $userId);
+        }
+        if ($deptUserIds !== null) {
+            $query->whereIn('user_id', $deptUserIds);
         }
 
         return $query->count();
@@ -817,7 +935,7 @@ class AnalyticsService
         return round($messages / $conversations, 2);
     }
 
-    private function getSentimentOverTime(Carbon $start, Carbon $end, ?int $userId = null): array
+    private function getSentimentOverTime(Carbon $start, Carbon $end, ?int $userId = null, ?\Illuminate\Support\Collection $deptUserIds = null): array
     {
         $driver = DB::connection()->getDriverName();
 
@@ -836,6 +954,9 @@ class AnalyticsService
         $query = EmotionLog::whereBetween('created_at', [$start, $end]);
         if ($userId) {
             $query->where('user_id', $userId);
+        }
+        if ($deptUserIds !== null) {
+            $query->whereIn('user_id', $deptUserIds);
         }
 
         $emotionCounts = $query->selectRaw("$dateExpr as date, emotion, COUNT(*) as count")
@@ -891,7 +1012,7 @@ class AnalyticsService
         return $weeks;
     }
 
-    private function getWeeklyComparison(): array
+    private function getWeeklyComparison(?\Illuminate\Support\Collection $deptUserIds = null): array
     {
         $start = Carbon::now()->subWeeks(3)->startOfWeek(1); // Monday of W1
         $end = Carbon::now()->endOfWeek(7); // Sunday of W4
@@ -913,21 +1034,33 @@ class AnalyticsService
         }
 
         // 1. Fetch conversations count by date
-        $convCounts = Conversation::whereBetween('created_at', [$start, $end])
+        $convQuery = Conversation::whereBetween('created_at', [$start, $end]);
+        if ($deptUserIds !== null) {
+            $convQuery->whereIn('user_id', $deptUserIds);
+        }
+        $convCounts = $convQuery
             ->selectRaw("$dateExpr as date, COUNT(*) as count")
             ->groupByRaw("$dateExpr")
             ->pluck('count', 'date')
             ->toArray();
 
         // 2. Fetch chat messages count by date
-        $msgCounts = ChatMessage::whereBetween('created_at', [$start, $end])
+        $msgQuery = ChatMessage::whereBetween('created_at', [$start, $end]);
+        if ($deptUserIds !== null) {
+            $msgQuery->whereIn('user_id', $deptUserIds);
+        }
+        $msgCounts = $msgQuery
             ->selectRaw("$dateExpr as date, COUNT(*) as count")
             ->groupByRaw("$dateExpr")
             ->pluck('count', 'date')
             ->toArray();
 
         // 3. Fetch active users per date (distinct user_ids per day)
-        $userSessions = SessionLog::whereBetween('session_start', [$start, $end])
+        $sessionQuery = SessionLog::whereBetween('session_start', [$start, $end]);
+        if ($deptUserIds !== null) {
+            $sessionQuery->whereIn('user_id', $deptUserIds);
+        }
+        $userSessions = $sessionQuery
             ->selectRaw("$sessionDateExpr as date, user_id")
             ->groupByRaw("$sessionDateExpr, user_id")
             ->get()
@@ -998,11 +1131,14 @@ class AnalyticsService
      * Bucket registered students into age ranges and return the most common one.
      * Buckets: Under 18 | 18–20 | 21–23 | 24–26 | 27+
      */
-    private function getTopAgeRange(): array
+    private function getTopAgeRange(?\Illuminate\Support\Collection $deptUserIds = null): array
     {
-        $result = User::where('role', 'student')
-            ->whereNotNull('age')
-            ->selectRaw("
+        $query = User::where('role', 'student')->whereNotNull('age');
+        if ($deptUserIds !== null) {
+            $query->whereIn('id', $deptUserIds);
+        }
+
+        $result = $query->selectRaw("
                 COUNT(CASE WHEN age <= 17 THEN 1 END) as under_17,
                 COUNT(CASE WHEN age BETWEEN 18 AND 20 THEN 1 END) as age_18_20,
                 COUNT(CASE WHEN age BETWEEN 21 AND 23 THEN 1 END) as age_21_23,

@@ -375,10 +375,10 @@
                 <button
                   type="button"
                   class="export-format-tab"
-                  :class="{ active: exportOptions.format === 'csv' }"
-                  @click="exportOptions.format = 'csv'"
+                  :class="{ active: exportOptions.format === 'excel' }"
+                  @click="exportOptions.format = 'excel'"
                 >
-                  <i class="bx bxs-file-txt"></i> CSV Spreadsheet
+                  <i class="bx bx-spreadsheet"></i> Excel Spreadsheet (.xlsx)
                 </button>
               </div>
             </div>
@@ -401,12 +401,12 @@
             <button
               type="button"
               class="export-confirm-btn"
-              @click="exportOptions.format === 'csv' ? generateCSV() : generatePDF()"
+              @click="exportOptions.format === 'excel' ? generateExcel() : generatePDF()"
               :disabled="exportLoading"
             >
               <span v-if="exportLoading" class="btn-spinner"></span>
-              <i v-else :class="exportOptions.format === 'csv' ? 'bx bx-spreadsheet' : 'bx bx-download'"></i>
-              {{ exportLoading ? 'Generating...' : (exportOptions.format === 'csv' ? 'Download CSV' : 'Download PDF') }}
+              <i v-else :class="exportOptions.format === 'excel' ? 'bx bx-spreadsheet' : 'bx bx-download'"></i>
+              {{ exportLoading ? 'Generating...' : (exportOptions.format === 'excel' ? 'Download Excel' : 'Download PDF') }}
             </button>
           </div>
         </div>
@@ -420,6 +420,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 import SidebarAdmin from '@/components/sidebarAdmin.vue'
 import HeaderAdmin from '@/components/headerAdmin.vue'
 import MoodDistributionChart from '@/components/MoodDistributionChart.vue'
@@ -934,8 +935,20 @@ const generatePDF = async () => {
   }
 }
 
-// Generate CSV Report for Selected Student
-const generateCSV = async () => {
+// ── Excel Generation ──────────────────────────────────────────────
+const applyAutoWidth = (ws, aoa) => {
+  const colWidths = []
+  aoa.forEach(row => {
+    row.forEach((cell, colIdx) => {
+      const len = cell != null ? String(cell).length : 0
+      colWidths[colIdx] = Math.max(colWidths[colIdx] || 12, len + 3)
+    })
+  })
+  ws['!cols'] = colWidths.map(w => ({ wch: Math.min(Math.max(w, 12), 60) }))
+}
+
+// Generate Excel Report for Selected Student
+const generateExcel = async () => {
   if (!selectedStudent.value) return
   exportLoading.value = true
   try {
@@ -948,103 +961,123 @@ const generateCSV = async () => {
     })
     const refId = `STU-RPT-${Date.now().toString(36).toUpperCase()}`
 
-    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`
-    const rows = []
+    const wb = XLSX.utils.book_new()
 
-    rows.push([esc('LeanOn Bot — Individual Student Wellness Report')])
-    rows.push([esc('Gordon College — Guidance & Counseling Office')])
-    rows.push([esc(`Student Name: ${student.display}`)])
-    rows.push([esc(`Student Email: ${student.email}`)])
-    rows.push([esc(`Department: ${student.department || 'N/A'}`)])
-    rows.push([esc(`Reporting Period: ${periodLabel} (${stats.value.period_start || ''} to ${stats.value.period_end || ''})`)])
-    rows.push([esc(`Generated At: ${generatedAt}`)])
-    rows.push([esc(`Export Reference: ${refId}`)])
-    rows.push([esc('Privacy Notice: Confidential student case metrics for authorized guidance counselors.')])
-    rows.push([])
-
-    rows.push([esc('=== SUMMARY METRICS ===')])
-    rows.push([esc('Metric'), esc('Value')])
-    rows.push([esc('Total Conversations'), esc(stats.value.total_conversations || 0)])
-    rows.push([esc('Conversation Growth (%)'), esc(stats.value.conversation_growth || 0)])
-    rows.push([esc('Total Messages'), esc(stats.value.message_count || 0)])
-    rows.push([esc('Session Count'), esc(stats.value.session_count || 0)])
-    rows.push([esc('Peak Active Hour'), esc(formatPeakHour(stats.value.peak_hour))])
-    rows.push([esc('Crisis Alert Count'), esc(stats.value.crisis_alert_count || 0)])
-    rows.push([esc('Off-Topic Fallbacks'), esc(stats.value.fallback_count || 0)])
-    rows.push([])
+    // ── Sheet 1: Case Summary ──
+    const summaryRows = [
+      ['LeanOn Bot — Individual Student Wellness Report'],
+      ['Gordon College — Guidance & Counseling Office'],
+      ['Student Name', student.display],
+      ['Student Email', student.email],
+      ['Department', student.department || 'N/A'],
+      ['Reporting Period', `${periodLabel} (${stats.value.period_start || ''} to ${stats.value.period_end || ''})`],
+      ['Generated At', generatedAt],
+      ['Export Reference', refId],
+      ['Privacy Notice', 'Confidential student case metrics for authorized guidance counselors.'],
+      [],
+      ['=== SUMMARY METRICS ===', ''],
+      ['Metric', 'Value'],
+      ['Total Conversations', stats.value.total_conversations || 0],
+      ['Conversation Growth (%)', `${stats.value.conversation_growth || 0}%`],
+      ['Total Messages', stats.value.message_count || 0],
+      ['Session Count', stats.value.session_count || 0],
+      ['Peak Active Hour', formatPeakHour(stats.value.peak_hour)],
+      ['Crisis Alert Count', stats.value.crisis_alert_count || 0],
+      ['Off-Topic Fallbacks', stats.value.fallback_count || 0],
+    ]
 
     if (stats.value.crisis_by_severity && Object.keys(stats.value.crisis_by_severity).length > 0) {
-      rows.push([esc('=== CRISIS SEVERITY BREAKDOWN ===')])
-      rows.push([esc('Severity'), esc('Alert Count')])
+      summaryRows.push([])
+      summaryRows.push(['=== CRISIS SEVERITY BREAKDOWN ===', ''])
+      summaryRows.push(['Severity', 'Alert Count'])
       Object.entries(stats.value.crisis_by_severity).forEach(([sev, cnt]) => {
-        rows.push([esc(sev.charAt(0).toUpperCase() + sev.slice(1)), esc(cnt)])
+        summaryRows.push([sev.charAt(0).toUpperCase() + sev.slice(1), cnt])
       })
-      rows.push([])
     }
 
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows)
+    applyAutoWidth(wsSummary, summaryRows)
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Case Summary')
+
+    // ── Sheet 2: Emotion Distribution ──
     const emoDist = trendData.value.emotion_distribution || {}
     if (Object.keys(emoDist).length > 0) {
-      rows.push([esc('=== EMOTION DISTRIBUTION ===')])
-      rows.push([esc('Emotion'), esc('Count'), esc('Percentage'), esc('Rank')])
+      const emoRows = [
+        ['LeanOn Bot — Emotion Distribution Analysis'],
+        [`Student: ${student.display} | Period: ${periodLabel}`],
+        [],
+        ['Emotion', 'Count', 'Percentage of Total', 'Relative Rank'],
+      ]
       const total = Object.values(emoDist).reduce((a, b) => a + b, 0)
       Object.entries(emoDist)
         .sort(([, a], [, b]) => b - a)
         .forEach(([emo, count], idx) => {
-          rows.push([
-            esc(emo.charAt(0).toUpperCase() + emo.slice(1)),
-            esc(count),
-            esc(total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%'),
-            esc(`#${idx + 1}`),
+          emoRows.push([
+            emo.charAt(0).toUpperCase() + emo.slice(1),
+            count,
+            total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%',
+            `#${idx + 1}`,
           ])
         })
-      rows.push([])
+      const wsEmotions = XLSX.utils.aoa_to_sheet(emoRows)
+      applyAutoWidth(wsEmotions, emoRows)
+      XLSX.utils.book_append_sheet(wb, wsEmotions, 'Emotion Distribution')
     }
 
+    // ── Sheet 3: Sentiment Trends ──
     const sentWeeks = trendData.value.sentiment_over_time || []
     if (sentWeeks.length > 0) {
-      rows.push([esc('=== SENTIMENT TREND OVER TIME ===')])
-      rows.push([esc('Week Starting'), esc('Positive'), esc('Neutral'), esc('Negative'), esc('Dominant Trend')])
+      const sentRows = [
+        ['LeanOn Bot — Sentiment Trends Over Time'],
+        [`Student: ${student.display} | Period: ${periodLabel}`],
+        [],
+        ['Week Starting', 'Positive', 'Neutral', 'Negative', 'Dominant Trend'],
+      ]
       sentWeeks.forEach((w, idx) => {
         const pos = w.positive || 0
         const neu = w.neutral || 0
         const neg = w.negative || 0
         const dominant = pos >= neu && pos >= neg ? 'Positive' : (neg >= pos && neg >= neu ? 'Negative' : 'Neutral')
-        rows.push([
-          esc(w.week_start || `Week ${idx + 1}`),
-          esc(pos), esc(neu), esc(neg), esc(dominant),
+        sentRows.push([
+          w.week_start || `Week ${idx + 1}`,
+          pos, neu, neg, dominant,
         ])
       })
-      rows.push([])
+      const wsSentiment = XLSX.utils.aoa_to_sheet(sentRows)
+      applyAutoWidth(wsSentiment, sentRows)
+      XLSX.utils.book_append_sheet(wb, wsSentiment, 'Sentiment Trends')
     }
 
+    // ── Sheet 4: Peak Usage Hours ──
     const peakHours = trendData.value.peak_usage_hours || []
     if (peakHours.length > 0) {
-      rows.push([esc('=== PEAK USAGE HOURS ===')])
-      rows.push([esc('Hour'), esc('Interaction Volume')])
+      const peakRows = [
+        ['LeanOn Bot — Peak Usage Hours'],
+        [`Student: ${student.display} | Period: ${periodLabel}`],
+        [],
+        ['Hour / Time Slot', 'Interaction Volume'],
+      ]
       peakHours.forEach(h => {
-        rows.push([esc(formatPeakHour(h.hour)), esc(h.count || 0)])
+        peakRows.push([formatPeakHour(h.hour), h.count || 0])
       })
-      rows.push([])
+      const wsPeak = XLSX.utils.aoa_to_sheet(peakRows)
+      applyAutoWidth(wsPeak, peakRows)
+      XLSX.utils.book_append_sheet(wb, wsPeak, 'Peak Usage Hours')
     }
 
-    rows.push([esc(`End of Report — ${refId}`)])
-
-    const csvContent = '\uFEFF' + rows.map(r => r.join(',')).join('\r\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `Student-Insights-${student.display.replace(/\s+/g, '_')}-${selectedPeriod.value}-${new Date().toISOString().slice(0, 10)}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
+    const fileName = `Student-Insights-${student.display.replace(/\s+/g, '_')}-${selectedPeriod.value}-${new Date().toISOString().slice(0, 10)}.xlsx`
+    XLSX.writeFile(wb, fileName)
     closeExportModal()
   } catch (err) {
-    console.error('CSV export failed:', err)
-    alert('Failed to generate CSV report. Please try again.')
+    console.error('Excel export failed:', err)
+    alert('Failed to generate Excel report. Please try again.')
   } finally {
     exportLoading.value = false
   }
 }
+
+// Backward compatibility alias
+const generateCSV = generateExcel
 
 const onDocClick = (e) => {
   if (!e.target.closest('.student-search-card')) {

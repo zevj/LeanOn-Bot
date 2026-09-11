@@ -25,9 +25,9 @@
                             <i class='bx bxs-file-pdf'></i>
                             <span>Export PDF</span>
                         </button>
-                        <button class="download-btn download-btn-csv hover-glow" @click="downloadCSV">
+                        <button class="download-btn download-btn-excel download-btn-csv hover-glow" @click="downloadExcel">
                             <i class='bx bx-spreadsheet'></i>
-                            <span>Export CSV</span>
+                            <span>Export Excel</span>
                         </button>
                     </div>
                 </div>
@@ -227,6 +227,7 @@ import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import SidebarAdmin from '@/components/sidebarAdmin.vue';
 import HeaderAdmin from '@/components/headerAdmin.vue';
 
@@ -592,11 +593,22 @@ const downloadPDF = async () => {
     }
 }
 
-// ── CSV Export ──────────────────────────────────────────────────────────────
-const downloadCSV = async () => {
+// ── Excel Export ──────────────────────────────────────────────────────────────
+const applyAutoWidth = (ws, aoa) => {
+    const colWidths = []
+    aoa.forEach(row => {
+        row.forEach((cell, colIdx) => {
+            const len = cell != null ? String(cell).length : 0
+            colWidths[colIdx] = Math.max(colWidths[colIdx] || 12, len + 3)
+        })
+    })
+    ws['!cols'] = colWidths.map(w => ({ wch: Math.min(Math.max(w, 12), 50) }))
+}
+
+const downloadExcel = async () => {
     try {
         const token = localStorage.getItem('token')
-        // Fetch ALL matching records (no pagination) for the CSV
+        // Fetch ALL matching records (no pagination) for Excel export
         const params = { per_page: 9999, page: 1 }
         if (search.value)      params.search     = search.value
         if (deptFilter.value)  params.department = deptFilter.value
@@ -618,9 +630,7 @@ const downloadCSV = async () => {
             hour: '2-digit', minute: '2-digit', hour12: true,
         })
 
-        const esc = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`
-
-        const fmtCsv = (dt) => {
+        const fmtExcel = (dt) => {
             if (!dt) return ''
             const d = new Date(dt)
             return d.toLocaleString('en-PH', {
@@ -632,33 +642,33 @@ const downloadCSV = async () => {
         const rows = []
 
         // Report metadata block
-        rows.push([esc('LeanOn Bot — System Log Records Report')])
-        rows.push([esc('Gordon College — Guidance & Counseling Office')])
-        rows.push([esc(`Generated: ${generatedAt}`)])
-        rows.push([esc(`Filters Applied: ${currentDept} / ${currentStatus}`)])
-        rows.push([esc(`Total Records Exported: ${allLogs.length}`)])
+        rows.push(['LeanOn Bot — System Log Records Report'])
+        rows.push(['Gordon College — Guidance & Counseling Office'])
+        rows.push(['Generated At', generatedAt])
+        rows.push(['Filters Applied', `${currentDept} / ${currentStatus}`])
+        rows.push(['Total Records Exported', allLogs.length])
         rows.push([])
 
         // Summary stats
-        rows.push([esc('=== SESSION SUMMARY ===')])
-        rows.push([esc('Metric'), esc('Count')])
-        rows.push([esc('Total Log Entries'),  esc(totalLogs.value)])
-        rows.push([esc('Active Sessions'),    esc(activeSessions.value)])
-        rows.push([esc('Closed Sessions'),    esc(closedSessions.value)])
-        rows.push([esc('Departments Tracked'), esc(departments.value.length)])
+        rows.push(['=== SESSION SUMMARY ===', ''])
+        rows.push(['Metric', 'Count'])
+        rows.push(['Total Log Entries',  totalLogs.value])
+        rows.push(['Active Sessions',    activeSessions.value])
+        rows.push(['Closed Sessions',    closedSessions.value])
+        rows.push(['Departments Tracked', departments.value.length])
         rows.push([])
 
         // Data table
-        rows.push([esc('=== SESSION ACTIVITY RECORDS ===')])
+        rows.push(['=== SESSION ACTIVITY RECORDS ===', ''])
         rows.push([
-            esc('Log ID'),
-            esc('User Email'),
-            esc('Department'),
-            esc('Program'),
-            esc('Session Start'),
-            esc('Session End'),
-            esc('Session Status'),
-            esc('Duration (approx.)'),
+            'Log ID',
+            'User Email',
+            'Department',
+            'Program',
+            'Session Start',
+            'Session End',
+            'Session Status',
+            'Duration (approx.)',
         ])
 
         allLogs.forEach(r => {
@@ -672,43 +682,45 @@ const downloadCSV = async () => {
                     : `${Math.floor(mins / 60)}h ${mins % 60}m`
             }
             rows.push([
-                esc(`LOG-${String(r.id).padStart(8, '0')}`),
-                esc(r.real_email || r.masked_email || 'N/A'),
-                esc(r.department || 'N/A'),
-                esc(r.program    || 'N/A'),
-                esc(fmtCsv(r.session_start)),
-                esc(r.session_end ? fmtCsv(r.session_end) : 'Still Active'),
-                esc(r.session_end ? 'Closed' : 'Active'),
-                esc(duration),
+                `LOG-${String(r.id).padStart(8, '0')}`,
+                r.real_email || r.masked_email || 'N/A',
+                r.department || 'N/A',
+                r.program    || 'N/A',
+                fmtExcel(r.session_start),
+                r.session_end ? fmtExcel(r.session_end) : 'Still Active',
+                r.session_end ? 'Closed' : 'Active',
+                duration,
             ])
         })
 
         rows.push([])
-        rows.push([esc('Privacy Notice: This report contains anonymized session data. For authorized administrative use only.')])
+        rows.push(['Privacy Notice: This report contains anonymized session data. For authorized administrative use only.'])
 
-        const csvContent = '\uFEFF' + rows.map(r => r.join(',')).join('\r\n')
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-        const url  = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href     = url
-        link.download = `LeanOn-LogRecords-${new Date().toISOString().slice(0, 10)}.csv`
-        link.click()
-        URL.revokeObjectURL(url)
+        const wb = XLSX.utils.book_new()
+        const ws = XLSX.utils.aoa_to_sheet(rows)
+        applyAutoWidth(ws, rows)
+        XLSX.utils.book_append_sheet(wb, ws, 'Log Records')
+
+        const fileName = `LeanOn-LogRecords-${new Date().toISOString().slice(0, 10)}.xlsx`
+        XLSX.writeFile(wb, fileName)
 
         // Notify admin panel
         try {
-            await axios.post('/api/admin/notifications/log-csv-exported', {
+            await axios.post('/api/admin/notifications/log-excel-exported', {
                 total_records: allLogs.length,
                 filters: { department: currentDept, status: currentStatus },
             }, { headers: { Authorization: `Bearer ${token}` } })
         } catch (notifErr) {
-            console.warn('Log CSV notification failed (non-fatal):', notifErr)
+            console.warn('Log Excel notification failed (non-fatal):', notifErr)
         }
     } catch (err) {
-        console.error('CSV export failed:', err)
-        alert('Failed to generate CSV. Please try again.')
+        console.error('Excel export failed:', err)
+        alert('Failed to generate Excel file. Please try again.')
     }
 }
+
+// Backward compatibility alias
+const downloadCSV = downloadExcel
 
 onMounted(() => {
     fetchLogs();
@@ -753,11 +765,13 @@ const paginationRange = computed(() => {
   flex-wrap: wrap;
 }
 
+.download-btn-excel,
 .download-btn-csv {
   background: linear-gradient(135deg, #0e7490 0%, #0891b2 100%);
   box-shadow: 0 3px 10px rgba(14, 116, 144, 0.25);
 }
 
+.download-btn-excel:hover,
 .download-btn-csv:hover {
   background: linear-gradient(135deg, #0c6478 0%, #0e7490 100%);
   box-shadow: 0 6px 16px rgba(14, 116, 144, 0.35);
