@@ -41,8 +41,20 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
-    'turnstile' => [
-        'secret' => env('TURNSTILE_SECRET_KEY'),
+    // ── AI Chatbot Providers ──────────────────────────────────
+    'gemini' => [
+        'key'   => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    ],
+
+    'groq' => [
+        'key'   => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'qwen/qwen3.8-27b'),
+    ],
+
+    'openrouter' => [
+        'key'   => env('OPENROUTER_API_KEY'),
+        'model' => env('OPENROUTER_MODEL', 'deepseek/deepseek-chat'),
     ],
 
     // ── AI Analytics & Insights ───────────────────────────────

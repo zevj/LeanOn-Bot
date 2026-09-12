@@ -32,6 +32,12 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // ── Prohibit Destructive Database Commands ────────────────
+        // Prevents accidental migrate:fresh, db:wipe, or rollback in production
+        \Illuminate\Support\Facades\DB::prohibitDestructiveCommands(
+            $this->app->isProduction()
+        );
+
         // ── Model Strict Mode ────────────────────────────────────
         // In non-production, enable strict mode to catch:
         // - N+1 queries (lazy loading)

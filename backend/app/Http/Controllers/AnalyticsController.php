@@ -39,8 +39,10 @@ class AnalyticsController extends Controller
             $period = '7d';
         }
 
+        $department = $request->query('department');
+
         try {
-            $stats = $this->analytics->getDashboardStats($period);
+            $stats = $this->analytics->getDashboardStats($period, $department);
             return response()->json($stats);
         } catch (\Exception $e) {
             Log::error('Analytics dashboard error: ' . $e->getMessage());
@@ -141,8 +143,10 @@ class AnalyticsController extends Controller
             $period = '30d';
         }
 
+        $department = $request->query('department');
+
         try {
-            $trends = $this->analytics->getTrends($period);
+            $trends = $this->analytics->getTrends($period, $department);
             return response()->json($trends);
         } catch (\Exception $e) {
             Log::error('Analytics trends error: ' . $e->getMessage());
@@ -303,7 +307,7 @@ class AnalyticsController extends Controller
         $startDate = $request->query('start_date');
         $endDate   = $request->query('end_date');
         $isCustomRange = $startDate && $endDate;
-        $format    = $request->query('format', 'pdf'); // 'pdf' or 'csv'
+        $format    = $request->query('format', 'pdf'); // 'pdf', 'excel', 'xlsx', or 'csv'
 
         if ($isCustomRange) {
             // Validate date format
@@ -340,27 +344,30 @@ class AnalyticsController extends Controller
             $sections = ['dashboard', 'trends', 'insights'];
         }
 
+        $department = $request->query('department');
+
         $payload = [
             'generated_at' => now()->toIso8601String(),
             'period'       => $periodLabel,
+            'department'   => $department ?: 'All Departments',
             'sections'     => array_values($sections),
         ];
 
         try {
             if (in_array('dashboard', $sections)) {
                 if ($isCustomRange) {
-                    $payload['dashboard'] = $this->analytics->getDashboardStatsByRange($start, $end);
+                    $payload['dashboard'] = $this->analytics->getDashboardStatsByRange($start, $end, $department);
                 } else {
-                    $payload['dashboard'] = $this->analytics->getDashboardStats($period);
+                    $payload['dashboard'] = $this->analytics->getDashboardStats($period, $department);
                 }
             }
 
             if (in_array('trends', $sections)) {
                 if ($isCustomRange) {
-                    $payload['trends'] = $this->analytics->getTrendsByRange($start, $end);
+                    $payload['trends'] = $this->analytics->getTrendsByRange($start, $end, $department);
                 } else {
                     $trendPeriod = $period === '1d' ? '7d' : $period;
-                    $payload['trends'] = $this->analytics->getTrends($trendPeriod);
+                    $payload['trends'] = $this->analytics->getTrends($trendPeriod, $department);
                 }
             }
 
@@ -396,7 +403,9 @@ class AnalyticsController extends Controller
 
             // Record export notification for admin panel
             try {
-                if ($format === 'csv') {
+                if ($format === 'excel' || $format === 'xlsx') {
+                    \App\Models\AdminNotification::excelExported($periodLabel);
+                } elseif ($format === 'csv') {
                     \App\Models\AdminNotification::csvExported($periodLabel);
                 } else {
                     \App\Models\AdminNotification::reportExported($periodLabel, array_values($sections));

@@ -1,5 +1,4 @@
 node_modules/
+backups/
 .vscode/
-CLOUDFLARE_SETUP.md
-DEPLOYMENT_CHECKLIST.md
-DATA_FLOW_DIAGRAM.md
+*.log
