@@ -19,6 +19,8 @@
 <script setup>
 import { computed } from 'vue'
 import { Bar } from 'vue-chartjs'
+import { useTheme } from '@/composables/useTheme.js'
+import { getChartTheme } from '@/utils/chartTheme.js'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -38,6 +40,8 @@ const props = defineProps({
 })
 
 const hasData = computed(() => props.data.length > 0)
+const { isDark } = useTheme()
+const themeColors = computed(() => getChartTheme(isDark.value))
 
 const formatHour = (h) => {
   if (h === 0) return '12 AM'
@@ -87,7 +91,11 @@ const chartOptions = computed(() => ({
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: 'rgba(17, 24, 39, 0.9)',
+      backgroundColor: themeColors.value.tooltipBg,
+      borderColor: themeColors.value.tooltipBorder,
+      borderWidth: 1,
+      titleColor: themeColors.value.tooltipTitle,
+      bodyColor: themeColors.value.tooltipBody,
       titleFont: { family: "'DM Sans', system-ui, sans-serif", weight: '600' },
       bodyFont: { family: "'DM Sans', system-ui, sans-serif" },
       padding: 12,
@@ -102,7 +110,7 @@ const chartOptions = computed(() => ({
     x: {
       grid: { display: false },
       ticks: {
-        color: '#9ca3af',
+        color: themeColors.value.tick,
         font: { family: "'DM Sans', system-ui, sans-serif", size: 10 },
         maxRotation: 45,
         callback: function(val, idx) {
@@ -113,9 +121,9 @@ const chartOptions = computed(() => ({
     },
     y: {
       beginAtZero: true,
-      grid: { color: 'rgba(0, 0, 0, 0.04)' },
+      grid: { color: themeColors.value.grid },
       ticks: {
-        color: '#9ca3af',
+        color: themeColors.value.tick,
         font: { family: "'DM Sans', system-ui, sans-serif", size: 11 },
         precision: 0,
       }

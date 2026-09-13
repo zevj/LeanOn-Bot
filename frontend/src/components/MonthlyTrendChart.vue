@@ -30,7 +30,15 @@
 
     <!-- CHART -->
     <div class="chart-wrapper">
-      <Line :data="chartData" :options="chartOptions" />
+      <Line v-if="!hasNoData" :data="chartData" :options="chartOptions" />
+
+      <div v-else class="empty-state-line">
+        <div class="empty-icon-wrap-line">
+          <i class='bx bx-line-chart'></i>
+        </div>
+        <p class="empty-title-line">No interaction data yet</p>
+        <p class="empty-subtitle-line">This trend will populate once activity is recorded.</p>
+      </div>
     </div>
 
   </div>
@@ -45,6 +53,8 @@ import {
   CategoryScale, LinearScale, Filler
 } from "chart.js"
 import { Line } from "vue-chartjs"
+import { useTheme } from '@/composables/useTheme.js'
+import { getChartTheme } from '@/utils/chartTheme.js'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale, Filler)
 
@@ -56,6 +66,8 @@ const props = defineProps({
 })
 
 const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+const { isDark } = useTheme()
+const themeColors = computed(() => getChartTheme(isDark.value))
 
 const filters = [
   { key: "all", label: "All Months" },
@@ -75,6 +87,9 @@ const rangesData = computed(() => ({
   q3:  { labels: months.slice(6, 9),  data: props.data.slice(6, 9)  },
   q4:  { labels: months.slice(9, 12), data: props.data.slice(9, 12) }
 }))
+
+// --- Empty state: no data array, or every month is zero ---
+const hasNoData = computed(() => !props.data.length || props.data.every(v => Number(v) === 0))
 
 // Simple trend: compare last 6 months average to first 6 months
 const trendPercent = computed(() => {
@@ -105,7 +120,7 @@ function buildDataset(r) {
       tension: 0.45,
       pointRadius: 4,
       pointHoverRadius: 7,
-      pointBackgroundColor: "#fff",
+      pointBackgroundColor: themeColors.value.pointBorder,
       pointBorderColor: "#0E6008",
       pointBorderWidth: 2.5,
       borderWidth: 3
@@ -119,27 +134,31 @@ watch(() => props.data, () => {
   chartData.value = buildDataset(rangesData.value[selectedRange.value])
 }, { deep: true })
 
+watch(isDark, () => {
+  chartData.value = buildDataset(rangesData.value[selectedRange.value])
+})
+
 function selectRange(f) {
   selectedRange.value = f.key
   chartData.value = buildDataset(rangesData.value[f.key])
 }
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: { duration: 800, easing: "easeOutExpo" },
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: "rgba(17, 24, 39, 0.95)",
-      titleColor: "#f3f4f6",
+      backgroundColor: themeColors.value.tooltipBg,
+      titleColor: themeColors.value.tooltipTitle,
       titleFont: { size: 13, weight: 'bold', family: "'DM Sans', sans-serif" },
-      bodyColor: "#a3e6a0",
+      bodyColor: themeColors.value.tooltipBody,
       bodyFont: { size: 12, family: "'DM Sans', sans-serif" },
       padding: 12,
       cornerRadius: 8,
       displayColors: false,
-      borderColor: "rgba(255,255,255,0.1)",
+      borderColor: themeColors.value.tooltipBorder,
       borderWidth: 1,
       callbacks: {
         title: (items) => items[0].label,
@@ -152,7 +171,7 @@ const chartOptions = {
       grid: { display: false },
       border: { display: false },
       ticks: {
-        color: "#6b7280",
+        color: themeColors.value.tickMuted,
         font: { size: 12, family: "'DM Sans', sans-serif" },
         padding: 6
       }
@@ -160,20 +179,20 @@ const chartOptions = {
     y: {
       beginAtZero: true,
       grid: { 
-        color: "rgba(0,0,0,0.04)", 
+        color: themeColors.value.grid,
         drawBorder: false,
         borderDash: [5, 5]
       },
       border: { display: false },
       ticks: {
-        color: "#9ca3af",
+        color: themeColors.value.tick,
         font: { size: 11, family: "'DM Sans', sans-serif" },
         padding: 10,
         maxTicksLimit: 6
       }
     }
   }
-}
+}))
 </script>
 
 <style scoped>
@@ -321,6 +340,48 @@ const chartOptions = {
   width: 100%;
 }
 
+/* EMPTY STATE */
+.empty-state-line {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 12px;
+}
+
+.empty-icon-wrap-line {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  border: 1px solid rgba(14, 96, 8, 0.15);
+  color: #0E6008;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.empty-title-line {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.empty-subtitle-line {
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin: 0;
+  max-width: 220px;
+  line-height: 1.5;
+}
+
 /* ── RESPONSIVE BREAKPOINTS ── */
 
 @media (max-width: 1024px) {
@@ -375,5 +436,15 @@ const chartOptions = {
   .chart-wrapper {
     height: 200px; /* Give the canvas a strict height on small phones */
   }
+
+  .empty-icon-wrap-line {
+    width: 44px;
+    height: 44px;
+    font-size: 19px;
+    border-radius: 12px;
+  }
+
+  .empty-title-line { font-size: 13px; }
+  .empty-subtitle-line { font-size: 11.5px; }
 }
 </style>

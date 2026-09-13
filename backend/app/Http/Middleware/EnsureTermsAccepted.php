@@ -15,7 +15,14 @@ class EnsureTermsAccepted
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->user() && is_null($request->user()->terms_accepted_at)) {
+        $user = $request->user();
+
+        // Guidance counselors and admin staff do not block on student terms modal
+        if ($user && in_array($user->role, ['guidance', 'admin'], true)) {
+            return $next($request);
+        }
+
+        if ($user && is_null($user->terms_accepted_at)) {
             return response()->json([
                 'status' => 'TERMS_REQUIRED',
                 'message' => 'You must accept the terms and conditions to proceed.'

@@ -172,6 +172,21 @@
   max-width: 160px;
 }
 
+.stat-meta {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.stat-value--alert {
+  color: #b91c1c;
+}
+
+.stat-value--age {
+  font-size: 22px;
+  font-weight: 700;
+}
+
 .stat-growth {
   display: inline-flex;
   align-items: center;
@@ -1039,6 +1054,36 @@
   flex-shrink: 0;
 }
 
+/* ── Fix: prevent grid children from overflowing on mobile ── */
+.charts-section > *,
+.charts-section-bottom > * {
+  min-width: 0; /* allows grid/flex children to actually shrink */
+}
+
+.perf-card {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.perf-row {
+  flex-wrap: wrap;
+  row-gap: 4px;
+  min-width: 0;
+}
+
+.perf-row span,
+.perf-row strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.perf-privacy-notice {
+  overflow-wrap: anywhere;
+}
+.main-container {
+  overflow-x: hidden;
+}
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
 /* ── Modal Transition ── */
@@ -1232,4 +1277,29 @@
     width: 100%;
     justify-content: center;
   }
+
+/* ─── System Performance Card semantic classes ────────────────────── */
+}
+
+.perf-card {
+  background: #ffffff;
+}
+
+.perf-card-title {
+  color: #111827;
+}
+
+.perf-card-body {
+  color: #4b5563;
+}
+
+.perf-row {
+  border-bottom-color: #f3f4f6;
+  color: #111827;
+}
+
+.perf-privacy-notice {
+  background: #f9fafb;
+  border-color: #f3f4f6;
+  color: #6b7280;
 }

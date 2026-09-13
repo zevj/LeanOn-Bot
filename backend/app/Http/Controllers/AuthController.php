@@ -35,37 +35,10 @@ class AuthController extends Controller
                 'regex:/^[a-zA-Z0-9._%+\-]+@gordoncollege\.edu\.ph$/'
             ],
             'password' => 'required|min:6',
-            'turnstile_token' => 'required|string'
         ], [
             'email.regex' => 'Only Gordon College email addresses are allowed.',
-            'turnstile_token.required' => 'Security check is required.'
         ]);
 
-        // ✅ Verify Turnstile Token with Cloudflare
-        $secretKey = config('services.turnstile.secret');
-        if (empty($secretKey)) {
-            Log::error('Turnstile secret key is not configured in services.php.');
-            return response()->json([
-                'message' => 'Internal server error. CAPTCHA configuration missing.'
-            ], 500);
-        }
-
-        $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-            'secret' => $secretKey,
-            'response' => $request->turnstile_token,
-            'remoteip' => $request->ip(),
-        ]);
-
-        if (!$response->successful() || !$response->json('success')) {
-            Log::warning('Turnstile verification failed', [
-                'ip' => $request->ip(),
-                'response' => $response->json(),
-            ]);
-            return response()->json([
-                'message' => 'Security check failed. Please try again.'
-            ], 422);
-        }
-        
         // ✅ Attempt login
         if (!Auth::attempt([
             'email' => $request->email,

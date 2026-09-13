@@ -48,7 +48,7 @@
           <template v-if="filteredNotifications.length > 0">
             <div
               class="notif-item"
-              :class="{ unread: !notif.is_read, expanded: expandedId === notif.id }"
+              :class="{ unread: !notif.is_read, expanded: expandedId === notif.id, 'notif-item--urgent': notif.type === 'multiple_severe_alerts' }"
               v-for="notif in filteredNotifications"
               :key="notif.id"
               @click="handleExpand(notif)"
@@ -87,7 +87,10 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
+
+const router = useRouter()
 
 const showPanel   = ref(false)
 const wrapperRef  = ref(null)
@@ -141,6 +144,11 @@ const handleExpand = async (notif) => {
     } catch {
       notif.is_read = false // revert on failure
     }
+  }
+
+  if (notif.type === 'multiple_severe_alerts') {
+    showPanel.value = false
+    router.push('/AdminCrisisAlerts')
   }
 }
 
@@ -310,6 +318,11 @@ defineEmits(['view-all'])
 .notif-item:hover { background: #fafafa; }
 .notif-item.unread { background: #f7fbf6; }
 .notif-item.expanded { background: #f4f9f3; }
+.notif-item.notif-item--urgent {
+  background: #fff5f5;
+  border-left: 3px solid #ef4444;
+}
+.notif-item.notif-item--urgent.unread { background: #fef2f2; }
 
 /* ── Icon ── */
 .notif-icon {
@@ -417,5 +430,179 @@ defineEmits(['view-all'])
   .notif-header { padding: 12px 12px 8px; }
   .filter-tabs { padding: 6px 8px; }
   .icon-btn { width: 34px; height: 34px; font-size: 15px; border-radius: 8px; }
+}
+
+/* ── Dark Mode ── */
+:global([data-theme="dark"]) .icon-btn {
+  background: #1a2e1a;
+  border-color: #2d6a2d;
+  color: #4ade80;
+}
+
+:global([data-theme="dark"]) .icon-btn:hover {
+  background: #2d6a2d;
+  color: #f0fdf4;
+}
+
+:global([data-theme="dark"]) .notif-dot {
+  background: #ef4444;
+  border-color: #1e2533;
+}
+
+:global([data-theme="dark"]) .notif-panel {
+  background: #1e2533;
+  border-color: #2d3748;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+:global([data-theme="dark"]) .notif-header,
+:global([data-theme="dark"]) .filter-tabs {
+  background: #161b27;
+  border-bottom-color: #2d3748;
+}
+
+:global([data-theme="dark"]) .notif-title {
+  color: #f3f4f6;
+}
+
+:global([data-theme="dark"]) .mark-all {
+  background: #1c3d25;
+  color: #4ade80;
+}
+
+:global([data-theme="dark"]) .mark-all:hover:not(:disabled) {
+  background: #15803d;
+  color: #ffffff;
+}
+
+:global([data-theme="dark"]) .filter-tab {
+  background: transparent;
+  color: #9ca3af;
+}
+
+:global([data-theme="dark"]) .filter-tab:hover {
+  background: #243044;
+  color: #f3f4f6;
+}
+
+:global([data-theme="dark"]) .filter-tab.active {
+  background: #1e2533;
+  color: #4ade80;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+:global([data-theme="dark"]) .tab-count {
+  background: #2d3748;
+  color: #cbd5e1;
+}
+
+:global([data-theme="dark"]) .tab-count.unread-count {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+:global([data-theme="dark"]) .notif-list::-webkit-scrollbar-thumb {
+  background: #374151;
+}
+
+:global([data-theme="dark"]) .notif-skeleton {
+  border-bottom-color: #2d3748;
+}
+
+:global([data-theme="dark"]) .skel-icon,
+:global([data-theme="dark"]) .skel-line {
+  background: linear-gradient(90deg, #243044 25%, #2d3748 50%, #243044 75%);
+  background-size: 200% 100%;
+}
+
+:global([data-theme="dark"]) .notif-item {
+  border-bottom-color: #2d3748;
+}
+
+:global([data-theme="dark"]) .notif-item:hover {
+  background: #243044;
+}
+
+:global([data-theme="dark"]) .notif-item.unread {
+  background: #1c2b21;
+}
+
+:global([data-theme="dark"]) .notif-item.expanded {
+  background: #203527;
+}
+
+:global([data-theme="dark"]) .notif-item.notif-item--urgent {
+  background: #2d1010;
+  border-left-color: #ef4444;
+}
+
+:global([data-theme="dark"]) .notif-item.notif-item--urgent.unread {
+  background: #3b1010;
+}
+
+:global([data-theme="dark"]) .notif-icon.green {
+  background: #0d2818;
+}
+
+:global([data-theme="dark"]) .notif-icon.green i {
+  color: #4ade80;
+}
+
+:global([data-theme="dark"]) .notif-icon.amber {
+  background: #2d2410;
+}
+
+:global([data-theme="dark"]) .notif-icon.amber i {
+  color: #fde68a;
+}
+
+:global([data-theme="dark"]) .notif-icon.red {
+  background: #3b1010;
+}
+
+:global([data-theme="dark"]) .notif-icon.red i {
+  color: #fca5a5;
+}
+
+:global([data-theme="dark"]) .notif-icon.blue {
+  background: #172554;
+}
+
+:global([data-theme="dark"]) .notif-icon.blue i {
+  color: #60a5fa;
+}
+
+:global([data-theme="dark"]) .notif-msg {
+  color: #f3f4f6;
+}
+
+:global([data-theme="dark"]) .notif-detail {
+  background: #161b27;
+  border-color: #374151;
+  color: #cbd5e1;
+}
+
+:global([data-theme="dark"]) .notif-time {
+  color: #9ca3af;
+}
+
+:global([data-theme="dark"]) .unread-dot {
+  background: #4ade80;
+}
+
+:global([data-theme="dark"]) .chevron {
+  color: #6b7280;
+}
+
+:global([data-theme="dark"]) .notif-item.expanded .chevron {
+  color: #4ade80;
+}
+
+:global([data-theme="dark"]) .notif-empty {
+  color: #6b7280;
+}
+
+:global([data-theme="dark"]) .notif-empty p {
+  color: #9ca3af;
 }
 </style>

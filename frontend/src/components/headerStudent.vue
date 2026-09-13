@@ -22,7 +22,8 @@
 
     <!-- Right Section -->
     <div class="right-section">
-      <NotificationPanel @view-all="handleViewAll" />
+        <ThemeToggleHeader />
+        <NotificationPanel @view-all="handleViewAll" />
     </div>
 
   </header>
@@ -31,6 +32,7 @@
 <script setup>
 import { ref } from 'vue'
 import NotificationPanel from '../components/StudentNotificationPanel.vue'
+import ThemeToggleHeader from '@/components/ThemeToggleHeader.vue'
 import { useSidebarToggle } from '@/composables/useSidebarToggle'
 
 const { triggerMobileToggle } = useSidebarToggle()  // ← add
@@ -43,3 +45,5 @@ function handleViewAll() {
 </script>
 
 <style scoped src="../assets/header-sidebar/header.css"></style>
+
+<!-- repush updates -->

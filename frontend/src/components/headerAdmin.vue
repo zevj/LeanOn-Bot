@@ -22,6 +22,7 @@
 
     <!-- Right Section -->
     <div class="right-section">
+      <ThemeToggleHeader />
       <NotificationPanel @view-all="handleViewAll" />
     </div>
 
@@ -30,11 +31,19 @@
 
 <script setup>
 import NotificationPanel from '../components/NotificationPanel.vue'
+import ThemeToggleHeader from '@/components/ThemeToggleHeader.vue'
 import { useSidebarToggle } from '@/composables/useSidebarToggle'
+import { useTheme } from '@/composables/useTheme'
+import { onMounted } from 'vue'
 
 const { triggerMobileToggle } = useSidebarToggle()
+const { initTheme } = useTheme()
 
 defineEmits(['toggle-sidebar'])
+
+onMounted(() => {
+  initTheme()
+})
 
 function handleViewAll() {}
 </script>
