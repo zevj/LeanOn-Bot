@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
  * Analytics Controller
  *
  * All endpoints are protected by auth:sanctum + role:guidance middleware.
- * All data returned is anonymized — no student PII is ever exposed.
+ * Admin UI can access student identity for searching/picker purposes.
  */
 class AnalyticsController extends Controller
 {
@@ -39,12 +39,93 @@ class AnalyticsController extends Controller
             $period = '7d';
         }
 
+        $department = $request->query('department');
+
         try {
-            $stats = $this->analytics->getDashboardStats($period);
+            $stats = $this->analytics->getDashboardStats($period, $department);
             return response()->json($stats);
         } catch (\Exception $e) {
             Log::error('Analytics dashboard error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to load analytics.'], 500);
+        }
+    }
+
+    /**
+     * GET /api/admin/analytics/students?q=
+     *
+     * Anonymized student search for the Student Insights page.
+     */
+    public function students(Request $request)
+    {
+        $q = (string) $request->query('q', '');
+        $flagged = filter_var($request->query('flagged', false), FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $students = $this->analytics->searchStudents($q, $flagged);
+            return response()->json(['students' => $students]);
+        } catch (\Exception $e) {
+            Log::error('Analytics student search error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to search students.'], 500);
+        }
+    }
+
+    /**
+     * GET /api/admin/analytics/student/dashboard?user_id=&period=
+     *
+     * Per-student wellness dashboard (anonymized subject + live metrics).
+     */
+    public function studentDashboard(Request $request)
+    {
+        $userId = (int) $request->query('user_id', 0);
+        if ($userId < 1) {
+            return response()->json(['error' => 'user_id is required.'], 422);
+        }
+
+        $period = $request->query('period', '7d');
+        $allowed = ['1d', '7d', '14d', '30d', '90d'];
+        if (!in_array($period, $allowed)) {
+            $period = '7d';
+        }
+
+        try {
+            $stats = $this->analytics->getStudentDashboardStats($userId, $period);
+            if (!$stats) {
+                return response()->json(['error' => 'Student not found.'], 404);
+            }
+            return response()->json($stats);
+        } catch (\Exception $e) {
+            Log::error('Student analytics dashboard error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load student analytics.'], 500);
+        }
+    }
+
+    /**
+     * GET /api/admin/analytics/student/trends?user_id=&period=
+     *
+     * Per-student emotion / usage trends.
+     */
+    public function studentTrends(Request $request)
+    {
+        $userId = (int) $request->query('user_id', 0);
+        if ($userId < 1) {
+            return response()->json(['error' => 'user_id is required.'], 422);
+        }
+
+        $period = $request->query('period', '30d');
+        $allowed = ['7d', '14d', '30d', '90d'];
+        if (!in_array($period, $allowed)) {
+            $period = '30d';
+        }
+
+        try {
+            $trends = $this->analytics->getStudentTrends($userId, $period);
+            if (!$trends) {
+                return response()->json(['error' => 'Student not found.'], 404);
+            }
+            return response()->json($trends);
+        } catch (\Exception $e) {
+            Log::error('Student analytics trends error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load student trends.'], 500);
         }
     }
 
@@ -62,8 +143,10 @@ class AnalyticsController extends Controller
             $period = '30d';
         }
 
+        $department = $request->query('department');
+
         try {
-            $trends = $this->analytics->getTrends($period);
+            $trends = $this->analytics->getTrends($period, $department);
             return response()->json($trends);
         } catch (\Exception $e) {
             Log::error('Analytics trends error: ' . $e->getMessage());
@@ -224,7 +307,7 @@ class AnalyticsController extends Controller
         $startDate = $request->query('start_date');
         $endDate   = $request->query('end_date');
         $isCustomRange = $startDate && $endDate;
-        $format    = $request->query('format', 'pdf'); // 'pdf' or 'csv'
+        $format    = $request->query('format', 'pdf'); // 'pdf', 'excel', 'xlsx', or 'csv'
 
         if ($isCustomRange) {
             // Validate date format
@@ -261,27 +344,30 @@ class AnalyticsController extends Controller
             $sections = ['dashboard', 'trends', 'insights'];
         }
 
+        $department = $request->query('department');
+
         $payload = [
             'generated_at' => now()->toIso8601String(),
             'period'       => $periodLabel,
+            'department'   => $department ?: 'All Departments',
             'sections'     => array_values($sections),
         ];
 
         try {
             if (in_array('dashboard', $sections)) {
                 if ($isCustomRange) {
-                    $payload['dashboard'] = $this->analytics->getDashboardStatsByRange($start, $end);
+                    $payload['dashboard'] = $this->analytics->getDashboardStatsByRange($start, $end, $department);
                 } else {
-                    $payload['dashboard'] = $this->analytics->getDashboardStats($period);
+                    $payload['dashboard'] = $this->analytics->getDashboardStats($period, $department);
                 }
             }
 
             if (in_array('trends', $sections)) {
                 if ($isCustomRange) {
-                    $payload['trends'] = $this->analytics->getTrendsByRange($start, $end);
+                    $payload['trends'] = $this->analytics->getTrendsByRange($start, $end, $department);
                 } else {
                     $trendPeriod = $period === '1d' ? '7d' : $period;
-                    $payload['trends'] = $this->analytics->getTrends($trendPeriod);
+                    $payload['trends'] = $this->analytics->getTrends($trendPeriod, $department);
                 }
             }
 
@@ -317,7 +403,9 @@ class AnalyticsController extends Controller
 
             // Record export notification for admin panel
             try {
-                if ($format === 'csv') {
+                if ($format === 'excel' || $format === 'xlsx') {
+                    \App\Models\AdminNotification::excelExported($periodLabel);
+                } elseif ($format === 'csv') {
                     \App\Models\AdminNotification::csvExported($periodLabel);
                 } else {
                     \App\Models\AdminNotification::reportExported($periodLabel, array_values($sections));

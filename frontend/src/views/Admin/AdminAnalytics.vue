@@ -17,7 +17,6 @@
           </div>
 
           <div class="header-actions">
-            <!-- Period Tabs Selector -->
             <!-- Period Selector — dropdown for all screen sizes -->
             <div class="period-selector">
               <label>Reporting Period:</label>
@@ -28,6 +27,21 @@
               >
                 <option v-for="p in periods" :key="p.value" :value="p.value">
                   {{ p.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Department Filter -->
+            <div class="period-selector">
+              <label>Department:</label>
+              <select
+                class="period-dropdown"
+                :value="selectedDepartment"
+                @change="changeDepartment($event.target.value)"
+              >
+                <option value="">All Departments</option>
+                <option v-for="d in departments" :key="d" :value="d">
+                  {{ d }}
                 </option>
               </select>
             </div>
@@ -52,11 +66,11 @@
             <!-- Card 1: Department With Most Crisis Alerts -->
             <div class="stat-card red">
               <div class="stat-card-content">
-                <h4 class="stat-label">Dept. With Most Alerts</h4>
-                <p class="stat-value dept-value" :style="{ color: stats.top_department_alerts !== 'N/A' ? '#b91c1c' : '#111827' }">
+                <h4 class="stat-label">{{ selectedDepartment ? `${selectedDepartment} Crisis Alerts` : 'Dept. With Most Alerts' }}</h4>
+                <p class="stat-value dept-value" :class="{ 'stat-value--alert': stats.top_department_alerts !== 'N/A' }">
                   {{ stats.top_department_alerts || 'N/A' }}
                 </p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">
+                <span class="stat-meta">
                   {{ stats.top_department_alerts_count || 0 }} classified alerts
                 </span>
               </div>
@@ -81,7 +95,7 @@
               <div class="stat-card-content">
                 <h4 class="stat-label">Peak Usage Hour</h4>
                 <p class="stat-value unit-suffix">{{ formatPeakHour(stats.peak_hour) }}</p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">Highest interaction volume</span>
+                <span class="stat-meta">Highest interaction volume</span>
               </div>
               <div class="stat-icon-wrapper icon-cyan"><i class="bx bx-bell"></i></div>
             </div>
@@ -90,10 +104,10 @@
             <div class="stat-card amber">
               <div class="stat-card-content">
                 <h4 class="stat-label">Crisis Alerts</h4>
-                <p class="stat-value" :style="{ color: stats.crisis_alert_count > 0 ? '#b91c1c' : '#111827' }">
+                <p class="stat-value" :class="{ 'stat-value--alert': stats.crisis_alert_count > 0 }">
                   {{ stats.crisis_alert_count || 0 }}
                 </p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">Flagged messages</span>
+                <span class="stat-meta">Flagged messages</span>
               </div>
               <div class="stat-icon-wrapper icon-amber"><i class="bx bx-shield"></i></div>
             </div>
@@ -102,10 +116,10 @@
             <div class="stat-card purple">
               <div class="stat-card-content">
                 <h4 class="stat-label">Users Age Range</h4>
-                <p class="stat-value unit-suffix" style="font-size:22px;font-weight:700;">
+                <p class="stat-value unit-suffix stat-value--age">
                   {{ stats.top_age_range || 'N/A' }}
                 </p>
-                <span style="font-size:11px;color:#6b7280;margin-top:2px;">
+                <span class="stat-meta">
                   {{ stats.top_age_range_count || 0 }} registered students
                 </span>
               </div>
@@ -123,29 +137,29 @@
           <div class="charts-section-bottom">
             <SentimentTrendChart :data="trendData.sentiment_over_time || []" />
 
-            <div class="stat-card" style="height:auto;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:1.5rem;gap:1.25rem;border-left:4px solid #16a34a;background:var(--card-bg,#fff);">
+            <div class="stat-card perf-card" style="height:auto;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:1.5rem;gap:1.25rem;border-left:4px solid #16a34a;">
               <div style="display:flex;align-items:center;gap:10px;width:100%;">
                 <div class="stat-icon-wrapper icon-green" style="width:36px;height:36px;font-size:1.1rem;">
                   <i class="bx bx-info-circle"></i>
                 </div>
-                <h3 style="font-size:15px;font-weight:600;color:#111827;margin:0;">System Performance & Privacy</h3>
+                <h3 class="perf-card-title" style="font-size:15px;font-weight:600;margin:0;">System Performance & Privacy</h3>
               </div>
-              <div style="display:flex;flex-direction:column;gap:12px;width:100%;font-size:13.5px;color:#4b5563;">
-                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
+              <div class="perf-card-body" style="display:flex;flex-direction:column;gap:12px;width:100%;font-size:13.5px;">
+                <div class="perf-row" style="display:flex;justify-content:space-between;border-bottom:1px solid;padding-bottom:8px;">
                   <span>Off-topic Fallbacks:</span>
-                  <strong style="color:#111827;">{{ stats.fallback_count || 0 }} times</strong>
+                  <strong class="perf-row">{{ stats.fallback_count || 0 }} times</strong>
                 </div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
+                <div class="perf-row" style="display:flex;justify-content:space-between;border-bottom:1px solid;padding-bottom:8px;">
                   <span>Active Student Engagement Rate:</span>
-                  <strong style="color:#111827;">
+                  <strong class="perf-row">
                     {{ stats.total_registered_users > 0 ? ((stats.active_users_in_period / stats.total_registered_users) * 100).toFixed(1) : 0 }}%
                   </strong>
                 </div>
-                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:8px;">
+                <div class="perf-row" style="display:flex;justify-content:space-between;border-bottom:1px solid;padding-bottom:8px;">
                   <span>Total Registered Students:</span>
-                  <strong style="color:#111827;">{{ stats.total_registered_users || 0 }}</strong>
+                  <strong class="perf-row">{{ stats.total_registered_users || 0 }}</strong>
                 </div>
-                <div style="margin-top:8px;font-size:12px;line-height:1.5;color:#6b7280;background:#f9fafb;padding:10px;border-radius:8px;border:1px solid #f3f4f6;">
+                <div class="perf-privacy-notice" style="margin-top:8px;font-size:12px;line-height:1.5;padding:10px;border-radius:8px;border:1px solid;">
                   <i class="bx bx-lock-alt" style="margin-right:4px;color:#16a34a;"></i>
                   <strong>Privacy Notice:</strong> All text contents, raw chat sessions, names, and emails are excluded from AI analyses. Only aggregated statistics are shared with AI APIs for school-wide insight extraction.
                 </div>
@@ -206,17 +220,25 @@
                 </button>
                 <button
                   class="export-format-tab"
-                  :class="{ active: exportOptions.format === 'csv' }"
-                  @click="exportOptions.format = 'csv'"
+                  :class="{ active: exportOptions.format === 'excel' }"
+                  @click="exportOptions.format = 'excel'"
                 >
-                  <i class="bx bxs-file-txt"></i> CSV
+                  <i class="bx bx-spreadsheet"></i> Excel (.xlsx)
                 </button>
               </div>
             </div>
 
+            <!-- Department -->
+            <div class="export-field-group">
+              <label class="export-field-label">Department</label>
+              <select class="period-dropdown" v-model="exportOptions.department" style="min-width:unset; width:100%;">
+                <option value="">All Departments</option>
+                <option v-for="d in departments" :key="d" :value="d">{{ d }}</option>
+              </select>
+            </div>
+
             <!-- Date Range -->
-            <!-- Date Range -->
-<div class="export-field-group">
+            <div class="export-field-group">
   <label class="export-field-label">Date Range</label>
 
   <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -273,12 +295,12 @@
             <button class="export-cancel-btn" @click="closeExportModal">Cancel</button>
             <button
               class="export-confirm-btn"
-              @click="exportOptions.format === 'csv' ? generateCSV() : generatePDF()"
+              @click="exportOptions.format === 'excel' ? generateExcel() : generatePDF()"
               :disabled="exportLoading || (exportOptions.format === 'pdf' && exportOptions.sections.length === 0) || (exportOptions.dateMode === 'custom' && (!exportOptions.startDate || !exportOptions.endDate))"
             >
               <span v-if="exportLoading" class="btn-spinner"></span>
-              <i v-else :class="exportOptions.format === 'csv' ? 'bx bx-spreadsheet' : 'bx bx-download'"></i>
-              {{ exportLoading ? 'Generating...' : (exportOptions.format === 'csv' ? 'Download CSV' : 'Download PDF') }}
+              <i v-else :class="exportOptions.format === 'excel' ? 'bx bx-spreadsheet' : 'bx bx-download'"></i>
+              {{ exportLoading ? 'Generating...' : (exportOptions.format === 'excel' ? 'Download Excel' : 'Download PDF') }}
             </button>
           </div>
         </div>
@@ -292,6 +314,7 @@ import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import * as XLSX from 'xlsx'
 import SidebarAdmin from '@/components/sidebarAdmin.vue'
 import HeaderAdmin from '@/components/headerAdmin.vue'
 import MoodDistributionChart from '@/components/MoodDistributionChart.vue'
@@ -317,6 +340,8 @@ const exportSections = [
 ]
 
 const selectedPeriod = ref('7d')
+const departments = ['CSS', 'CAHS', 'CHTM', 'BSA', 'BSN']
+const selectedDepartment = ref('')
 const loadingDashboard = ref(true)
 const loadingInsights = ref(false)
 const fetchingDashboard = ref(false)
@@ -328,6 +353,7 @@ const exportLoading = ref(false)
 const today = new Date().toISOString().slice(0, 10)
 const exportOptions = ref({
   period: '7d',
+  department: '',
   sections: ['dashboard', 'trends', 'insights'],
   format: 'pdf',
   dateMode: 'preset',
@@ -366,6 +392,12 @@ const changePeriod = (period) => {
   fetchData()
 }
 
+const changeDepartment = (dept) => {
+  if (selectedDepartment.value === dept || fetchingDashboard.value) return
+  selectedDepartment.value = dept
+  fetchData()
+}
+
 const formatPeakHour = (hour) => {
   if (hour === null || hour === undefined) return 'N/A'
   if (hour === 0) return '12 AM'
@@ -398,9 +430,10 @@ const fetchData = async () => {
   loadingDashboard.value = true
   try {
     const trendPeriod = selectedPeriod.value === '1d' ? '7d' : selectedPeriod.value
+    const deptQuery = selectedDepartment.value ? `&department=${encodeURIComponent(selectedDepartment.value)}` : ''
     const [dashRes, trendsRes] = await Promise.all([
-      axios.get(`/api/admin/analytics/dashboard?period=${selectedPeriod.value}`, authConfig()),
-      axios.get(`/api/admin/analytics/trends?period=${trendPeriod}`, authConfig()),
+      axios.get(`/api/admin/analytics/dashboard?period=${selectedPeriod.value}${deptQuery}`, authConfig()),
+      axios.get(`/api/admin/analytics/trends?period=${trendPeriod}${deptQuery}`, authConfig()),
     ])
     stats.value = dashRes.data
     trendData.value = trendsRes.data
@@ -429,6 +462,7 @@ const fetchInsights = async () => {
 
 const openExportModal = () => {
   exportOptions.value.period = selectedPeriod.value
+  exportOptions.value.department = selectedDepartment.value
   exportOptions.value.format = 'pdf'
   exportOptions.value.dateMode = 'preset'
   exportOptions.value.startDate = ''
@@ -453,6 +487,10 @@ const buildExportParams = () => {
     params.set('end_date', opts.endDate)
   } else {
     params.set('period', opts.period)
+  }
+  const dept = opts.department !== undefined && opts.department !== '' ? opts.department : selectedDepartment.value
+  if (dept) {
+    params.set('department', dept)
   }
   return params
 }
@@ -480,21 +518,29 @@ const generatePDF = async () => {
   }
 }
 
-// ── CSV Generation ──────────────────────────────────────────────
-const generateCSV = async () => {
+// ── Excel Generation ──────────────────────────────────────────────
+const applyAutoWidth = (ws, aoa) => {
+  const colWidths = []
+  aoa.forEach(row => {
+    row.forEach((cell, colIdx) => {
+      const len = cell != null ? String(cell).length : 0
+      colWidths[colIdx] = Math.max(colWidths[colIdx] || 12, len + 3)
+    })
+  })
+  ws['!cols'] = colWidths.map(w => ({ wch: Math.min(Math.max(w, 12), 60) }))
+}
+
+const generateExcel = async () => {
   exportLoading.value = true
   try {
     const params = buildExportParams()
     params.set('sections', 'dashboard,trends,snapshots')
-    params.set('format', 'csv')
+    params.set('format', 'excel')
     const res = await axios.get(
       `/api/admin/analytics/export?${params.toString()}`,
       authConfig()
     )
     const data = res.data
-
-    // Helper: escape a cell value for CSV (UTF-8 BOM-safe, Excel-compatible)
-    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`
 
     // Human-readable date formatter
     const fmtDate = (iso) => {
@@ -514,58 +560,73 @@ const generateCSV = async () => {
     })
 
     const refId = `RPT-${Date.now().toString(36).toUpperCase()}`
+    const deptLabel = (exportOptions.value.department !== '' ? exportOptions.value.department : selectedDepartment.value) || data.department || 'All Departments'
 
-    const rows = []
+    const wb = XLSX.utils.book_new()
 
-    // ── Report header block ──
-    rows.push([esc('LeanOn Bot — AI Analytics & Wellness Report')])
-    rows.push([esc('Gordon College — Guidance & Counseling Office')])
-    rows.push([esc(`Reporting Period: ${periodLabel}`)])
-    rows.push([esc(`Generated: ${generatedAt}`)])
-    rows.push([esc(`Export Reference: ${refId}`)])
-    rows.push([esc('Privacy Notice: All data is anonymized. No student PII is included.')])
-    rows.push([])
+    // ── Sheet 1: Overview & Statistics ──
+    const overviewRows = [
+      ['LeanOn Bot — AI Analytics & Wellness Report'],
+      ['Gordon College — Guidance & Counseling Office'],
+      ['Reporting Period', periodLabel],
+      ['Department', deptLabel],
+      ['Generated At', generatedAt],
+      ['Export Reference', refId],
+      ['Privacy Notice', 'All data is anonymized. No student PII is included.'],
+      [],
+    ]
 
-    // ── Dashboard Statistics ──
     if (data.dashboard) {
       const d = data.dashboard
-      rows.push([esc('=== DASHBOARD STATISTICS ===')])
-      rows.push([esc('Metric'), esc('Value')])
-      rows.push([esc('Department With Most Crisis Alerts'), esc(d.top_department_alerts ?? 'N/A')])
-      rows.push([esc('Crisis Alerts in Top Department'),   esc(d.top_department_alerts_count ?? 0)])
-      rows.push([esc('Total Conversations'),               esc(d.total_conversations ?? 0)])
-      rows.push([esc('Conversation Growth (%)'),           esc(d.conversation_growth ?? 0)])
-      rows.push([esc('Peak Usage Hour'),                   esc(d.peak_hour !== null ? formatPeakHour(d.peak_hour) : 'N/A')])
-      rows.push([esc('Crisis Alerts (Period)'),            esc(d.crisis_alert_count ?? 0)])
-      rows.push([esc('Off-Topic Fallbacks'),               esc(d.fallback_count ?? 0)])
-      rows.push([esc('Total Registered Students'),         esc(d.total_registered_users ?? 0)])
-      rows.push([esc('Most Active Age Range'),             esc(d.top_age_range ?? 'N/A')])
-      rows.push([esc('Students in Top Age Range'),         esc(d.top_age_range_count ?? 0)])
-      rows.push([])
+      overviewRows.push(['=== DASHBOARD STATISTICS ===', ''])
+      overviewRows.push(['Metric', 'Value'])
+      overviewRows.push(['Department With Most Crisis Alerts', d.top_department_alerts ?? 'N/A'])
+      overviewRows.push(['Crisis Alerts in Top Department', d.top_department_alerts_count ?? 0])
+      overviewRows.push(['Total Conversations', d.total_conversations ?? 0])
+      overviewRows.push(['Conversation Growth (%)', `${d.conversation_growth ?? 0}%`])
+      overviewRows.push(['Peak Usage Hour', d.peak_hour !== null ? formatPeakHour(d.peak_hour) : 'N/A'])
+      overviewRows.push(['Crisis Alerts (Period)', d.crisis_alert_count ?? 0])
+      overviewRows.push(['Off-Topic Fallbacks', d.fallback_count ?? 0])
+      overviewRows.push(['Total Registered Students', d.total_registered_users ?? 0])
+      overviewRows.push(['Most Active Age Range', d.top_age_range ?? 'N/A'])
+      overviewRows.push(['Students in Top Age Range', d.top_age_range_count ?? 0])
     }
 
-    // ── Emotion Distribution ──
+    const wsOverview = XLSX.utils.aoa_to_sheet(overviewRows)
+    applyAutoWidth(wsOverview, overviewRows)
+    XLSX.utils.book_append_sheet(wb, wsOverview, 'Overview')
+
+    // ── Sheet 2: Emotion Distribution ──
     if (data.trends?.emotion_distribution && Object.keys(data.trends.emotion_distribution).length > 0) {
-      rows.push([esc('=== EMOTION DISTRIBUTION ===')])
-      rows.push([esc('Emotion'), esc('Count'), esc('Percentage of Total'), esc('Relative Rank')])
+      const emotionRows = [
+        ['LeanOn Bot — Emotion Distribution Analysis'],
+        [`Period: ${periodLabel} | Department: ${deptLabel}`],
+        [],
+        ['Emotion', 'Count', 'Percentage of Total', 'Relative Rank'],
+      ]
       const total = Object.values(data.trends.emotion_distribution).reduce((a, b) => a + b, 0)
-      const sorted = Object.entries(data.trends.emotion_distribution)
-        .sort(([, a], [, b]) => b - a)
+      const sorted = Object.entries(data.trends.emotion_distribution).sort(([, a], [, b]) => b - a)
       sorted.forEach(([emotion, count], idx) => {
-        rows.push([
-          esc(emotion.charAt(0).toUpperCase() + emotion.slice(1)),
-          esc(count),
-          esc(total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%'),
-          esc(`#${idx + 1}`),
+        emotionRows.push([
+          emotion.charAt(0).toUpperCase() + emotion.slice(1),
+          count,
+          total > 0 ? `${((count / total) * 100).toFixed(1)}%` : '0%',
+          `#${idx + 1}`,
         ])
       })
-      rows.push([])
+      const wsEmotions = XLSX.utils.aoa_to_sheet(emotionRows)
+      applyAutoWidth(wsEmotions, emotionRows)
+      XLSX.utils.book_append_sheet(wb, wsEmotions, 'Emotion Distribution')
     }
 
-    // ── Sentiment Over Time ──
+    // ── Sheet 3: Sentiment Trends ──
     if (data.trends?.sentiment_over_time?.length > 0) {
-      rows.push([esc('=== SENTIMENT TREND (WEEKLY) ===')])
-      rows.push([esc('Week Starting'), esc('Positive'), esc('Neutral'), esc('Negative'), esc('Dominant Sentiment')])
+      const sentimentRows = [
+        ['LeanOn Bot — Sentiment Trends Over Time'],
+        [`Period: ${periodLabel} | Department: ${deptLabel}`],
+        [],
+        ['Week Starting', 'Positive', 'Neutral', 'Negative', 'Dominant Sentiment'],
+      ]
       data.trends.sentiment_over_time.forEach((w, i) => {
         const pos = w.positive ?? 0
         const neu = w.neutral  ?? 0
@@ -573,70 +634,73 @@ const generateCSV = async () => {
         const dominant = pos >= neu && pos >= neg ? 'Positive'
                        : neg >= pos && neg >= neu ? 'Negative'
                        : 'Neutral'
-        rows.push([
-          esc(w.week_start ? fmtDate(w.week_start) : `Week ${i + 1}`),
-          esc(pos), esc(neu), esc(neg), esc(dominant),
+        sentimentRows.push([
+          w.week_start ? fmtDate(w.week_start) : `Week ${i + 1}`,
+          pos, neu, neg, dominant,
         ])
       })
-      rows.push([])
+      const wsSentiment = XLSX.utils.aoa_to_sheet(sentimentRows)
+      applyAutoWidth(wsSentiment, sentimentRows)
+      XLSX.utils.book_append_sheet(wb, wsSentiment, 'Sentiment Trends')
     }
 
-    // ── Peak Usage Hours ──
+    // ── Sheet 4: Peak Usage Hours ──
     if (data.trends?.peak_usage_hours?.length > 0) {
-      rows.push([esc('=== PEAK USAGE HOURS ===')])
-      rows.push([esc('Hour'), esc('Session Count')])
+      const peakRows = [
+        ['LeanOn Bot — Peak Usage Hours'],
+        [`Period: ${periodLabel} | Department: ${deptLabel}`],
+        [],
+        ['Hour / Time Slot', 'Session Count'],
+      ]
       data.trends.peak_usage_hours.forEach(h => {
-        rows.push([esc(formatPeakHour(h.hour)), esc(h.count ?? 0)])
+        peakRows.push([formatPeakHour(h.hour), h.count ?? 0])
       })
-      rows.push([])
+      const wsPeak = XLSX.utils.aoa_to_sheet(peakRows)
+      applyAutoWidth(wsPeak, peakRows)
+      XLSX.utils.book_append_sheet(wb, wsPeak, 'Peak Usage Hours')
     }
 
-    // ── Historical Daily Snapshots ──
+    // ── Sheet 5: Historical Daily Snapshots ──
     if (data.snapshots?.length > 0) {
-      rows.push([esc('=== HISTORICAL DAILY SNAPSHOTS ===')])
-      rows.push([
-        esc('Date'),
-        esc('Daily Active Users'),
-        esc('Total Conversations'),
-        esc('Total Messages'),
-        esc('Avg Session Duration (min)'),
-        esc('Crisis Alerts'),
-      ])
+      const snapshotRows = [
+        ['LeanOn Bot — Historical Daily Snapshots'],
+        [`Period: ${periodLabel} | Department: ${deptLabel}`],
+        [],
+        ['Date', 'Daily Active Users', 'Total Conversations', 'Total Messages', 'Avg Session Duration (min)', 'Crisis Alerts'],
+      ]
       data.snapshots.forEach(s => {
-        rows.push([
-          esc(s.snapshot_date ? fmtDate(s.snapshot_date) : ''),
-          esc(s.daily_active_users   ?? 0),
-          esc(s.total_conversations  ?? 0),
-          esc(s.total_messages       ?? 0),
-          esc(s.avg_session_minutes  ?? 0),
-          esc(s.crisis_alert_count   ?? 0),
+        snapshotRows.push([
+          s.snapshot_date ? fmtDate(s.snapshot_date) : '',
+          s.daily_active_users   ?? 0,
+          s.total_conversations  ?? 0,
+          s.total_messages       ?? 0,
+          s.avg_session_minutes  ?? 0,
+          s.crisis_alert_count   ?? 0,
         ])
       })
-      rows.push([])
+      const wsSnapshots = XLSX.utils.aoa_to_sheet(snapshotRows)
+      applyAutoWidth(wsSnapshots, snapshotRows)
+      XLSX.utils.book_append_sheet(wb, wsSnapshots, 'Daily Snapshots')
     }
 
-    rows.push([esc(`End of Report — ${refId}`)])
-
-    // UTF-8 BOM ensures Excel opens with correct encoding
-    const csvContent = '\uFEFF' + rows.map(r => r.join(',')).join('\r\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url  = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href  = url
     const dateSuffix = exportOptions.value.dateMode === 'custom'
       ? `${exportOptions.value.startDate}_${exportOptions.value.endDate}`
       : exportOptions.value.period
-    link.download = `LeanOn-Analytics-${dateSuffix}-${new Date().toISOString().slice(0, 10)}.csv`
-    link.click()
-    URL.revokeObjectURL(url)
+    const deptSuffix = deptLabel !== 'All Departments' ? `-${deptLabel}` : ''
+    const fileName = `LeanOn-Analytics${deptSuffix}-${dateSuffix}-${new Date().toISOString().slice(0, 10)}.xlsx`
+
+    XLSX.writeFile(wb, fileName)
     closeExportModal()
   } catch (err) {
-    console.error('CSV export failed:', err)
-    alert('Failed to generate CSV. Please try again.')
+    console.error('Excel export failed:', err)
+    alert('Failed to generate Excel report. Please try again.')
   } finally {
     exportLoading.value = false
   }
 }
+
+// Backward compatibility alias
+const generateCSV = generateExcel
 
 // ── PDF shared helpers ──────────────────────────────────────────
 const PDF_GREEN      = [14, 96, 8]
@@ -665,7 +729,7 @@ const loadImageAsDataUrl = (path) => new Promise((resolve) => {
   img.src = path
 })
 
-const pdfDrawHeader = async (doc, title, periodLabel, generatedAt, refId) => {
+const pdfDrawHeader = async (doc, title, periodLabel, generatedAt, refId, deptLabel = '') => {
   const W = doc.internal.pageSize.getWidth()
   const M = 14
   const BANNER_TOP = 0
@@ -721,7 +785,8 @@ const pdfDrawHeader = async (doc, title, periodLabel, generatedAt, refId) => {
   doc.setFontSize(7.5)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(187, 247, 208)
-  const metaText = `Period: ${periodLabel}   ·   Generated: ${generatedAt}`
+  const deptMeta = deptLabel && deptLabel !== 'All Departments' ? `   ·   Dept: ${deptLabel}` : ''
+  const metaText = `Period: ${periodLabel}${deptMeta}   ·   Generated: ${generatedAt}`
   doc.text(metaText, textX, 34, { maxWidth: W - textX - 42 })
 
   // Right badge text — vertically centered in banner content (7→42)
@@ -822,7 +887,9 @@ const buildPDF = async (data) => {
     hour: '2-digit', minute: '2-digit', hour12: true,
   })
 
-  let y = await pdfDrawHeader(doc, 'AI Analytics & Wellness Report', periodLabel, generatedAt, refId)
+  const deptLabel = (exportOptions.value.department !== '' ? exportOptions.value.department : selectedDepartment.value) || data.department || 'All Departments'
+
+  let y = await pdfDrawHeader(doc, 'AI Analytics & Wellness Report', periodLabel, generatedAt, refId, deptLabel)
 
   doc.setTextColor(...PDF_TEXT_DARK)
 
@@ -863,6 +930,7 @@ const buildPDF = async (data) => {
       startY: y,
       head: [['Metric', 'Value']],
       body: [
+        ...(deptLabel !== 'All Departments' ? [['Filtered Department', deptLabel]] : []),
         ['Department With Most Crisis Alerts', d.top_department_alerts ?? 'N/A'],
         ['Crisis Alerts in Top Department',    String(d.top_department_alerts_count ?? 0)],
         ['Total Conversations',                String(d.total_conversations ?? 0)],
@@ -1134,7 +1202,8 @@ const buildPDF = async (data) => {
   const dateSuffix = exportOptions.value.dateMode === 'custom'
     ? `${exportOptions.value.startDate}_${exportOptions.value.endDate}`
     : (exportOptions.value.period || 'custom')
-  doc.save(`LeanOn-Analytics-${dateSuffix}-${new Date().toISOString().slice(0, 10)}.pdf`)
+  const deptSuffix = deptLabel !== 'All Departments' ? `-${deptLabel}` : ''
+  doc.save(`LeanOn-Analytics${deptSuffix}-${dateSuffix}-${new Date().toISOString().slice(0, 10)}.pdf`)
 }
 
 onMounted(() => {
@@ -1145,3 +1214,148 @@ onMounted(() => {
 
 <style scoped src="@/assets/admin/adminAnalytics.css"></style>
 <style src="@/assets/admin/admin-layout.css"></style>
+
+<style>
+/* ── AdminAnalytics Non-scoped Dark Mode Overrides ── */
+/* These must be non-scoped since admin-dark.css cannot pierce scoped selectors */
+[data-theme="dark"] .perf-card {
+  background: #1e2533 !important;
+}
+
+[data-theme="dark"] .perf-card-title {
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .perf-card-body {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .perf-row {
+  border-bottom-color: #2d3748 !important;
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .perf-privacy-notice {
+  background: #161b27 !important;
+  border-color: #2d3748 !important;
+  color: #9ca3af !important;
+}
+
+/* Analytics stat cards */
+[data-theme="dark"] .stat-cards-grid .stat-card {
+  background: linear-gradient(145deg, #1e2533, #1a2030) !important;
+  border-color: #2d3748 !important;
+}
+
+[data-theme="dark"] .stat-label {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .stat-value {
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .stat-growth.positive {
+  background: #0d2818 !important;
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .stat-growth.negative {
+  background: #3b1010 !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .stat-growth.neutral {
+  background: #1a1f2e !important;
+  color: #6b7280 !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-green {
+  background: #0d2818 !important;
+  border-color: #14532d !important;
+  color: #4ade80 !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-red {
+  background: #3b1010 !important;
+  border-color: #7f1d1d !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-amber {
+  background: #2d2410 !important;
+  border-color: #78500a !important;
+  color: #fde68a !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-purple {
+  background: #2e1b4e !important;
+  border-color: #4c1d95 !important;
+  color: #c084fc !important;
+}
+
+[data-theme="dark"] .stat-icon-wrapper.icon-cyan {
+  background: #0a2a2e !important;
+  border-color: #164e57 !important;
+  color: #67e8f9 !important;
+}
+
+[data-theme="dark"] .loading-overlay {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .loading-overlay p {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .main-container {
+  background: #0f1117 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .title {
+  color: #f3f4f6 !important;
+}
+
+[data-theme="dark"] .subtext,
+[data-theme="dark"] .period-selector label {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .period-tabs {
+  background: #1e2533 !important;
+  border-color: #2d3748 !important;
+}
+
+[data-theme="dark"] .period-tab {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .period-tab:hover:not(.active) {
+  background: #243044 !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .period-dropdown {
+  background: #1a2030 !important;
+  border-color: #374151 !important;
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .period-dropdown:hover,
+[data-theme="dark"] .period-dropdown:focus {
+  border-color: #4ade80 !important;
+}
+
+[data-theme="dark"] .stat-meta {
+  color: #9ca3af !important;
+}
+
+[data-theme="dark"] .stat-value--alert {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .ai-insights-section {
+  color: #cbd5e1 !important;
+}
+</style>

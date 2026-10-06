@@ -21,28 +21,39 @@
       </div>
     </div>
 
-    <!-- CUSTOM LEGEND (Interactive Pills) -->
-    <div class="legend-container">
-      <button
-        v-for="d in chartData.datasets"
-        :key="d.label"
-        class="legend-pill"
-        :class="{ dimmed: hiddenSets.has(d.label) }"
-        @click="toggleDataset(d.label)"
-      >
-        <span class="legend-dot" :style="{ background: d.borderColor, boxShadow: `0 0 6px ${d.borderColor}` }"></span>
-        {{ d.label }}
-      </button>
-    </div>
+    <template v-if="!hasNoData">
+      <!-- CUSTOM LEGEND (Interactive Pills) -->
+      <div class="legend-container">
+        <button
+          v-for="d in chartData.datasets"
+          :key="d.label"
+          class="legend-pill"
+          :class="{ dimmed: hiddenSets.has(d.label) }"
+          @click="toggleDataset(d.label)"
+        >
+          <span class="legend-dot" :style="{ background: d.borderColor, boxShadow: `0 0 6px ${d.borderColor}` }"></span>
+          {{ d.label }}
+        </button>
+      </div>
 
-    <!-- CHART -->
-    <div class="chart-wrapper">
-      <Line
-        ref="chartRef"
-        :key="chartKey"
-        :data="visibleChartData"
-        :options="chartOptions"
-      />
+      <!-- CHART -->
+      <div class="chart-wrapper">
+        <Line
+          ref="chartRef"
+          :key="chartKey"
+          :data="visibleChartData"
+          :options="chartOptions"
+        />
+      </div>
+    </template>
+
+    <!-- EMPTY STATE -->
+    <div v-else class="empty-state-chart">
+      <div class="empty-icon-wrap-chart">
+        <i class='bx bx-line-chart'></i>
+      </div>
+      <p class="empty-title-chart">No trend data yet</p>
+      <p class="empty-subtitle-chart">Weekly emotion trends will appear here once data is available.</p>
     </div>
 
   </div>
@@ -57,6 +68,8 @@ import {
   LinearScale, PointElement, Filler
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
+import { useTheme } from '@/composables/useTheme.js'
+import { getChartTheme } from '@/utils/chartTheme.js'
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, Filler)
 
@@ -73,6 +86,8 @@ const props = defineProps({
 
 const chartRef = ref(null)
 const chartKey = ref(0)
+const { isDark } = useTheme()
+const themeColors = computed(() => getChartTheme(isDark.value))
 
 const filters = [
   { key: 'all', label: 'All Weeks' },
@@ -99,6 +114,9 @@ const emotionColors = {
   angry:       { border: '#f97316', fill: 'rgba(249,115,22,1)' },
   hopeful:     { border: '#06b6d4', fill: 'rgba(6,182,212,1)' },
 }
+
+// --- Empty state: no emotion keys present in the incoming data ---
+const hasNoData = computed(() => !props.weeklyData || Object.keys(props.weeklyData).length === 0)
 
 const gradientFill = (color) => (context) => {
   const chart = context.chart
@@ -169,9 +187,13 @@ watch(() => props.weeklyData, () => {
   chartKey.value++
 }, { deep: true })
 
+watch(isDark, () => {
+  chartKey.value++
+})
+
 onMounted(() => { chartKey.value++ })
 
-const chartOptions = {
+const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   animation: { duration: 600, easing: 'easeOutQuart' },
@@ -180,11 +202,11 @@ const chartOptions = {
     tooltip: {
       mode: 'index',
       intersect: false,
-      backgroundColor: 'rgba(17, 24, 39, 0.95)', /* Dark glassmorphism tooltip */
-      borderColor: 'rgba(255, 255, 255, 0.1)',
+      backgroundColor: themeColors.value.tooltipBg, /* Dark glassmorphism tooltip */
+      borderColor: themeColors.value.tooltipBorder,
       borderWidth: 1,
-      titleColor: '#f3f4f6',
-      bodyColor: '#e5e7eb',
+      titleColor: themeColors.value.tooltipTitle,
+      bodyColor: themeColors.value.tooltipBody,
       padding: 14,
       cornerRadius: 12,
       boxPadding: 6,
@@ -199,13 +221,13 @@ const chartOptions = {
       beginAtZero: true,
       max: 100,
       grid: { 
-        color: 'rgba(0,0,0,0.04)', 
+        color: themeColors.value.grid,
         drawBorder: false,
         borderDash: [5, 5] /* Clean dashed grid lines */
       },
       border: { display: false },
       ticks: {
-        color: '#9ca3af',
+        color: themeColors.value.tick,
         font: { size: 11, family: "'DM Sans', sans-serif" },
         padding: 10,
         maxTicksLimit: 6,
@@ -216,13 +238,13 @@ const chartOptions = {
       grid: { display: false },
       border: { display: false },
       ticks: { 
-        color: '#6b7280', 
+        color: themeColors.value.tickMuted,
         font: { size: 12, family: "'DM Sans', sans-serif" }, 
         padding: 8 
       }
     }
   }
-}
+}))
 </script>
 
 <style scoped>
@@ -376,6 +398,50 @@ const chartOptions = {
   width: 100%;
 }
 
+/* ── Empty State ── */
+.empty-state-chart {
+  flex: 1;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 24px;
+}
+
+.empty-icon-wrap-chart {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #0E6008;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.empty-title-chart {
+  font-size: 14px;
+  font-weight: 700;
+  color: #374151;
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.empty-subtitle-chart {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin: 0;
+  max-width: 260px;
+  line-height: 1.5;
+}
+
 /* ── 📱 RESPONSIVE BREAKPOINTS ── */
 
 @media (max-width: 1024px) {
@@ -437,5 +503,15 @@ const chartOptions = {
     width: 8px;
     height: 8px;
   }
+
+  .empty-icon-wrap-chart {
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
+    border-radius: 14px;
+  }
+
+  .empty-title-chart { font-size: 13px; }
+  .empty-subtitle-chart { font-size: 11.5px; }
 }
 </style>

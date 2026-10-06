@@ -41,8 +41,20 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
-    'turnstile' => [
-        'secret' => env('TURNSTILE_SECRET_KEY'),
+    // ── AI Chatbot Providers ──────────────────────────────────
+    'gemini' => [
+        'key'   => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    ],
+
+    'groq' => [
+        'key'   => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'qwen/qwen3.8-27b'),
+    ],
+
+    'openrouter' => [
+        'key'   => env('OPENROUTER_API_KEY'),
+        'model' => env('OPENROUTER_MODEL', 'deepseek/deepseek-chat'),
     ],
 
     // ── AI Analytics & Insights ───────────────────────────────
@@ -58,6 +70,16 @@ return [
         'max_retries'           => env('AI_INSIGHTS_MAX_RETRIES', 1),
         'timeout'               => env('AI_INSIGHTS_TIMEOUT', 25),
         'max_output_tokens'     => env('AI_INSIGHTS_MAX_OUTPUT_TOKENS', 600),
+    ],
+
+    // ── Python Machine Learning Service ───────────────────────
+    'ml' => [
+        'enabled'               => env('ML_SERVICE_ENABLED', true),
+        'url'                   => env('ML_SERVICE_URL', 'http://127.0.0.1:8001'),
+        'timeout'               => (float) env('ML_SERVICE_TIMEOUT', 1.5),
+        'fallback_cli'          => env('ML_FALLBACK_CLI', true),
+        'python_path'           => env('PYTHON_PATH', 'python'),
+        'script_path'           => env('ML_SCRIPT_PATH', base_path('../ml_service/predict.py')),
     ],
 
 ];

@@ -48,14 +48,13 @@ class SecureHeaders
         $csp = implode('; ', [
             "default-src 'self'",
             // 'unsafe-eval' is required by the marked.js markdown library used to render bot responses
-            "script-src 'self' 'unsafe-eval' https://challenges.cloudflare.com",
+            "script-src 'self' 'unsafe-eval'",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com",
             "font-src 'self' https://fonts.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: blob: https://api.leanon-bot.xyz https://leanon-backend-rdy7.onrender.com https://placehold.co https://placeholder.co http://127.0.0.1:8000 http://localhost:8000",
-            "connect-src 'self' {$frontendUrl} https://challenges.cloudflare.com",
-            "frame-src 'self' https://challenges.cloudflare.com",
-            // Cloudflare Turnstile uses Web Workers internally
-            "worker-src 'self' blob: https://challenges.cloudflare.com",
+            "connect-src 'self' {$frontendUrl}",
+            "frame-src 'self'",
+            "worker-src 'self' blob:",
             "frame-ancestors 'none'",
             "base-uri 'self'",
             "form-action 'self'",

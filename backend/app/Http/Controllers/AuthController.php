@@ -28,45 +28,18 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        // ✅ Validate input
+        // Validate input
         $request->validate([
             'email' => [
                 'required',
                 'regex:/^[a-zA-Z0-9._%+\-]+@gordoncollege\.edu\.ph$/'
             ],
             'password' => 'required|min:6',
-            'turnstile_token' => 'required|string'
         ], [
             'email.regex' => 'Only Gordon College email addresses are allowed.',
-            'turnstile_token.required' => 'Security check is required.'
         ]);
 
-        // ✅ Verify Turnstile Token with Cloudflare
-        $secretKey = config('services.turnstile.secret');
-        if (empty($secretKey)) {
-            Log::error('Turnstile secret key is not configured in services.php.');
-            return response()->json([
-                'message' => 'Internal server error. CAPTCHA configuration missing.'
-            ], 500);
-        }
-
-        $response = Http::asForm()->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-            'secret' => $secretKey,
-            'response' => $request->turnstile_token,
-            'remoteip' => $request->ip(),
-        ]);
-
-        if (!$response->successful() || !$response->json('success')) {
-            Log::warning('Turnstile verification failed', [
-                'ip' => $request->ip(),
-                'response' => $response->json(),
-            ]);
-            return response()->json([
-                'message' => 'Security check failed. Please try again.'
-            ], 422);
-        }
-        
-        // ✅ Attempt login
+        // Attempt login
         if (!Auth::attempt([
             'email' => $request->email,
             'password' => $request->password
@@ -76,11 +49,11 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // ✅ Get authenticated user
+        // Get authenticated user
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // 🔐 First-time login or verification expired (older than 30 days): require email OTP verification
+        // First-time login or verification expired (older than 30 days): require email OTP verification
         if (is_null($user->email_verified_at) || $user->email_verified_at->lt(now()->subDays(30))) {
             if (!is_null($user->email_verified_at)) {
                 $user->update(['email_verified_at' => null]);
@@ -162,10 +135,10 @@ public function verifyOtp(Request $request)
         return response()->json(['message' => 'Invalid OTP'], 400);
     }
 
-    // ✅ Mark OTP as used
+    // Mark OTP as used
     $otpRecord->update(['used_at' => now()]);
 
-    // ✅ Mark email as verified
+    // Mark email as verified
     $user->update(['email_verified_at' => now()]);
     $user->refresh();
 
@@ -241,7 +214,7 @@ public function sendOtp(Request $request)
         ]
     );
 
-    // ✅ SEND EMAIL VIA API
+    // SEND EMAIL VIA API
     $this->mailService->sendOtp($request->email, $otp, 'forgot');
 
     return response()->json([
@@ -263,7 +236,7 @@ public function verifyForgotPasswordOtp(Request $request)
         return response()->json(['message' => 'Invalid OTP'], 400);
     }
 
-    // ✅ FIX: HASH CHECK
+    // FIX: HASH CHECK
     if (!Hash::check($request->otp, $record->otp)) {
         return response()->json(['message' => 'Invalid OTP'], 400);
     }
@@ -341,7 +314,7 @@ public function resetPassword(Request $request)
 //     $email = $payload['email'];
 //     $name = $payload['name'];
 
-//     // 🔥 STRICT DOMAIN CHECK
+//     // STRICT DOMAIN CHECK
 //     if (!str_ends_with($email, '@gordoncollege.edu.ph')) {
 //         return response()->json([
 //             'message' => 'Only Gordon College accounts are allowed'

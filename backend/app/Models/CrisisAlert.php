@@ -19,6 +19,9 @@ class CrisisAlert extends Model
         'is_classified',
         'admin_email_sent_at',
         'admin_email_notified',
+        'appointment_date',
+        'appointment_time',
+        'appointment_status',
     ];
 
     protected $casts = [
@@ -26,6 +29,7 @@ class CrisisAlert extends Model
         'is_classified'        => 'boolean',
         'admin_email_sent_at'  => 'datetime',
         'admin_email_notified' => 'boolean',
+        'appointment_date'     => 'date:Y-m-d',
     ];
 
     public function user()

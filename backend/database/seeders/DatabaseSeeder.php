@@ -6,6 +6,8 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
+require_once __DIR__ . '/LocalTestingSeeder.php';
+
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
@@ -15,10 +17,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         $this->call([
-            UsersTableSeeder::class,
+            LocalTestingSeeder::class,
         ]);
     }
 }

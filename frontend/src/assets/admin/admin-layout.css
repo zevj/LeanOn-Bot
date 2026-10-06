@@ -1,3 +1,5 @@
+@import './admin-dark.css';
+
 .layout {
   display: flex;
   height: 100vh;

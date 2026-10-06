@@ -33,16 +33,51 @@ class EmotionController extends Controller
         // Weekly emotion trends (last 6 weeks)
         $emotionTypes = ['positive', 'sad', 'anxious', 'stressed'];
         $weeklyData = [];
+        foreach ($emotionTypes as $emo) {
+            $weeklyData[$emo] = [];
+        }
+
+        $start = Carbon::now()->subWeeks(5)->startOfWeek();
+        $end = Carbon::now()->endOfWeek();
+        $driver = DB::connection()->getDriverName();
+
+        switch ($driver) {
+            case 'pgsql':
+                $dateExpr = "created_at::date";
+                break;
+            case 'sqlite':
+                $dateExpr = "date(created_at)";
+                break;
+            default:
+                $dateExpr = "DATE(created_at)";
+                break;
+        }
+
+        $emotionCounts = EmotionLog::whereBetween('created_at', [$start, $end])
+            ->selectRaw("$dateExpr as date, emotion, COUNT(*) as count")
+            ->groupByRaw("$dateExpr, emotion")
+            ->get()
+            ->groupBy('date')
+            ->map(function ($items) {
+                return $items->pluck('count', 'emotion')->toArray();
+            })
+            ->toArray();
 
         for ($i = 5; $i >= 0; $i--) {
-            $weekStart = Carbon::now()->subWeeks($i)->startOfWeek(\Carbon\CarbonInterface::MONDAY);
-            $weekEnd   = Carbon::now()->subWeeks($i)->endOfWeek(\Carbon\CarbonInterface::SUNDAY);
+            $weekStart = Carbon::now()->subWeeks($i)->startOfWeek();
+            $weekEnd   = Carbon::now()->subWeeks($i)->endOfWeek();
 
-            $weekCounts = EmotionLog::whereBetween('created_at', [$weekStart, $weekEnd])
-                ->selectRaw('emotion, COUNT(*) as count')
-                ->groupBy('emotion')
-                ->pluck('count', 'emotion')
-                ->toArray();
+            $weekCounts = [];
+            $currentDay = $weekStart->copy();
+            while ($currentDay->lte($weekEnd)) {
+                $dayStr = $currentDay->toDateString();
+                if (isset($emotionCounts[$dayStr])) {
+                    foreach ($emotionCounts[$dayStr] as $emo => $cnt) {
+                        $weekCounts[$emo] = ($weekCounts[$emo] ?? 0) + $cnt;
+                    }
+                }
+                $currentDay->addDay();
+            }
 
             $weekTotal = array_sum($weekCounts);
 
@@ -57,8 +92,8 @@ class EmotionController extends Controller
         $referralStats = [
             ['label' => 'Total',    'value' => $totalLogs, 'modifier' => 'total'],
             ['label' => 'This Week','value' => EmotionLog::whereBetween('created_at', [
-                Carbon::now()->startOfWeek(\Carbon\CarbonInterface::MONDAY),
-                Carbon::now()->endOfWeek(\Carbon\CarbonInterface::SUNDAY)
+                Carbon::now()->startOfWeek(),
+                Carbon::now()->endOfWeek()
             ])->count(), 'modifier' => 'accepted'],
             ['label' => 'This Month','value' => EmotionLog::whereMonth('created_at', Carbon::now()->month)
                 ->whereYear('created_at', Carbon::now()->year)

@@ -15,8 +15,32 @@
 
         <div class="notif-header">
           <span class="notif-title">Notifications</span>
-          <button class="mark-all" @click="dismissAll" :disabled="notifications.length === 0 || allDismissed">
-            Clear all
+          <div class="notif-header-actions">
+            <button class="refresh-btn" @click="refreshNotifications" :disabled="loading" title="Refresh">
+              <i class="bx bx-refresh" :class="{ spinning: loading }"></i>
+            </button>
+            <button class="mark-all" @click="dismissAll" :disabled="notifications.length === 0 || allDismissed">
+              Clear all
+            </button>
+          </div>
+        </div>
+
+        <!-- Unread filter -->
+        <div class="notif-filter-tabs" v-if="!loading">
+          <button
+            class="filter-tab"
+            :class="{ active: filterMode === 'all' }"
+            @click="setFilter('all')"
+          >
+            All
+          </button>
+          <button
+            class="filter-tab"
+            :class="{ active: filterMode === 'unread' }"
+            @click="setFilter('unread')"
+          >
+            Unread
+            <span class="filter-count" v-if="unreadCount > 0">{{ unreadCount }}</span>
           </button>
         </div>
 
@@ -32,22 +56,32 @@
         </div>
 
         <div v-else class="notif-list">
-          <template v-if="notifications.length > 0">
+          <template v-if="filteredNotifications.length > 0">
             <div
               class="notif-item"
               :class="{ unread: !notif.dismissed }"
-              v-for="notif in notifications"
-              :key="notif.alert_id"
+              v-for="notif in filteredNotifications"
+              :key="notif.alert_id + '-' + (notif.appointment_status || 'email')"
             >
-              <div class="notif-icon blue">
-                <i class="bx bx-envelope"></i>
+              <div class="notif-icon" :class="notif.appointment_status ? 'green' : 'blue'">
+                <i :class="notif.appointment_status ? 'bx bx-calendar' : 'bx bx-envelope'"></i>
               </div>
               <div class="notif-body">
                 <div class="notif-msg">
-                  <strong>Message from Guidance Office</strong>
+                  <strong v-if="notif.appointment_status === 'scheduled'">Appointment Scheduled</strong>
+                  <strong v-else-if="notif.appointment_status === 'rescheduled'">Appointment Rescheduled</strong>
+                  <strong v-else>Message from Guidance Office</strong>
                 </div>
                 <div class="notif-detail-text">
-                  A support email was sent to your registered email address. Please check your inbox.
+                  <template v-if="notif.appointment_status === 'scheduled'">
+                    Your wellness appointment has been scheduled for {{ formatDate(notif.appointment_date) }} at {{ formatAppointmentTime(notif.appointment_time) }}. Please check your email.
+                  </template>
+                  <template v-else-if="notif.appointment_status === 'rescheduled'">
+                    Your wellness appointment has been rescheduled to {{ formatDate(notif.appointment_date) }} at {{ formatAppointmentTime(notif.appointment_time) }}. Please check your email.
+                  </template>
+                  <template v-else>
+                    A support email was sent to your registered email address. Please check your inbox.
+                  </template>
                 </div>
                 <div class="notif-time">{{ formatTime(notif.sent_at) }}</div>
               </div>
@@ -62,7 +96,7 @@
 
           <div class="notif-empty" v-else>
             <i class='bx bx-bell-off'></i>
-            <p>No notifications yet</p>
+            <p>{{ filterMode === 'unread' ? 'No unread notifications' : 'No notifications yet' }}</p>
           </div>
         </div>
 
@@ -80,8 +114,27 @@ const wrapperRef = ref(null)
 const loading    = ref(false)
 const notifications = ref([]) // array of { alert_id, sent_at, dismissed }
 
+/* NOTIF FILTER */
 const unreadCount = computed(() => notifications.value.filter(n => !n.dismissed).length)
 const allDismissed = computed(() => notifications.value.every(n => n.dismissed))
+
+// ── Unread filter ────────────────────────────────────────────
+const filterMode = ref('all') // 'all' | 'unread'
+
+const filteredNotifications = computed(() =>
+  filterMode.value === 'unread'
+    ? notifications.value.filter(n => !n.dismissed)
+    : notifications.value
+)
+
+const setFilter = (mode) => {
+  filterMode.value = mode
+}
+
+// ── Manual refresh ───────────────────────────────────────────
+const refreshNotifications = async () => {
+  await fetchNotifications()
+}
 
 const authHeaders = () => ({
   headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -93,13 +146,17 @@ const fetchNotifications = async () => {
   try {
     const res = await axios.get('/api/user/admin-email-notification', authHeaders())
     if (res.data.notification) {
-      // Merge — avoid duplicates
-      const existing = notifications.value.find(n => n.alert_id === res.data.notification.alert_id)
-      if (!existing) {
-        notifications.value.unshift({ ...res.data.notification, dismissed: false })
+      const incoming = res.data.notification
+      const existingIndex = notifications.value.findIndex(n => n.alert_id === incoming.alert_id)
+      if (existingIndex !== -1) {
+        if (notifications.value[existingIndex].sent_at !== incoming.sent_at) {
+          notifications.value[existingIndex] = { ...incoming, dismissed: false }
+        }
+      } else {
+        notifications.value.unshift({ ...incoming, dismissed: false })
       }
     }
-  } catch (e) {
+  } catch {
     // non-critical
   } finally {
     loading.value = false
@@ -119,7 +176,7 @@ const dismiss = async (notif) => {
     setTimeout(() => {
       notifications.value = notifications.value.filter(n => n.alert_id !== notif.alert_id)
     }, 400)
-  } catch (e) {
+  } catch {
     notif.dismissed = false
   }
 }
@@ -151,6 +208,26 @@ const formatTime = (iso) => {
     month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit', hour12: true,
   })
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d)) return dateStr
+  return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const formatAppointmentTime = (timeStr) => {
+  if (!timeStr) return ''
+  try {
+    const [hours, minutes] = timeStr.split(':')
+    const h = parseInt(hours, 10)
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const h12 = h % 12 || 12
+    return `${h12}:${minutes} ${ampm}`
+  } catch {
+    return timeStr
+  }
 }
 
 // ── Outside click ──────────────────────────────────────────────
@@ -238,6 +315,52 @@ onUnmounted(() => {
 .notif-list::-webkit-scrollbar { width: 3px; }
 .notif-list::-webkit-scrollbar-thumb { background: #e8e8e8; border-radius: 4px; }
 
+/* ── Header actions / refresh ── */
+.notif-header-actions { display: flex; align-items: center; gap: 8px; }
+
+.refresh-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px;
+  border: none; background: none; cursor: pointer;
+  color: #94a3b8; font-size: 15px; padding: 0;
+  transition: color 0.15s;
+}
+.refresh-btn:hover:not(:disabled) { color: #2563eb; }
+.refresh-btn:disabled { cursor: default; opacity: 0.6; }
+.refresh-btn i.spinning { animation: notif-spin 0.7s linear infinite; }
+@keyframes notif-spin { to { transform: rotate(360deg); } }
+
+/* ── Filter tabs ── */
+.notif-filter-tabs {
+  display: flex; gap: 6px;
+  padding: 8px 16px 10px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.filter-tab {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; color: #888;
+  padding: 4px 10px; border-radius: 20px;
+  border: none; background: #f5f5f5; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.filter-tab:hover { background: #ececec; }
+.filter-tab.active { background: #eff6ff; color: #2563eb; }
+.filter-count {
+  font-size: 10px; font-weight: 700;
+  background: #2563eb; color: #fff;
+  border-radius: 10px; padding: 1px 5px;
+  line-height: 1.3;
+}
+.filter-tab.active .filter-count { background: #2563eb; }
+
+/* ── Dark Mode: header actions / filter tabs ── */
+:global([data-theme="dark"]) .refresh-btn { color: #64748b; }
+:global([data-theme="dark"]) .refresh-btn:hover:not(:disabled) { color: #60a5fa; }
+:global([data-theme="dark"]) .notif-filter-tabs { border-bottom-color: #334155; }
+:global([data-theme="dark"]) .filter-tab { background: #263548; color: #94a3b8; }
+:global([data-theme="dark"]) .filter-tab:hover { background: #2d3f56; }
+:global([data-theme="dark"]) .filter-tab.active { background: #1e3a5f; color: #60a5fa; }
+
 /* ── Skeleton ── */
 .notif-skeleton {
   display: flex; align-items: flex-start; gap: 11px;
@@ -284,6 +407,9 @@ onUnmounted(() => {
 .notif-icon i { font-size: 16px; }
 .notif-icon.blue { background: #dbeafe; }
 .notif-icon.blue i { color: #1d4ed8; }
+
+.notif-icon.green { background: #dcfce7; }
+.notif-icon.green i { color: #16a34a; }
 
 /* ── Body ── */
 .notif-body { flex: 1; min-width: 0; }
@@ -348,86 +474,92 @@ onUnmounted(() => {
 }
 
 /* ── Dark Mode ── */
-[data-theme="dark"] .icon-btn {
+:global([data-theme="dark"]) .icon-btn {
   background: #1a2e1a;
   border-color: #2d6a2d;
   color: #4ade80;
 }
-[data-theme="dark"] .icon-btn:hover {
+:global([data-theme="dark"]) .icon-btn:hover {
   background: #2d6a2d;
   color: #f0fdf4;
 }
-[data-theme="dark"] .notif-dot {
+:global([data-theme="dark"]) .notif-dot {
   background: #3b82f6;
   border-color: #1e293b;
 }
-[data-theme="dark"] .notif-panel {
+:global([data-theme="dark"]) .notif-panel {
   background: #1e293b;
   border-color: #334155;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
-[data-theme="dark"] .notif-header {
+:global([data-theme="dark"]) .notif-header {
   border-bottom-color: #334155;
 }
-[data-theme="dark"] .notif-title {
+:global([data-theme="dark"]) .notif-title {
   color: #f1f5f9;
 }
-[data-theme="dark"] .mark-all {
+:global([data-theme="dark"]) .mark-all {
   background: #1e3a5f;
   color: #60a5fa;
 }
-[data-theme="dark"] .mark-all:hover:not(:disabled) {
+:global([data-theme="dark"]) .mark-all:hover:not(:disabled) {
   background: #1d4ed8;
   color: #fff;
 }
-[data-theme="dark"] .notif-list::-webkit-scrollbar-thumb {
+:global([data-theme="dark"]) .notif-list::-webkit-scrollbar-thumb {
   background: #334155;
 }
-[data-theme="dark"] .notif-skeleton {
+:global([data-theme="dark"]) .notif-skeleton {
   border-bottom-color: #334155;
 }
-[data-theme="dark"] .skel-icon,
-[data-theme="dark"] .skel-line {
+:global([data-theme="dark"]) .skel-icon,
+:global([data-theme="dark"]) .skel-line {
   background: linear-gradient(90deg, #334155 25%, #3d4f63 50%, #334155 75%);
   background-size: 200% 100%;
 }
-[data-theme="dark"] .notif-item {
+:global([data-theme="dark"]) .notif-item {
   border-bottom-color: #334155;
 }
-[data-theme="dark"] .notif-item:hover {
+:global([data-theme="dark"]) .notif-item:hover {
   background: #263548;
 }
-[data-theme="dark"] .notif-item.unread {
+:global([data-theme="dark"]) .notif-item.unread {
   background: #1e3a5f;
 }
-[data-theme="dark"] .notif-icon.blue {
+:global([data-theme="dark"]) .notif-icon.blue {
   background: #1e3a5f;
 }
-[data-theme="dark"] .notif-icon.blue i {
+:global([data-theme="dark"]) .notif-icon.blue i {
   color: #60a5fa;
 }
-[data-theme="dark"] .notif-msg {
+:global([data-theme="dark"]) .notif-icon.green {
+  background: #1a2e1a;
+}
+:global([data-theme="dark"]) .notif-icon.green i {
+  color: #4ade80;
+}
+:global([data-theme="dark"]) .notif-msg {
   color: #e2e8f0;
 }
-[data-theme="dark"] .notif-detail-text {
+:global([data-theme="dark"]) .notif-detail-text {
   color: #94a3b8;
 }
-[data-theme="dark"] .notif-time {
+:global([data-theme="dark"]) .notif-time {
   color: #64748b;
 }
-[data-theme="dark"] .unread-dot {
+:global([data-theme="dark"]) .unread-dot {
   background: #3b82f6;
 }
-[data-theme="dark"] .dismiss-btn {
+:global([data-theme="dark"]) .dismiss-btn {
   color: #475569;
 }
-[data-theme="dark"] .dismiss-btn:hover {
+:global([data-theme="dark"]) .dismiss-btn:hover {
   color: #f87171;
 }
-[data-theme="dark"] .notif-empty {
+:global([data-theme="dark"]) .notif-empty {
   color: #475569;
 }
-[data-theme="dark"] .notif-empty p {
+:global([data-theme="dark"]) .notif-empty p {
   color: #475569;
 }
 </style>

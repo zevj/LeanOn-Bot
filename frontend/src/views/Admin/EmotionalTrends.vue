@@ -27,7 +27,8 @@
                 <h2 class="card-title">Referrals</h2>
               </div>
               <div class="referrals-card__divider" />
-              <ul class="referrals-card__list">
+
+              <ul v-if="referralStats.length" class="referrals-card__list">
                 <li v-for="stat in referralStats" :key="stat.label" class="referrals-card__row">
                   <span class="referrals-card__label">{{ stat.label }}</span>
                   <span class="referrals-badge" :class="`badge--${stat.modifier}`">
@@ -35,6 +36,14 @@
                   </span>
                 </li>
               </ul>
+
+              <div v-else class="empty-state-mini">
+                <div class="empty-icon-wrap-mini icon-green">
+                  <i class='bx bx-user-plus'></i>
+                </div>
+                <p class="empty-title-mini">No referrals yet</p>
+                <p class="empty-subtitle-mini">Referral activity will show up here once available.</p>
+              </div>
             </div>
 
             <div class="top-emotions-card animate-card stagger-3">
@@ -43,7 +52,7 @@
                 <h3 class="card-title">Top Emotions</h3>
               </div>
               
-              <div class="emotions-list">
+              <div v-if="topEmotions.length" class="emotions-list">
                 <div
                   v-for="(item, index) in topEmotions"
                   :key="index"
@@ -60,6 +69,14 @@
                     ></div>
                   </div>
                 </div>
+              </div>
+
+              <div v-else class="empty-state-mini">
+                <div class="empty-icon-wrap-mini icon-blue">
+                  <i class='bx bx-heart'></i>
+                </div>
+                <p class="empty-title-mini">No emotion data yet</p>
+                <p class="empty-subtitle-mini">Emotional trend data will appear here once recorded.</p>
               </div>
             </div>
 
