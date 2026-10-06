@@ -161,6 +161,14 @@ Route::middleware(['auth:sanctum', 'role:guidance'])->prefix('admin')->group(fun
     Route::get('/analytics/wellness-report', [AnalyticsController::class, 'wellnessReport']);
     Route::get('/analytics/snapshots', [AnalyticsController::class, 'snapshots']);
     Route::get('/analytics/export', [AnalyticsController::class, 'export']);
+
+    // ── Machine Learning Management ───────────────────────────
+    Route::get('/ml/status', function (\App\Services\MLService $mlService) {
+        return response()->json($mlService->getStatus());
+    });
+    Route::post('/ml/retrain', function (\App\Services\MLService $mlService) {
+        return response()->json($mlService->train());
+    });
 });
 
 // ── Google Auth Routes ────────────────────────────────────────────

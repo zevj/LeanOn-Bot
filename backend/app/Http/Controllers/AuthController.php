@@ -28,7 +28,7 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        // ✅ Validate input
+        // Validate input
         $request->validate([
             'email' => [
                 'required',
@@ -39,7 +39,7 @@ class AuthController extends Controller
             'email.regex' => 'Only Gordon College email addresses are allowed.',
         ]);
 
-        // ✅ Attempt login
+        // Attempt login
         if (!Auth::attempt([
             'email' => $request->email,
             'password' => $request->password
@@ -49,11 +49,11 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // ✅ Get authenticated user
+        // Get authenticated user
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // 🔐 First-time login or verification expired (older than 30 days): require email OTP verification
+        // First-time login or verification expired (older than 30 days): require email OTP verification
         if (is_null($user->email_verified_at) || $user->email_verified_at->lt(now()->subDays(30))) {
             if (!is_null($user->email_verified_at)) {
                 $user->update(['email_verified_at' => null]);
@@ -135,10 +135,10 @@ public function verifyOtp(Request $request)
         return response()->json(['message' => 'Invalid OTP'], 400);
     }
 
-    // ✅ Mark OTP as used
+    // Mark OTP as used
     $otpRecord->update(['used_at' => now()]);
 
-    // ✅ Mark email as verified
+    // Mark email as verified
     $user->update(['email_verified_at' => now()]);
     $user->refresh();
 
@@ -214,7 +214,7 @@ public function sendOtp(Request $request)
         ]
     );
 
-    // ✅ SEND EMAIL VIA API
+    // SEND EMAIL VIA API
     $this->mailService->sendOtp($request->email, $otp, 'forgot');
 
     return response()->json([
@@ -236,7 +236,7 @@ public function verifyForgotPasswordOtp(Request $request)
         return response()->json(['message' => 'Invalid OTP'], 400);
     }
 
-    // ✅ FIX: HASH CHECK
+    // FIX: HASH CHECK
     if (!Hash::check($request->otp, $record->otp)) {
         return response()->json(['message' => 'Invalid OTP'], 400);
     }
@@ -314,7 +314,7 @@ public function resetPassword(Request $request)
 //     $email = $payload['email'];
 //     $name = $payload['name'];
 
-//     // 🔥 STRICT DOMAIN CHECK
+//     // STRICT DOMAIN CHECK
 //     if (!str_ends_with($email, '@gordoncollege.edu.ph')) {
 //         return response()->json([
 //             'message' => 'Only Gordon College accounts are allowed'

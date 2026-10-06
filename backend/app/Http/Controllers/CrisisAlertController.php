@@ -463,15 +463,18 @@ class CrisisAlertController extends Controller
             if (!$notification) {
                 \App\Models\AdminNotification::urgentHelpNeeded($user, $severeCount);
             } else {
-                $maskedEmail = \App\Helpers\DataFormatter::maskEmail($user->email);
+                $studentName = trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Unknown student';
+                $studentEmail = $user->email ?? 'No email';
                 $totalCount = CrisisAlert::where('user_id', $userId)->count();
                 $notification->update([
-                    'message' => "Student ({$maskedEmail}) has {$totalCount} crisis alert(s) — {$severeCount} classified severe.",
+                    'message' => "{$studentName} ({$studentEmail}) has {$totalCount} crisis alert(s) — {$severeCount} classified severe.",
                     'detail'  => 'This student requires immediate wellness checks and counselor intervention.',
                     'meta'    => [
-                        'user_id'      => $userId,
-                        'severe_count' => $severeCount,
-                        'total_count'  => $totalCount,
+                        'user_id'       => $userId,
+                        'student_name'  => $studentName,
+                        'student_email' => $studentEmail,
+                        'severe_count'  => $severeCount,
+                        'total_count'   => $totalCount,
                     ],
                     'is_read' => false,
                 ]);
