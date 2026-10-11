@@ -108,10 +108,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
-// ── OTP Verification Routes (rate-limited) ────────────────────────
+// ── Registration & OTP Verification Routes (rate-limited) ─────────
 Route::middleware('throttle:otp')->group(function () {
-    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
-    Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
+    Route::post('/register',    [AuthController::class, 'register']);
+    Route::post('/verify-otp',  [AuthController::class, 'verifyOtp']);
+    Route::post('/resend-otp',  [AuthController::class, 'resendOtp']);
     Route::post('/login-otp/resend', [AuthController::class, 'resendOtp']);
 });
 

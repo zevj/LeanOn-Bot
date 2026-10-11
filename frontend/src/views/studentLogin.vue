@@ -136,6 +136,12 @@
               <button type="button" class="terms-link privacy" @click="showPrivacyPolicy = true">Privacy Policy</button>
             </p>
           </div>
+
+          <p class="new-student">
+            New Student?
+            <router-link to="/signup">Create an account</router-link>
+          </p>
+
         </form>
       </div>
  

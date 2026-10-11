@@ -50,7 +50,7 @@ class AuthController extends Controller
         }
 
         // Get authenticated user
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         // First-time login or verification expired (older than 30 days): require email OTP verification
@@ -92,7 +92,63 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Register a new student account.
+     * Validates Gordon College email, creates the user, then sends a 6-digit
+     * OTP via the email_otps table (same path used by verifyOtp / resendOtp).
+     */
+    public function register(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:255',
+            'last_name'  => 'required|string|max:255',
+            'email'      => [
+                'required',
+                'regex:/^[a-zA-Z0-9._%+\-]+@gordoncollege\.edu\.ph$/i',
+                'unique:users,email',
+            ],
+            'password'     => 'required|min:6|confirmed',
+            'department'   => 'required|string',
+            'program'      => 'required|string',
+            'year_level'   => 'required|string',
+            'age'          => 'required|integer|min:15|max:100',
+            'gender'       => 'required|string|max:50',
+            'phone_number' => 'required|string|max:20',
+        ], [
+            'email.regex'  => 'Only Gordon College email addresses are allowed.',
+            'email.unique' => 'This email is already registered.',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        // Create the user (unverified)
+        $user = User::create([
+            'first_name'   => $request->first_name,
+            'last_name'    => $request->last_name,
+            'age'          => $request->age,
+            'gender'       => $request->gender,
+            'phone_number' => $request->phone_number,
+            'email'        => $request->email,
+            'password'     => Hash::make($request->password),
+            'role'         => 'student',
+            'department'   => $request->department,
+            'program'      => $request->program,
+            'year_level'   => $request->year_level,
+        ]);
+
+        // Send OTP via email_otps table (same flow as login OTP)
+        $expiresAt = $this->sendLoginOtp($user);
+
+        return response()->json([
+            'message'        => 'Account created. Please verify your email.',
+            'otp_expires_at' => $expiresAt,
+        ], 201);
+    }
 
 public function verifyOtp(Request $request)
 {
@@ -435,7 +491,7 @@ public function resetPassword(Request $request)
         ]);
 
         // 2. Get authenticated user
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user(); 
 
         // 3. Verify current password
@@ -486,7 +542,7 @@ public function resetPassword(Request $request)
             'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = Auth::user();
 
         if ($request->hasFile('profile_image')) {

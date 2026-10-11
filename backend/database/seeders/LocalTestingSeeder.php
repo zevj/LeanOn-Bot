@@ -22,6 +22,11 @@ class LocalTestingSeeder extends Seeder
      */
     public function run(): void
     {
+        if (!app()->environment('local', 'testing')) {
+            $this->command?->warn('Skipping LocalTestingSeeder: Environment is not local/testing.');
+            return;
+        }
+
         $this->command->info('Seeding local test data for LeanOn-Bot...');
 
         // 1. Ensure Baseline Seed Users
