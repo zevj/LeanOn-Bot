@@ -102,6 +102,22 @@ axios.interceptors.response.use(async response => {
   }
   return response
 }, async error => {
+  // Check if Cloudflare edge WAF intercepted an API call with a challenge page
+  if (error.response) {
+    const isCloudflareChallenge =
+      error.response.headers?.['cf-mitigated'] === 'challenge' ||
+      (typeof error.response.data === 'string' &&
+        (error.response.data.includes('cf-browser-verification') ||
+          error.response.data.includes('challenge-platform') ||
+          error.response.data.includes('Just a moment...')))
+
+    if (isCloudflareChallenge) {
+      console.warn('Cloudflare challenge detected on API request. Refreshing to complete verification.')
+      window.location.reload()
+      return Promise.reject(error)
+    }
+  }
+
   // Handle decryption for error responses (e.g. 422 validation, 401 unauthenticated)
   if (error.response && error.response.data && error.response.data.payload) {
     try {

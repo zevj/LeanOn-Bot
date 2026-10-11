@@ -19,6 +19,8 @@
 <script setup>
 import { computed } from 'vue'
 import { Doughnut } from 'vue-chartjs'
+import { useTheme } from '@/composables/useTheme.js'
+import { getChartTheme } from '@/utils/chartTheme.js'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -49,6 +51,8 @@ const emotionColors = {
 const hasData = computed(() => {
   return Object.keys(props.data).length > 0 && Object.values(props.data).some(v => v > 0)
 })
+const { isDark } = useTheme()
+const themeColors = computed(() => getChartTheme(isDark.value))
 
 const chartData = computed(() => {
   const labels = Object.keys(props.data).map(k => k.charAt(0).toUpperCase() + k.slice(1))
@@ -60,7 +64,7 @@ const chartData = computed(() => {
     datasets: [{
       data: values,
       backgroundColor: colors,
-      borderColor: 'var(--chart-border-color, #ffffff)',
+      borderColor: themeColors.value.chartBorder,
       borderWidth: 2,
       hoverBorderWidth: 3,
       hoverOffset: 8,
@@ -76,7 +80,7 @@ const chartOptions = computed(() => ({
     legend: {
       position: 'bottom',
       labels: {
-        color: 'var(--text-secondary, #6b7280)',
+        color: themeColors.value.tick,
         padding: 16,
         usePointStyle: true,
         pointStyleWidth: 10,
@@ -87,7 +91,11 @@ const chartOptions = computed(() => ({
       },
     },
     tooltip: {
-      backgroundColor: 'rgba(17, 24, 39, 0.9)',
+      backgroundColor: themeColors.value.tooltipBg,
+      borderColor: themeColors.value.tooltipBorder,
+      borderWidth: 1,
+      titleColor: themeColors.value.tooltipTitle,
+      bodyColor: themeColors.value.tooltipBody,
       titleFont: { family: "'DM Sans', system-ui, sans-serif", weight: '600' },
       bodyFont: { family: "'DM Sans', system-ui, sans-serif" },
       padding: 12,

@@ -34,6 +34,11 @@
         <i class='bx bx-message-square-add'></i>
       </button>
 
+      <button class="rail-btn" :class="{ 'active-rail': isDirectMessagesActive }" @click.stop="goToDirectMessages" title="Direct Messages">
+        <i class='bx bx-conversation'></i>
+        <span v-if="totalUnreadCount > 0" class="rail-badge">{{ totalUnreadCount }}</span>
+      </button>
+
       <button class="rail-btn" @click.stop="openSearchModal">
         <i class='bx bx-search'></i>
       </button>
@@ -72,6 +77,11 @@
         </div>
 
         <div class="main-menu">
+          <div class="menu-item" :class="{ 'active-menu': isDirectMessagesActive }" @click="goToDirectMessages">
+            <i class='bx bx-conversation'></i>
+            <span>Direct Messages</span>
+            <span v-if="totalUnreadCount > 0" class="menu-badge">{{ totalUnreadCount }}</span>
+          </div>
           <div class="menu-item" @click="openSearchModal">
             <i class='bx bx-search'></i>
             <span>Search Chat</span>
@@ -88,50 +98,104 @@
             <i class='bx bx-history chat-history-icon'></i>
             <h4 class="chat-history-title">Chat History</h4>
           </div>
-          <i class='bx bx-chevron-down chat-history-toggle' :class="{ 'is-collapsed': !isChatHistoryExpanded }"></i>
+          <div class="chat-history-header-actions" @click.stop>
+            <button
+              v-if="isChatHistoryExpanded"
+              class="bulk-select-btn"
+              :class="{ 'bulk-active': bulkMode }"
+              @click.stop="toggleBulkMode"
+              :title="bulkMode ? 'Cancel selection' : 'Select chats'"
+            >
+              <i :class="bulkMode ? 'bx bx-x' : 'bx bx-check-square'"></i>
+            </button>
+            <i class='bx bx-chevron-down chat-history-toggle' :class="{ 'is-collapsed': !isChatHistoryExpanded }"></i>
+          </div>
         </div>
 
-        <!-- ── ANIMATED CHAT HISTORY CONTAINER ── -->
+        <!-- ── SINGLE CHAT HISTORY CONTAINER (with bulk support) ── -->
         <transition name="history-collapse">
           <div v-if="isChatHistoryExpanded" class="chat-convo-module">
+
+            <!-- Bulk select-all row -->
+            <transition name="bulk-bar-slide">
+              <div v-if="bulkMode" class="bulk-select-all-row">
+                <label class="bulk-checkbox-label">
+                  <input
+                    type="checkbox"
+                    class="bulk-checkbox"
+                    :checked="selectedChats.size === chats.length && chats.length > 0"
+                    :indeterminate="selectedChats.size > 0 && selectedChats.size < chats.length"
+                    @change="toggleSelectAll"
+                  />
+                  <span>{{ selectedChats.size > 0 ? `${selectedChats.size} selected` : 'Select all' }}</span>
+                </label>
+              </div>
+            </transition>
+
             <div
-              v-for="(chat, index) in chats"
+              v-for="chat in chats"
               :key="chat.id"
               class="chat-convo-container"
-              :class="{ 'active-chat': isSelected(chat.id) }"
-              @click="selectChat(chat.id)"
+              :class="{
+                'active-chat': isSelected(chat.id),
+                'bulk-selected': selectedChats.has(chat.id)
+              }"
+              @click="bulkMode ? toggleChatSelection(chat.id) : selectChat(chat.id)"
             >
               <div class="title-3dots-separation">
+                <!-- Bulk checkbox -->
+                <transition name="checkbox-slide">
+                  <div v-if="bulkMode" class="bulk-checkbox-wrap" @click.stop>
+                    <input
+                      type="checkbox"
+                      class="bulk-checkbox"
+                      :checked="selectedChats.has(chat.id)"
+                      @click.stop
+                      @change.stop="toggleChatSelection(chat.id)"
+                    />
+                  </div>
+                </transition>
+
                 <div class="chat-text">
                   <h4 class="chat-title">{{ chat.title }}</h4>
                   <p class="chat-time">{{ formatDate(chat.updated_at) }}</p>
                 </div>
-                <div class="menu-wrapper">
-                  <i class="bx bx-dots-horizontal dots" @click.stop="openDropdown($event, index)"></i>
-                </div>
               </div>
             </div>
-            
-            <!-- Empty state fallback when no chats exist -->
+
+            <!-- Empty state -->
             <div v-if="chats.length === 0" class="no-history-msg">
               <i class='bx bx-message-rounded-dots'></i>
               <span>No past conversations</span>
             </div>
+
           </div>
         </transition>
 
-        <Teleport to="body">
-          <div
-            v-if="dropdown.visible"
-            class="dropdown-menu"
-            :style="{ top: dropdown.top + 'px', left: dropdown.left + 'px' }"
-            @click.stop
-          >
-            <div class="dropdown-item" @click="saveChat(dropdown.index)"><i class='bx bx-save'></i> Save</div>
-            <div class="dropdown-item" @click="archiveChat(dropdown.index)"><i class='bx bx-archive'></i> Archive</div>
-          </div>
-        </Teleport>
+
       </nav>
+
+      <!-- ── BULK ACTION BAR — inside sidebar, above footer ── -->
+      <!-- 🆕 Add bulk-delete button alongside the existing two -->
+<transition name="bulk-bar-slide">
+  <div v-if="bulkMode && selectedChats.size > 0" class="bulk-action-bar">
+    <span class="bulk-count">{{ selectedChats.size }} selected</span>
+    <div class="bulk-actions">
+      <button class="bulk-action-btn bulk-save" @click="bulkSave" title="Save selected">
+        <i class='bx bx-bookmark'></i>
+        <span>Save</span>
+      </button>
+      <button class="bulk-action-btn bulk-archive" @click="bulkArchive" title="Archive selected">
+        <i class='bx bx-archive'></i>
+        <span>Archive</span>
+      </button>
+      <button class="bulk-action-btn bulk-delete" @click="bulkDelete" title="Delete selected"> <!-- 🆕 -->
+        <i class='bx bx-trash'></i>                                                             <!-- 🆕 -->
+        <span>Delete</span>                                                                     <!-- 🆕 -->
+      </button>                                                                                 <!-- 🆕 -->
+    </div>
+  </div>
+</transition>
 
       <div class="logout">
         <div class="picture-info-separation" @click="openModal">
@@ -165,8 +229,6 @@
               <i class='bx bx-user'></i>
               <router-link to="/MyAccount" class="my-account">My Account</router-link>
             </div>
-
-            <!-- ── Terms of Use & Privacy Policy (dedicated modals) ── -->
             <div class="modal-item" @click="openTermsOfUse">
               <i class='bx bx-file'></i>
               <span>Terms of Use</span>
@@ -175,7 +237,6 @@
               <i class='bx bx-shield'></i>
               <span>Privacy Policy</span>
             </div>
-
             <div class="modal-item" @click="openArchivedModal">
               <i class='bx bx-archive'></i>
               <span>Archived</span>
@@ -290,7 +351,6 @@
         @cancel="cancelConfirm"
       />
 
-      <!-- TermsModal: section prop controls which tab opens first -->
       <TermsModal
         :visible="showTermsModal"
         :userId="userProfile.email || 'guest'"
@@ -300,7 +360,6 @@
         @close="closeTermsModal"
       />
 
-      <!-- Dedicated standalone modals (sidebar menu items) -->
       <TermsOfUseModal
         :visible="showTermsOfUse"
         @close="showTermsOfUse = false"
@@ -324,6 +383,7 @@ import TermsModal from '@/components/TermsModal.vue'
 import TermsOfUseModal from '@/components/TermsofuseModal.vue'
 import PrivacyPolicyModal from '@/components/PrivacypolicyModal.vue'
 import { useSidebarToggle } from '@/composables/useSidebarToggle'
+import { useDirectMessages } from '@/composables/useDirectMessages'
 import axios from 'axios'
 
 const router = useRouter()
@@ -331,6 +391,14 @@ const route = useRoute()
 const toast = useToast()
 
 const { mobileToggleCount } = useSidebarToggle()
+const { totalUnreadCount, fetchConversations: fetchDMConversations } = useDirectMessages()
+
+const isDirectMessagesActive = computed(() => route.path === '/StudentMessages')
+
+const goToDirectMessages = () => {
+  if (isMobile.value) mobileOpen.value = false
+  router.push('/StudentMessages')
+}
 
 const props = defineProps({
   open: Boolean,
@@ -349,7 +417,6 @@ const handleResize = () => {
 
 const emit = defineEmits(['toggle', 'select-chat', 'update:mobileOpen'])
 
-// Watch both the prop and the composable to ensure maximum compatibility
 watch(() => props.mobileToggle, () => {
   if (isMobile.value) mobileOpen.value = !mobileOpen.value
 })
@@ -374,16 +441,11 @@ const handleRailClick = (e) => {
 }
 
 // ── TERMS ──
-// termsModalSection controls which tab the modal opens on ('terms' | 'privacy')
 const termsModalMode = ref('accept')
 const termsModalSection = ref('terms')
 const showTermsModal = ref(false)
 
-
-
-const closeTermsModal = () => {
-  showTermsModal.value = false
-}
+const closeTermsModal = () => { showTermsModal.value = false }
 
 const handleConversationError = (error, fallbackMessage) => {
   if (error.response?.status === 403 && error.response?.data?.status === 'TERMS_REQUIRED') {
@@ -393,23 +455,14 @@ const handleConversationError = (error, fallbackMessage) => {
     toast.info('Please accept the terms before managing chats.')
     return
   }
-
   toast.error(fallbackMessage)
 }
 
-// ── DEDICATED TERMS OF USE / PRIVACY POLICY MODALS (sidebar menu) ──
 const showTermsOfUse = ref(false)
 const showPrivacyPolicy = ref(false)
 
-const openTermsOfUse = () => {
-  closeModal()
-  showTermsOfUse.value = true
-}
-
-const openPrivacyPolicy = () => {
-  closeModal()
-  showPrivacyPolicy.value = true
-}
+const openTermsOfUse = () => { closeModal(); showTermsOfUse.value = true }
+const openPrivacyPolicy = () => { closeModal(); showPrivacyPolicy.value = true }
 
 // ── USER ──
 const userProfile = ref({ first_name: 'Loading...', last_name: '', email: '' })
@@ -419,7 +472,6 @@ const fetchUserProfile = async () => {
     const token = localStorage.getItem('token')
     const res = await axios.get('/api/user', { headers: { Authorization: `Bearer ${token}` } })
     userProfile.value = res.data
-    // Post-login: show in accept mode if terms not yet accepted
     if (!res.data.terms_accepted_at) {
       termsModalMode.value = 'accept'
       termsModalSection.value = 'terms'
@@ -433,21 +485,21 @@ const fetchUserProfile = async () => {
 // ── CHATS & HISTORY TOGGLE ──
 const { chats, fetchConversations, addConversation, removeConversation, updateConversation } = useChats()
 const isChatHistoryExpanded = ref(true)
+const toggleChatHistory = () => { isChatHistoryExpanded.value = !isChatHistoryExpanded.value }
 
-const toggleChatHistory = () => {
-  isChatHistoryExpanded.value = !isChatHistoryExpanded.value
-}
+// ── Tracks the last "New Chat" created so repeated clicks
+// while still on that empty chat don't create duplicates ──
+const lastCreatedChatId = ref(null)
 
 onMounted(() => {
   fetchConversations()
+  fetchDMConversations()
   fetchUserProfile()
   window.addEventListener('resize', handleResize)
-  window.addEventListener('click', closeDropdown)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-  window.removeEventListener('click', closeDropdown)
 })
 
 // ── SAVED ──
@@ -532,29 +584,25 @@ const deleteArchivedChat = (index) => {
         await axios.delete(`/api/conversations/${chat.id}`, { data: {}, headers: { Authorization: `Bearer ${token}` } })
         archivedChats.value.splice(index, 1)
         removeConversation(chat.id)
-        if (route.query.conversation_id == chat.id) {
-          router.push('/ChatConvo')
-        }
+        if (route.query.conversation_id == chat.id) router.push('/ChatConvo')
         toast.success('Archived chat deleted!')
       } catch (error) { handleConversationError(error, 'Failed to delete archived chat') }
     }
   })
 }
 
-// ── DROPDOWN ──
-const dropdown = ref({ visible: false, top: 0, left: 0, index: null })
-const openDropdown = (event, index) => {
-  event.stopPropagation()
-  const rect = event.target.getBoundingClientRect()
-  dropdown.value = { visible: true, top: rect.bottom + window.scrollY, left: rect.left + window.scrollX, index }
-}
-const closeDropdown = () => { dropdown.value.visible = false }
 
 // ── CHAT ACTIONS ──
 const createNewChat = async () => {
+  // Already sitting on the new chat we just created? Don't spawn another one.
+  if (lastCreatedChatId.value && route.query.conversation_id == lastCreatedChatId.value) {
+    if (isMobile.value) mobileOpen.value = false
+    return
+  }
   try {
     const res = await axios.post('/api/conversations', {})
     addConversation(res.data)
+    lastCreatedChatId.value = res.data.id
     emit('select-chat', res.data.id)
     if (isMobile.value) mobileOpen.value = false
     router.currentRoute.value.path !== '/ChatConvo'
@@ -564,6 +612,7 @@ const createNewChat = async () => {
 }
 
 const selectChat = (id) => {
+  if (id !== lastCreatedChatId.value) lastCreatedChatId.value = null
   emit('select-chat', id)
   if (isMobile.value) mobileOpen.value = false
   router.currentRoute.value.path !== '/ChatConvo'
@@ -582,54 +631,6 @@ const executeConfirm = async () => {
   confirmModal.value.visible = false
 }
 
-const archiveChat = (index) => {
-  if (index == null) return
-  const chat = chats.value[index]
-  openConfirmModal({
-    title: 'Archive Chat', message: 'Are you sure you want to archive this chat?', confirmText: 'Archive', type: 'primary',
-    actionCallback: async () => {
-      try {
-        const token = localStorage.getItem('token')
-        await axios.patch(`/api/conversations/${chat.id}`, { is_archived: true }, { headers: { Authorization: `Bearer ${token}` } })
-        removeConversation(chat.id); toast.success('Chat archived!'); closeDropdown()
-      } catch (error) { handleConversationError(error, 'Failed to archive chat') }
-    }
-  })
-}
-
-const deleteChat = (index) => {
-  if (index == null) return
-  const id = chats.value[index].id
-  openConfirmModal({
-    title: 'Delete Chat', message: 'Are you sure you want to permanently delete this chat?', confirmText: 'Delete', type: 'danger',
-    actionCallback: async () => {
-      try {
-        await axios.delete(`/api/conversations/${id}`, { data: {} })
-        removeConversation(id); 
-        closeDropdown();
-        if (route.query.conversation_id == id) {
-          router.push('/ChatConvo')
-        }
-        toast.success('Chat deleted successfully!')
-      } catch { toast.error('Failed to delete chat') }
-    }
-  })
-}
-
-const saveChat = (index) => {
-  if (index == null) return
-  const chat = chats.value[index]
-  if (chat.is_saved) { toast.info('Already saved!'); closeDropdown(); return }
-  openConfirmModal({
-    title: 'Save Chat', message: 'Do you want to save this chat to your bookmarks?', confirmText: 'Save', type: 'primary',
-    actionCallback: async () => {
-      try {
-        await axios.patch(`/api/conversations/${chat.id}`, { is_saved: true })
-        updateConversation(chat.id, { is_saved: true }); toast.success('Chat saved successfully!'); closeDropdown()
-      } catch { toast.error('Failed to save chat') }
-    }
-  })
-}
 
 const deleteSavedChat = (index) => {
   const chat = savedChats.value[index]
@@ -657,6 +658,146 @@ const formatDate = (dateString) => {
   if (diff < 1440) return `${hours} hr${hours > 1 ? 's' : ''} ago`
   return date.toLocaleDateString()
 }
+
+// ── BULK SELECTION ──
+const bulkMode = ref(false)
+const selectedChats = ref(new Set())
+
+const toggleBulkMode = () => {
+  bulkMode.value = !bulkMode.value
+  if (!bulkMode.value) selectedChats.value = new Set()
+}
+
+const toggleChatSelection = (id) => {
+  const updated = new Set(selectedChats.value)
+  updated.has(id) ? updated.delete(id) : updated.add(id)
+  selectedChats.value = updated
+}
+
+const toggleSelectAll = () => {
+  if (selectedChats.value.size === chats.value.length) {
+    selectedChats.value = new Set()
+  } else {
+    selectedChats.value = new Set(chats.value.map(c => c.id))
+  }
+}
+
+const bulkSave = () => {
+  const ids = [...selectedChats.value]
+  const unsaved = ids.filter(id => {
+    const chat = chats.value.find(c => c.id === id)
+    return chat && !chat.is_saved
+  })
+  if (!unsaved.length) { toast.info('All selected chats are already saved.'); return }
+  openConfirmModal({
+    title: 'Save Chats',
+    message: `Save ${unsaved.length} chat${unsaved.length > 1 ? 's' : ''} to bookmarks?`,
+    confirmText: 'Save', type: 'primary',
+    actionCallback: async () => {
+      try {
+        const token = localStorage.getItem('token')
+        await Promise.all(unsaved.map(id =>
+          axios.patch(`/api/conversations/${id}`, { is_saved: true }, { headers: { Authorization: `Bearer ${token}` } })
+        ))
+        unsaved.forEach(id => updateConversation(id, { is_saved: true }))
+        toast.success(`${unsaved.length} chat${unsaved.length > 1 ? 's' : ''} saved!`)
+        toggleBulkMode()
+      } catch (error) { handleConversationError(error, 'Failed to save some chats') }
+    }
+  })
+}
+
+const bulkArchive = () => {
+  const ids = [...selectedChats.value]
+  if (!ids.length) return
+  openConfirmModal({
+    title: 'Archive Chats',
+    message: `Archive ${ids.length} chat${ids.length > 1 ? 's' : ''}?`,
+    confirmText: 'Archive', type: 'primary',
+    actionCallback: async () => {
+      try {
+        const token = localStorage.getItem('token')
+        await Promise.all(ids.map(id =>
+          axios.patch(`/api/conversations/${id}`, { is_archived: true }, { headers: { Authorization: `Bearer ${token}` } })
+        ))
+        ids.forEach(id => removeConversation(id))
+        toast.success(`${ids.length} chat${ids.length > 1 ? 's' : ''} archived!`)
+        toggleBulkMode()
+      } catch (error) { handleConversationError(error, 'Failed to archive some chats') }
+    }
+  })
+}
+
+const bulkDelete = () => {
+  const ids = [...selectedChats.value]
+  if (!ids.length) return
+  openConfirmModal({
+    title: 'Delete Chats',
+    message: `Permanently delete ${ids.length} chat${ids.length > 1 ? 's' : ''}? This cannot be undone.`,
+    confirmText: 'Delete', type: 'danger',
+    actionCallback: async () => {
+      try {
+        const token = localStorage.getItem('token')
+        await Promise.all(ids.map(id =>
+          axios.delete(`/api/conversations/${id}`, { data: {}, headers: { Authorization: `Bearer ${token}` } })
+        ))
+        ids.forEach(id => removeConversation(id))
+        if (ids.includes(Number(route.query.conversation_id))) router.push('/ChatConvo')
+        toast.success(`${ids.length} chat${ids.length > 1 ? 's' : ''} deleted!`)
+        toggleBulkMode()
+      } catch (error) { handleConversationError(error, 'Failed to delete some chats') }
+    }
+  })
+}
 </script>
 
 <style scoped src="../assets/header-sidebar/sidebar.css"></style>
+
+<style scoped>
+.menu-badge {
+  margin-left: auto;
+  background-color: var(--primary-color, #0E6008);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+}
+
+.rail-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background-color: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.active-menu, .active-rail {
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+.active-menu i, .active-rail i, .active-menu span {
+  color: #ffffff !important;
+}
+
+:global([data-theme="dark"]) .active-menu,
+:global([data-theme="dark"]) .active-rail {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+:global([data-theme="dark"]) .active-menu i,
+:global([data-theme="dark"]) .active-rail i,
+:global([data-theme="dark"]) .active-menu span {
+  color: #ffffff !important;
+}
+</style>

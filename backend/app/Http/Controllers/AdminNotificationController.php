@@ -77,4 +77,23 @@ class AdminNotificationController extends Controller
             return response()->json(['ok' => false], 500);
         }
     }
+
+    /**
+     * POST /api/admin/notifications/log-excel-exported
+     *
+     * Record a log records Excel export notification.
+     */
+    public function logExcelExported(Request $request)
+    {
+        try {
+            $totalRecords = (int) $request->input('total_records', 0);
+            $filters      = $request->input('filters', []);
+
+            AdminNotification::logExcelExported($totalRecords, $filters);
+
+            return response()->json(['ok' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['ok' => false], 500);
+        }
+    }
 }

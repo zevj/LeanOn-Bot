@@ -189,6 +189,24 @@ input[type="password"]::-webkit-textfield-decoration-container {
   opacity: 0.85;
 }
 
+.new-student {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #666;
+  text-align: center;
+}
+
+.new-student a {
+  color: #0E6008;
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.new-student a:hover {
+  text-decoration: underline;
+}
+
 /* ── Button ── */
     .login-button {
       display: flex;
@@ -407,25 +425,6 @@ input[type="password"]::-webkit-textfield-decoration-container {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   margin-left: auto;
-}
-
-.new-student {
-    margin-top: 20px;
-    font-size: 12px;
-    color: #555;
-    text-align: center;
-    padding-right: 140px;
-}
-
-.new-student a {
-    color: #049516;
-    text-decoration: none;
-    font-weight: 600;
-    padding-right: 40px;
-}
-
-.new-student a:hover {
-    text-decoration: underline;
 }
 
 /* RIGHT SIDE */

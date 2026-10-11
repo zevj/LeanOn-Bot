@@ -7,6 +7,8 @@ use App\Models\ChatMessage;
 use App\Models\CrisisAlert;
 use App\Models\AdminNotification;
 use App\Models\EmotionLog;
+use App\Services\MLService;
+use App\Services\CrisisHistoryService;
 use Illuminate\Support\Facades\Log;
 use OpenAI;
 
@@ -283,6 +285,16 @@ I'm here with you. Do you want to talk about what's going on?";
                 Log::warning('Failed to create admin notification: ' . $e->getMessage());
             }
 
+            // Flush the per-user crisis history cache so the next message
+            // immediately reflects this new alert (bypasses the 5-min TTL).
+            if ($userId) {
+                try {
+                    app(CrisisHistoryService::class)->flushCacheForUser($userId);
+                } catch (\Exception $e) {
+                    Log::warning('[ChatController] Cache flush failed: ' . $e->getMessage());
+                }
+            }
+
             return response()->json([
                 'reply' => $this->safeResponse,
                 'is_crisis' => true,
@@ -299,21 +311,37 @@ I'm here with you. Do you want to talk about what's going on?";
             ->reverse()
             ->values(); // re-index after reverse
 
+        // ── STEP 1.5: Machine Learning Analysis (scikit-learn microservice / CLI fallback)
+        $mlService = app(MLService::class);
+        $ml = $mlService->analyze($userMessage, $history);
+
+        // ── STEP 1.6: Per-User Crisis History Awareness
+        // Fetches the student's all-time crisis alert history and computes a risk
+        // tier (none / low / moderate / elevated / high). Results are cached for
+        // 5 minutes per user — no repeated DB hits during active conversations.
+        // The risk tier is injected as a hidden AI context hint below; nothing is
+        // shown to the student about their own history.
+        $crisisHistory = ['risk_tier' => 'none', 'total_count' => 0, 'recent_count' => 0, 'last_alert_at' => null];
+        if ($userId) {
+            try {
+                $crisisHistoryService = app(CrisisHistoryService::class);
+                $crisisHistory = $crisisHistoryService->getForUser($userId);
+            } catch (\Exception $e) {
+                Log::warning('[ChatController] CrisisHistoryService failed: ' . $e->getMessage());
+            }
+        }
+
         // ── STEP 2: Context-aware mental health topic check.
         //
-        // OLD logic (broken):
-        //   Classify ONLY the current message in isolation.
-        //   Short replies like "yeah", "we drifted apart", "not really" fail the
-        //   keyword filter even when they are direct responses to emotional questions.
-        //
-        // NEW logic:
-        //   The fallback only fires when BOTH conditions are true:
-        //     (a) the current message has no mental health keywords on its own, AND
-        //     (b) the recent conversation history has no emotional context to inherit.
-        //
-        //   This preserves conversational continuity without removing the fallback.
-
+        // Combines rule-based keyword check with scikit-learn domain classification.
         $isMentalHealthRelated = $this->checkForMentalHealthTopic($userMessage);
+
+        if (!$isMentalHealthRelated) {
+            // Check ML domain classifier (learned from student conversation patterns)
+            if (!empty($ml['is_mental_health']) && ($ml['mental_health_confidence'] ?? 0) >= 0.55) {
+                $isMentalHealthRelated = true;
+            }
+        }
 
         if (!$isMentalHealthRelated) {
             // Before firing the fallback, check whether this message is a
@@ -350,17 +378,30 @@ I'm here with you. Do you want to talk about what's going on?";
         }
 
         // ── STEP 3: Build enriched message with context hints for the AI.
-        $geminiApiKey = env('GEMINI_API_KEY');
-        $groqApiKey = env('GROQ_API_KEY');
-        $openRouterApiKey = env('OPENROUTER_API_KEY');
+        $geminiApiKey = config('services.gemini.key') ?: env('GEMINI_API_KEY');
+        $groqApiKey = config('services.groq.key') ?: env('GROQ_API_KEY');
+        $openRouterApiKey = config('services.openrouter.key') ?: env('OPENROUTER_API_KEY');
 
         // Detect language, closure, and emotional tone for context injection
         $detectedLanguage = $this->detectLanguage($userMessage);
-        $isClosure = $this->detectConversationClosure($userMessage);
+        $isClosure = $this->detectConversationClosure($userMessage) || (($ml['intent'] ?? '') === 'closure');
         $emotionalTone = $this->detectEmotionalTone($userMessage);
 
-        // Build context prefix to guide the AI's response style
-        $contextPrefix = "[CONTEXT: Language={$detectedLanguage} | Tone={$emotionalTone} | Closure=" . ($isClosure ? 'true' : 'false') . "]";
+        // Enhance tone with ML prediction if ML detected emotional/serious state
+        if (!empty($ml['tone']) && $ml['tone'] !== 'casual' && $emotionalTone === 'casual') {
+            $emotionalTone = $ml['tone'];
+        }
+
+        // Build context prefix to guide the AI's response style with ML insights
+        $mlIntent = $ml['intent'] ?? 'general';
+        $mlEmotion = $ml['emotion'] ?? 'neutral';
+        $mlDistress = $ml['distress_score'] ?? '0.0';
+        $contextPrefix = "[CONTEXT: Language={$detectedLanguage} | Tone={$emotionalTone} | ML_Intent={$mlIntent} | ML_Emotion={$mlEmotion} | DistressScore={$mlDistress} | Closure=" . ($isClosure ? 'true' : 'false') . "]";
+
+        if (!empty($ml['strategy_prompt'])) {
+            $contextPrefix .= "\n[RECOMMENDED STRATEGY (" . ($ml['recommended_strategy'] ?? 'SUPPORT') . "): {$ml['strategy_prompt']}]";
+        }
+
         if ($isClosure) {
             $contextPrefix .= "\n[The user appears to be ending the conversation. Reply warmly and briefly. Do NOT ask follow-up questions.]";
         }
@@ -368,6 +409,31 @@ I'm here with you. Do you want to talk about what's going on?";
             $contextPrefix .= "\n[IMPORTANT: The user is communicating in a serious, formal, or direct manner. You MUST match this seriousness. Drop ALL Gen Z slang, casual expressions, and emojis. Speak like a mature, empathetic counselor-friend. Warm but composed.]";
         } elseif ($emotionalTone === 'emotional') {
             $contextPrefix .= "\n[The user seems emotionally distressed. Use a softer, supportive tone. Avoid jokes, slang, and casual expressions.]";
+        }
+
+        // ── Crisis History Context Injection (Step 1.6 result)
+        // Silently informs the AI about this student's alert history so it can
+        // calibrate warmth, urgency, and counselor referrals appropriately.
+        // The student never sees this — it is a hidden prompt instruction only.
+        $riskTier      = $crisisHistory['risk_tier'] ?? 'none';
+        $historyTotal  = $crisisHistory['total_count'] ?? 0;
+        $historyRecent = $crisisHistory['recent_count'] ?? 0;
+        $lastAlertAt   = $crisisHistory['last_alert_at'] ?? null;
+
+        $daysSinceLast = $lastAlertAt
+            ? (int) now()->diffInDays(\Carbon\Carbon::parse($lastAlertAt))
+            : null;
+
+        if ($riskTier === 'low') {
+            $contextPrefix .= "\n[NOTE: This student has had {$historyTotal} minor distress flag(s) in the past. Be warm and attentive, but no special escalation needed.]";
+        } elseif ($riskTier === 'moderate') {
+            $contextPrefix .= "\n[STUDENT HISTORY: This student has had {$historyTotal} distress alerts ({$historyRecent} in the last 30 days). Be especially attentive. Gently check in on how they have been doing overall.]";
+        } elseif ($riskTier === 'elevated') {
+            $daysAgoText = $daysSinceLast !== null ? "{$daysSinceLast} day(s) ago" : 'recently';
+            $contextPrefix .= "\n[ELEVATED CONCERN: This student has an elevated crisis history ({$historyTotal} alerts, most recent: {$daysAgoText}). Be proactively supportive. Warmly mention that speaking with a counselor or trusted adult is always a good idea, and that LeanOn-Bot is here to supplement — not replace — human support.]";
+        } elseif ($riskTier === 'high') {
+            $daysAgoText = $daysSinceLast !== null ? "{$daysSinceLast} day(s) ago" : 'recently';
+            $contextPrefix .= "\n[HIGH PRIORITY — STUDENT WELLBEING: This student has a significant crisis history ({$historyTotal} total alerts, last flagged {$daysAgoText}). Prioritize their safety and emotional wellbeing above all else. Acknowledge their strength in continuing to reach out. Express genuine care. Strongly and clearly encourage them to speak with the school counselor or a trusted adult. Do not be dismissive of any concern they share, no matter how small it seems.]";
         }
 
         $enrichedMessage = $contextPrefix . "\n\n" . $userMessage;
@@ -409,9 +475,35 @@ I'm here with you. Do you want to talk about what's going on?";
             'is_crisis' => false,
         ]);
 
-        // Classify emotion per conversation via Gemini
-        if ($userId && $geminiApiKey) {
-            $this->classifyConversationEmotion($conversationId, $userId, $geminiApiKey);
+        // Classify emotion per conversation: Use ML prediction first (zero API cost), fallback to Gemini
+        if ($userId) {
+            $mlEmotion = $ml['emotion'] ?? null;
+            $validEmotions = ['positive', 'sad', 'anxious', 'stressed', 'overwhelmed', 'lonely', 'angry', 'hopeful'];
+            if ($mlEmotion && in_array($mlEmotion, $validEmotions) && ($ml['emotion_confidence'] ?? 0) >= 0.45) {
+                EmotionLog::updateOrCreate(
+                    ['conversation_id' => $conversationId],
+                    ['user_id' => $userId, 'emotion' => $mlEmotion]
+                );
+                \Illuminate\Support\Facades\Log::info("Emotion classified via ML: {$mlEmotion} (conf: " . ($ml['emotion_confidence'] ?? 'N/A') . ")");
+            } elseif ($geminiApiKey) {
+                $this->classifyConversationEmotion($conversationId, $userId, $geminiApiKey);
+            }
+        }
+
+        // ── Soft-flag check (moderate / low distress) ─────────────────────────
+        // This runs AFTER the AI reply is saved so the student's experience is
+        // never interrupted. It creates a CrisisAlert only when the conversation
+        // shows persistent, contextual distress — now augmented with ML distress score.
+        if ($userId) {
+            $this->checkAndFlagSoftDistress(
+                $userId,
+                $conversationId,
+                $userMessage,
+                $emotionalTone,   // already computed above: 'casual' | 'emotional' | 'serious'
+                $history,
+                (float) ($ml['distress_score'] ?? 0.0),
+                (string) ($ml['suggested_severity'] ?? 'low')
+            );
         }
 
         return response()->json([
@@ -493,7 +585,7 @@ I'm here with you. Do you want to talk about what's going on?";
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
             ])->post('https://api.groq.com/openai/v1/chat/completions', [
-                'model' => 'llama-3.3-70b-versatile',
+                'model' => config('services.groq.model', 'qwen/qwen3.8-27b'),
                 'messages' => $messages
             ]);
 
@@ -950,8 +1042,191 @@ I'm here with you. Do you want to talk about what's going on?";
     }
 
     /**
+     * Context-aware soft-distress flagging for moderate/low level concerns.
+     *
+     * Unlike checkForCrisis() which flags on a single keyword hit, this method
+     * requires MULTIPLE signals before creating a CrisisAlert:
+     *   1. The current message contains moderate/low distress keywords
+     *   2. The emotional tone of the message is NOT casual (must be 'emotional' or 'serious')
+     *      OR the conversation history already shows accumulated distress
+     *   3. The student hasn't already been flagged for the SAME conversation recently
+     *
+     * This prevents flagging a student who casually says "I'm a bit tired" in
+     * an otherwise lighthearted conversation, while still catching someone who
+     * has been expressing sustained distress across multiple messages.
+     */
+    private function checkAndFlagSoftDistress(
+        int $userId,
+        int $conversationId,
+        string $currentMessage,
+        string $emotionalTone,
+        $history,
+        float $mlDistressScore = 0.0,
+        string $mlSuggestedSeverity = 'low'
+    ): void {
+        try {
+            $messageLower = strtolower($currentMessage);
+
+            // ── Step 1: Does the current message contain moderate/low keywords or high ML distress?
+            $matchedModerate = [];
+            $matchedLow = [];
+
+            foreach ($this->moderateKeywords as $kw) {
+                if (str_contains($messageLower, $kw)) {
+                    $matchedModerate[] = $kw;
+                }
+            }
+            foreach ($this->lowKeywords as $kw) {
+                if (str_contains($messageLower, $kw)) {
+                    $matchedLow[] = $kw;
+                }
+            }
+
+            $allMatched = array_merge($matchedModerate, $matchedLow);
+
+            // If message has no keyword hits, but ML distress score is high (>= 0.75) and tone is not casual,
+            // treat ML distress pattern as a soft distress signal
+            if (empty($allMatched) && $mlDistressScore >= 0.75 && $emotionalTone !== 'casual') {
+                $allMatched = ['ml_distress_pattern'];
+            }
+
+            // No soft keywords or ML distress in this message → skip
+            if (empty($allMatched)) {
+                return;
+            }
+
+            // ── Step 2: Require emotional/serious tone OR persistent history distress
+            // A single "I'm tired" in a casual conversation should NOT flag.
+            $distressScore = 0;
+
+            // Current message tone contributes:
+            if ($emotionalTone === 'emotional') {
+                $distressScore += 3;
+            } elseif ($emotionalTone === 'serious') {
+                $distressScore += 2;
+            }
+            // casual tone = 0 points from current message
+
+            // Keyword weight: moderate keywords count more than low keywords
+            $distressScore += count($matchedModerate) * 2;
+            $distressScore += count($matchedLow) * 1;
+
+            // ML distress score directly contributes to confidence
+            if ($mlDistressScore >= 0.85) {
+                $distressScore += 3;
+            } elseif ($mlDistressScore >= 0.70) {
+                $distressScore += 2;
+            }
+
+            // ── Step 3: Scan conversation history for accumulated emotional weight
+            // Each past message with moderate/low keywords or emotional tone adds weight
+            $historyDistress = 0;
+            foreach ($history as $msg) {
+                $pastMsg = strtolower($msg->message ?? '');
+                foreach ($this->moderateKeywords as $kw) {
+                    if (str_contains($pastMsg, $kw)) {
+                        $historyDistress += 1;
+                        break; // count max 1 per message
+                    }
+                }
+                foreach ($this->lowKeywords as $kw) {
+                    if (str_contains($pastMsg, $kw)) {
+                        $historyDistress += 1;
+                        break;
+                    }
+                }
+            }
+            $distressScore += $historyDistress;
+
+            // ── Step 4: Threshold check
+            // Minimum score of 4 required to flag:
+            //   - "emotional" tone + 1 moderate keyword = 3 + 2 = 5 ✓ (flags)
+            //   - "serious" tone + 1 moderate keyword = 2 + 2 = 4 ✓ (flags)
+            //   - "casual" tone + 1 moderate keyword = 0 + 2 = 2 ✗ (does NOT flag)
+            //   - "casual" tone + 1 low keyword + 2 history hits = 0 + 1 + 2 = 3 ✗
+            //   - "casual" tone + 2 moderate keywords + 1 history = 0 + 4 + 1 = 5 ✓ (flags — repeated keywords even in casual tone)
+            if ($distressScore < 4) {
+                return;
+            }
+
+            // ── Step 5: Prevent duplicate flags for the same conversation
+            // Only flag once per conversation (avoids spamming admin with repeated alerts)
+            $existingFlag = CrisisAlert::where('user_id', $userId)
+                ->whereHas('chatMessage', function ($q) use ($conversationId) {
+                    $q->where('conversation_id', $conversationId);
+                })
+                ->where('is_classified', false)
+                ->where('status', 'new')
+                ->whereNull('severity')
+                ->exists();
+
+            if ($existingFlag) {
+                return;
+            }
+
+            // ── Step 6: Create the soft-flag alert
+            $flagReason = $this->buildSoftFlagReason($matchedModerate, $matchedLow, $emotionalTone, $distressScore);
+
+            $alertUser = \App\Models\User::find($userId);
+
+            // Find the most recent chat message for this conversation
+            $latestMsg = ChatMessage::where('user_id', $userId)
+                ->where('conversation_id', $conversationId)
+                ->orderByDesc('created_at')
+                ->first();
+
+            CrisisAlert::create([
+                'user_id'           => $userId,
+                'chat_message_id'   => $latestMsg?->id,
+                'department'        => $alertUser?->department,
+                'gender'            => $alertUser?->gender,
+                'message'           => $currentMessage,
+                'severity'          => null,   // Admin classifies manually
+                'detected_keywords' => $allMatched,
+                'flag_reason'       => $flagReason,
+                'status'            => 'new',
+                'is_classified'     => false,
+            ]);
+
+            // Notify admin
+            $newAlert = CrisisAlert::where('chat_message_id', $latestMsg?->id)->first();
+            if ($newAlert) {
+                AdminNotification::crisisFlagged($newAlert);
+            }
+
+            Log::info("Soft-distress flag created for user {$userId} in conversation {$conversationId} (score: {$distressScore})");
+        } catch (\Exception $e) {
+            // Non-critical — never interrupt the student's chat experience
+            Log::warning('Soft-distress flag check failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Build a human-readable flag reason for moderate/low distress alerts.
+     */
+    private function buildSoftFlagReason(array $moderate, array $low, string $tone, int $score): string
+    {
+        if (!empty($moderate) && $tone === 'emotional') {
+            return 'Emotional distress with moderate concern signals';
+        }
+        if (!empty($moderate) && $tone === 'serious') {
+            return 'Serious tone with moderate concern signals';
+        }
+        if (!empty($moderate) && count($moderate) >= 2) {
+            return 'Repeated moderate concern signals in conversation';
+        }
+        if (!empty($low) && $tone === 'emotional') {
+            return 'Emotional distress with low-level concern signals';
+        }
+        if ($score >= 6) {
+            return 'Accumulated emotional distress across conversation';
+        }
+        return 'Persistent emotional concern detected';
+    }
+
+    /**
      * Detect the emotional tone of the user's message.
-     * Returns 'casual', 'emotional', or 'crisis'.
+     * Returns 'casual', 'emotional', or 'serious'.
      * Note: Actual crisis is already handled by checkForCrisis().
      * This covers the spectrum between casual and crisis.
      */
