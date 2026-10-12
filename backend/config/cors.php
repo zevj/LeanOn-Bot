@@ -45,12 +45,23 @@ return [
     |
     */
 
-    'allowed_origins' => array_filter([
-        env('FRONTEND_URL', 'http://localhost:5173'),
-        // Add additional origins if needed (e.g., staging)
-    ]),
+    'allowed_origins' => array_values(array_unique(array_filter([
+        'http://localhost:5173',
+        'http://localhost:3000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:8000',
+        'https://leanon-bot.xyz',
+        'https://www.leanon-bot.xyz',
+        ...array_map(
+            fn($url) => rtrim(trim($url), '/'),
+            explode(',', env('FRONTEND_URL', ''))
+        ),
+    ]))),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https://(.*\\.)?leanon-bot\\.xyz$#',
+        '#^https://.*\\.vercel\\.app$#',
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -58,23 +69,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | Must include custom headers used by the encryption and HMAC
-    | signing system, plus standard auth headers.
+    | signing system, plus standard auth headers. Using ['*'] ensures
+    | browser preflight requests are never rejected due to unexpected headers.
     |
     */
 
-    'allowed_headers' => [
-        'Content-Type',
-        'Authorization',
-        'Accept',
-        'Origin',
-        'X-Requested-With',
-        // E2E Encryption header
-        'X-Encrypted',
-        // HMAC signing headers
-        'X-Timestamp',
-        'X-Nonce',
-        'X-Signature',
-    ],
+    'allowed_headers' => ['*'],
 
     /*
     |--------------------------------------------------------------------------
